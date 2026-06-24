@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>久久家烧烤 · 扫码点餐</title>
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <style>
@@ -22,10 +21,10 @@
     .item-info { flex: 1; }
     .item-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
     .item-price { color: #c0392b; font-weight: bold; font-size: 16px; }
-    .item-controls { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .item-controls { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
     .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ccc; background: white; font-size: 18px; line-height: 1; cursor: pointer; }
-    .qty-num { font-size: 16px; min-width: 20px; text-align: center; }
-    .spicy-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #ddd; font-size: 13px; margin-left: auto; }
+    .qty-num { font-size: 16px; min-width: 22px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 4px; }
+    .spicy-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #ddd; font-size: 13px; }
     .cart-bar { position: sticky; bottom: 0; background: white; box-shadow: 0 -3px 10px rgba(0,0,0,0.08); padding: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; margin-top: 15px; }
     .cart-info { font-size: 16px; }
     .cart-total { color: #c0392b; font-weight: bold; font-size: 18px; }
@@ -38,17 +37,36 @@
     .clear-btn { background: #e67e22; color: white; border: none; padding: 8px 20px; border-radius: 15px; margin-bottom: 15px; cursor: pointer; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     @media print { body > *:not(#printArea) { display: none; } #printArea { display: block !important; } }
-    .new-order-sound { display: none; }
-    /* 登录框样式 */
+
+    /* 登录框 */
     #loginBox { max-width: 300px; margin: 60px auto; background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     #loginBox input { width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
     #loginBox button { background: #c0392b; color: white; border: none; padding: 10px 30px; border-radius: 20px; font-size: 16px; cursor: pointer; }
     #loginError { color: red; font-size: 13px; margin-top: 10px; }
+
+    /* 下单确认弹窗 */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; padding: 20px; }
+    .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; }
+    .modal-items { margin-bottom: 15px; }
+    .modal-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #eee; }
+    .modal-item-name { flex: 1; font-size: 14px; }
+    .modal-item-detail { font-size: 12px; color: #666; }
+    .modal-item-subtotal { font-weight: bold; margin-left: 10px; }
+    .modal-total { text-align: right; font-size: 18px; font-weight: bold; color: #c0392b; margin: 10px 0; }
+    .modal-input-group { margin: 10px 0; }
+    .modal-input-group label { display: block; font-size: 14px; margin-bottom: 4px; }
+    .modal-input-group input, .modal-input-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+    .modal-checkbox { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+    .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 20px; font-size: 16px; cursor: pointer; }
+    .btn-confirm { background: #c0392b; color: white; }
+    .btn-cancel { background: #ddd; color: #333; }
   </style>
 </head>
 <body>
 
-<!-- ===== 客人点餐界面 ===== -->
+<!-- 点餐界面 -->
 <div id="customerView">
   <div class="header">
     <h1>🍖 久久家烧烤</h1>
@@ -69,11 +87,11 @@
     <div class="cart-info">
       已选 <span id="cartCount">0</span> 件 | 合计 <span class="cart-total" id="cartTotal">0.00</span> 元
     </div>
-    <button class="submit-btn" onclick="submitOrder()">下单</button>
+    <button class="submit-btn" onclick="showConfirmModal()">下单</button>
   </div>
 </div>
 
-<!-- ===== 店家管理界面 ===== -->
+<!-- 管理员面板 -->
 <div id="adminPanel">
   <h3 style="margin-bottom:15px;">📋 实时订单（自动接收）</h3>
   <button class="clear-btn" onclick="clearOrders()">清空已完成订单</button>
@@ -82,24 +100,22 @@
 </div>
 
 <script>
-  // ========== 1. 替换为你的 Firebase 配置 ==========
+  // Firebase 配置
   const firebaseConfig = {
-  apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
-  authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
-  databaseURL: "https://jiujiukaorou-53a3d-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "jiujiukaorou-53a3d",
-  storageBucket: "jiujiukaorou-53a3d.firebasestorage.app",
-  messagingSenderId: "499822532464",
-  appId: "1:499822532464:web:93d49aba6e5b3d524761b5"
-};
-  // =================================================
+    apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
+    authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
+    databaseURL: "https://jiujiukaorou-53a3d-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "jiujiukaorou-53a3d",
+    storageBucket: "jiujiukaorou-53a3d.firebasestorage.app",
+    messagingSenderId: "499822532464",
+    appId: "1:499822532464:web:93d49aba6e5b3d524761b5"
+  };
 
-  // 初始化 Firebase
   firebase.initializeApp(firebaseConfig);
   const database = firebase.database();
   const ordersRef = database.ref('orders');
 
-  // 菜单数据（可自行修改图片路径）
+  // 菜单
   const menu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪肉" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=羊肉" },
@@ -126,26 +142,25 @@
   ];
 
   let cart = {};
+  const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
-  const ADMIN_PASSWORD = '888'; // 管理密码
+  let currentFilter = 'all';
 
-  // 初始化界面
+  // 初始化
   if (isAdmin) {
-    // 进入管理页前先验证密码
     showLoginForm();
   } else {
     document.getElementById('customerView').style.display = 'block';
     document.getElementById('adminPanel').style.display = 'none';
-    // 添加管理员入口（客人端隐藏）
     document.body.insertAdjacentHTML('beforeend', '<div class="admin-link"><a href="?admin">🔐 店家管理</a></div>');
     renderMenu('all');
   }
 
-  // 显示登录框
+  // 登录
   function showLoginForm() {
     document.getElementById('customerView').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'none';
-    const loginHtml = `
+    const html = `
       <div id="loginBox">
         <h3>🔐 店家登录</h3>
         <input id="pwdInput" type="password" placeholder="请输入管理密码">
@@ -154,12 +169,10 @@
         <a href="${window.location.pathname}" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a>
       </div>
     `;
-    document.body.insertAdjacentHTML('beforeend', loginHtml);
+    document.body.insertAdjacentHTML('beforeend', html);
   }
-
   function checkPassword() {
-    const pwd = document.getElementById('pwdInput').value;
-    if (pwd === ADMIN_PASSWORD) {
+    if (document.getElementById('pwdInput').value === ADMIN_PASSWORD) {
       document.getElementById('loginBox').remove();
       document.getElementById('adminPanel').style.display = 'block';
       startListening();
@@ -168,12 +181,15 @@
     }
   }
 
+  // 分类切换
   function filterCategory(cat) {
-    document.querySelectorAll('.category-nav button').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.category-nav button').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
+    currentFilter = cat;
     renderMenu(cat);
   }
 
+  // 渲染菜单
   function renderMenu(filter = 'all') {
     const container = document.getElementById('menuContainer');
     const items = filter === 'all' ? menu : menu.filter(m => m.category === filter);
@@ -187,7 +203,7 @@
             <div class="item-price">¥${item.price}</div>
             <div class="item-controls">
               <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
-              <span class="qty-num">${cartItem.qty}</span>
+              <span class="qty-num" onclick="editQty(${item.id})">${cartItem.qty}</span>
               <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
               <select class="spicy-select" onchange="changeSpicy(${item.id}, this.value)">
                 <option ${cartItem.spicy==='不辣'?'selected':''}>不辣</option>
@@ -203,10 +219,26 @@
     updateCartBar();
   }
 
+  // 修改数量（加减）
   function changeQty(id, delta) {
     if (!cart[id]) cart[id] = { qty: 0, spicy: '不辣' };
     cart[id].qty = Math.max(0, cart[id].qty + delta);
-    renderMenu(document.querySelector('.category-nav button.active')?.innerText.includes('全部') ? 'all' : 'meat');
+    renderMenu(currentFilter);
+  }
+
+  // 点击数字直接输入
+  function editQty(id) {
+    const current = cart[id] ? cart[id].qty : 0;
+    const input = prompt(`请输入【${menu.find(m=>m.id==id).name}】的数量：`, current);
+    if (input === null) return;
+    const num = parseInt(input);
+    if (isNaN(num) || num < 0) {
+      alert('请输入正确的数字');
+      return;
+    }
+    if (!cart[id]) cart[id] = { qty: 0, spicy: '不辣' };
+    cart[id].qty = num;
+    renderMenu(currentFilter);
   }
 
   function changeSpicy(id, value) {
@@ -227,24 +259,90 @@
     document.getElementById('cartTotal').innerText = total.toFixed(2);
   }
 
-  function submitOrder() {
-    const items = Object.entries(cart).filter(([id, val]) => val.qty > 0).map(([id, val]) => {
-      const item = menu.find(m => m.id == id);
-      return { name: item.name, price: item.price, qty: val.qty, spicy: val.spicy, subtotal: item.price * val.qty };
-    });
-    if (items.length === 0) return alert('请先选择菜品');
-    const total = items.reduce((sum, i) => sum + i.subtotal, 0);
+  // 获取已选菜品列表
+  function getCartItems() {
+    return Object.entries(cart)
+      .filter(([id, val]) => val.qty > 0)
+      .map(([id, val]) => {
+        const item = menu.find(m => m.id == id);
+        return {
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          qty: val.qty,
+          spicy: val.spicy,
+          subtotal: item.price * val.qty
+        };
+      });
+  }
+
+  // 弹出确认下单弹窗
+  function showConfirmModal() {
+    const items = getCartItems();
+    if (items.length === 0) {
+      alert('请先选择菜品');
+      return;
+    }
+    const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
+    let itemsHtml = items.map(i => `
+      <div class="modal-item">
+        <div class="modal-item-name">
+          ${i.name} 
+          <span class="modal-item-detail">x${i.qty} (${i.spicy})</span>
+        </div>
+        <div class="modal-item-subtotal">¥${i.subtotal.toFixed(2)}</div>
+      </div>
+    `).join('');
+
+    const modalHtml = `
+      <div class="modal-overlay" id="confirmModal">
+        <div class="modal-content">
+          <div class="modal-title">📋 确认订单</div>
+          <div class="modal-items">${itemsHtml}</div>
+          <div class="modal-total">合计：¥${total}</div>
+          <div class="modal-input-group">
+            <label>🪑 桌号</label>
+            <input type="text" id="tableNumberInput" placeholder="请输入桌号">
+          </div>
+          <div class="modal-checkbox">
+            <input type="checkbox" id="packCheckbox">
+            <label for="packCheckbox">🥡 打包</label>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn-confirm" onclick="confirmOrder()">确认下单</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  function closeModal() {
+    document.getElementById('confirmModal')?.remove();
+  }
+
+  // 确认下单（提交到 Firebase）
+  function confirmOrder() {
+    const tableNumber = document.getElementById('tableNumberInput').value.trim() || '未填';
+    const isPack = document.getElementById('packCheckbox').checked;
+    const items = getCartItems();
+    const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
     const order = {
       time: new Date().toLocaleString(),
-      items,
-      total: total.toFixed(2),
+      table: tableNumber,
+      isPack: isPack ? '打包' : '堂食',
+      items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })),
+      total: total,
       timestamp: firebase.database.ServerValue.TIMESTAMP
     };
+
     ordersRef.push(order)
       .then(() => {
-        alert(`下单成功！合计 ¥${total.toFixed(2)}，店家已收到订单。`);
+        closeModal();
+        alert(`下单成功！合计 ¥${total}，店家已收到订单。`);
         cart = {};
-        renderMenu('all');
+        renderMenu(currentFilter);
       })
       .catch(err => {
         alert('提交失败，请检查网络后重试');
@@ -252,6 +350,7 @@
       });
   }
 
+  // ========== 管理员功能 ==========
   function startListening() {
     ordersRef.on('child_added', (snapshot) => {
       const order = snapshot.val();
@@ -267,7 +366,8 @@
     div.className = 'order-card';
     div.id = 'order-' + key;
     div.innerHTML = `
-      <strong>🕒 ${order.time}</strong> | 合计 ¥${order.total}
+      <strong>🕒 ${order.time}</strong> | 🪑 ${order.table || '无'} | ${order.isPack || '堂食'}
+      <br>合计 ¥${order.total}
       <ul style="margin:6px 0; padding-left:20px;">
         ${order.items.map(i => `<li>${i.name} x${i.qty}（${i.spicy}） - ¥${i.subtotal}</li>`).join('')}
       </ul>
@@ -279,10 +379,7 @@
 
   function autoPrint(order) {
     const printWindow = window.open('', '_blank', 'width=300,height=400');
-    if (!printWindow) {
-      console.warn('无法自动弹出打印窗口，请允许弹窗');
-      return;
-    }
+    if (!printWindow) return;
     printWindow.document.write(`
       <html>
       <head><title>久久家烧烤·新订单</title>
@@ -291,6 +388,7 @@
       <body>
         <h2>久久家烧烤</h2>
         <p style="text-align:center;">${order.time}</p>
+        <p>桌号：${order.table || '无'} | ${order.isPack || '堂食'}</p>
         <div class="line"></div>
         ${order.items.map(i => `<div>${i.name} x${i.qty} <span style="float:right;">¥${i.subtotal}</span><br/><small>辣度:${i.spicy}</small></div>`).join('<div class="line"></div>')}
         <div class="line"></div>
@@ -302,32 +400,25 @@
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
-    setTimeout(() => { printWindow.close(); }, 2000);
+    setTimeout(() => printWindow.close(), 2000);
   }
 
   function reprint(key) {
     ordersRef.child(key).once('value').then(snap => {
-      if (snap.exists()) {
-        autoPrint(snap.val());
-      }
+      if (snap.exists()) autoPrint(snap.val());
     });
   }
-
   function deleteOrder(key) {
     if (confirm('确定删除此订单？')) {
       ordersRef.child(key).remove();
       document.getElementById('order-' + key)?.remove();
     }
   }
-
   function clearOrders() {
-    if (confirm('确定清空所有订单吗？此操作不可恢复！')) {
-      ordersRef.remove()
-        .then(() => { document.getElementById('orderList').innerHTML = ''; })
-        .catch(err => alert('清空失败'));
+    if (confirm('确定清空所有订单？')) {
+      ordersRef.remove().then(() => document.getElementById('orderList').innerHTML = '');
     }
   }
-
   function playNotification() {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
@@ -337,7 +428,6 @@
     osc.start();
     osc.stop(ctx.currentTime + 0.15);
   }
-
   function hideAdmin() {
     window.location.href = window.location.pathname;
   }
