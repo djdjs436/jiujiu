@@ -1,288 +1,259 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>久久家烧烤 · 扫码点餐</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a1a; color: #f5e6d3;
-            max-width: 480px; margin: 0 auto; padding: 15px;
-        }
-        .header {
-            text-align: center; margin-bottom: 20px;
-        }
-        .header h1 {
-            font-size: 28px; color: #f8b500; letter-spacing: 2px;
-        }
-        .header .sub {
-            font-size: 14px; color: #ccc; margin-top: 5px;
-        }
-        .tabs {
-            display: flex; gap: 8px; margin-bottom: 15px;
-        }
-        .tab {
-            flex: 1; padding: 12px; text-align: center;
-            background: #2c2c2c; border-radius: 8px;
-            color: #ddd; font-size: 16px; font-weight: bold;
-            cursor: pointer; transition: 0.2s; border: 2px solid transparent;
-        }
-        .tab.active {
-            background: #f8b500; color: #1a1a1a; border-color: #fff3cd;
-        }
-        .menu-list {
-            display: flex; flex-direction: column; gap: 10px;
-            margin-bottom: 100px;
-        }
-        .menu-item {
-            background: #2c2c2c; border-radius: 12px; padding: 12px;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .menu-item .info {
-            display: flex; align-items: center; gap: 12px; flex: 1;
-        }
-        .menu-item img {
-            width: 60px; height: 60px; object-fit: cover;
-            border-radius: 8px; background: #444;
-            display: none; /* 默认隐藏，有图片地址时显示 */
-        }
-        .menu-item .name-price {
-            display: flex; flex-direction: column;
-        }
-        .menu-item .name {
-            font-size: 18px; font-weight: bold;
-        }
-        .menu-item .price {
-            font-size: 14px; color: #f8b500; margin-top: 4px;
-        }
-        .qty-ctrl {
-            display: flex; align-items: center; gap: 8px;
-        }
-        .qty-ctrl button {
-            width: 32px; height: 32px; border-radius: 50%;
-            background: #f8b500; color: #1a1a1a; font-size: 20px;
-            font-weight: bold; border: none; cursor: pointer; line-height: 1;
-        }
-        .qty-ctrl .qty {
-            min-width: 20px; text-align: center; font-size: 18px; font-weight: bold;
-        }
-        .bottom-bar {
-            position: fixed; bottom: 0; left: 0; right: 0; max-width: 480px;
-            margin: 0 auto; background: #222; padding: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-top: 2px solid #f8b500; z-index: 10;
-        }
-        .total-text {
-            font-size: 20px; font-weight: bold;
-        }
-        .total-price {
-            color: #f8b500; font-size: 24px; font-weight: bold;
-        }
-        .order-btn {
-            background: #f8b500; color: #1a1a1a; border: none;
-            padding: 12px 25px; border-radius: 30px; font-size: 18px;
-            font-weight: bold; cursor: pointer;
-        }
-        /* 打印区域默认隐藏 */
-        #printArea {
-            display: none;
-        }
-        @media print {
-            body * { visibility: hidden; }
-            #printArea, #printArea * { visibility: visible; }
-            #printArea {
-                position: absolute; left: 0; top: 0; width: 100%;
-                display: block !important; background: white; color: black;
-                padding: 10px; font-size: 14px;
-            }
-            .bottom-bar, .tabs, .header, .menu-list { display: none !important; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>久久家烧烤 · 扫码点餐</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f8f8f8; max-width: 500px; margin: 0 auto; padding: 10px; }
+    .header { background: #c0392b; color: white; padding: 18px; text-align: center; border-radius: 12px; margin-bottom: 10px; }
+    .header h1 { font-size: 26px; margin-bottom: 4px; }
+    .header p { font-size: 14px; opacity: 0.9; }
+    .category-nav { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin-bottom: 12px; }
+    .category-nav button { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 14px; cursor: pointer; transition: 0.2s; }
+    .category-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
+    .menu-list { display: flex; flex-direction: column; gap: 10px; }
+    .menu-item { display: flex; background: white; border-radius: 12px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); align-items: center; }
+    .menu-item img { width: 70px; height: 70px; border-radius: 10px; object-fit: cover; margin-right: 12px; background: #eee; }
+    .item-info { flex: 1; }
+    .item-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+    .item-price { color: #c0392b; font-weight: bold; font-size: 16px; }
+    .item-controls { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ccc; background: white; font-size: 18px; line-height: 1; cursor: pointer; }
+    .qty-num { font-size: 16px; min-width: 20px; text-align: center; }
+    .spicy-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #ddd; font-size: 13px; margin-left: auto; }
+    .cart-bar { position: sticky; bottom: 0; background: white; box-shadow: 0 -3px 10px rgba(0,0,0,0.08); padding: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; margin-top: 15px; }
+    .cart-info { font-size: 16px; }
+    .cart-total { color: #c0392b; font-weight: bold; font-size: 18px; }
+    .submit-btn { background: #c0392b; color: white; border: none; padding: 10px 24px; border-radius: 25px; font-size: 16px; cursor: pointer; }
+    .admin-link { text-align: center; margin-top: 5px; font-size: 12px; color: #999; }
+    .admin-link a { color: #999; text-decoration: none; }
+    #adminPanel { display: none; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; }
+    .order-card { border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-bottom: 12px; }
+    .print-btn { background: #27ae60; color: white; border: none; padding: 6px 16px; border-radius: 15px; font-size: 13px; cursor: pointer; }
+    .clear-btn { background: #e67e22; color: white; border: none; padding: 8px 20px; border-radius: 15px; margin-bottom: 15px; cursor: pointer; }
+    @media print { body > *:not(#printArea) { display: none; } #printArea { display: block !important; } }
+  </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🔥 久久家烧烤</h1>
-        <div class="sub">扫码点餐 · 新鲜现烤</div>
+
+<!-- ===== 客人点餐界面 ===== -->
+<div id="customerView">
+  <div class="header">
+    <h1>🍖 久久家烧烤</h1>
+    <p>扫码点餐 · 干净卫生 · 现串现烤</p>
+  </div>
+
+  <div class="category-nav">
+    <button class="active" onclick="filterCategory('all')">全部</button>
+    <button onclick="filterCategory('meat')">🥩 肉类</button>
+    <button onclick="filterCategory('veg')">🥬 蔬菜</button>
+    <button onclick="filterCategory('staple')">🍚 主食</button>
+    <button onclick="filterCategory('other')">🥜 其他</button>
+  </div>
+
+  <div class="menu-list" id="menuContainer"></div>
+
+  <div class="cart-bar">
+    <div class="cart-info">
+      已选 <span id="cartCount">0</span> 件 | 合计 <span class="cart-total" id="cartTotal">0.00</span> 元
     </div>
+    <button class="submit-btn" onclick="submitOrder()">下单</button>
+  </div>
 
-    <div class="tabs">
-        <div class="tab active" data-cat="meat">🥩 肉类</div>
-        <div class="tab" data-cat="veg">🥬 蔬菜</div>
-        <div class="tab" data-cat="staple">🍚 主食</div>
-    </div>
+  <div class="admin-link">
+    <a href="#" onclick="showAdmin()">🔐 店家管理</a>
+  </div>
+</div>
 
-    <div class="menu-list" id="menuList"></div>
+<!-- ===== 店家管理界面 ===== -->
+<div id="adminPanel">
+  <h3 style="margin-bottom:15px;">📋 订单管理</h3>
+  <button class="clear-btn" onclick="clearOrders()">清空已完成订单</button>
+  <div id="orderList"></div>
+  <button onclick="hideAdmin()" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回点餐页</button>
+</div>
 
-    <div class="bottom-bar">
-        <div>
-            <span class="total-text">合计：</span>
-            <span class="total-price" id="totalDisplay">¥0</span>
+<script>
+  // 菜单数据（店家可在此修改菜品、价格、分类、图片）
+  const menu = [
+    { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪肉" },
+    { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=羊肉" },
+    { id:3, name:"香辣梅肉", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=梅肉" },
+    { id:4, name:"猪脆骨", price:2.5, category:"meat", img:"https://placehold.co/150x150/eee/999?text=脆骨" },
+    { id:5, name:"蒜瓣肉", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=蒜瓣肉" },
+    { id:6, name:"望京小腰", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=小腰" },
+    { id:7, name:"鱼豆腐", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鱼豆腐" },
+    { id:8, name:"掌中宝", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=掌中宝" },
+    { id:9, name:"烤肠", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=烤肠" },
+    { id:10, name:"牛心管", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=心管" },
+    { id:11, name:"烤翅中(大)", price:7, category:"meat", img:"https://placehold.co/150x150/eee/999?text=翅中" },
+    { id:12, name:"多味鱼", price:4, category:"meat", img:"https://placehold.co/150x150/eee/999?text=多味鱼" },
+    { id:13, name:"碳烤猪皮", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪皮" },
+    { id:14, name:"烤面筋", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=面筋" },
+    { id:15, name:"烤鱿鱼", price:8, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鱿鱼" },
+    { id:16, name:"烤韭菜", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=韭菜" },
+    { id:17, name:"烤豆干", price:1, category:"veg", img:"https://placehold.co/150x150/eee/999?text=豆干" },
+    { id:18, name:"烤辣椒", price:1, category:"veg", img:"https://placehold.co/150x150/eee/999?text=辣椒" },
+    { id:19, name:"烤包菜", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=包菜" },
+    { id:20, name:"烤金针菇", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=金针菇" },
+    { id:21, name:"烤馒头", price:1, category:"staple", img:"https://placehold.co/150x150/eee/999?text=馒头" },
+    { id:22, name:"卤花生", price:8, category:"other", img:"https://placehold.co/150x150/eee/999?text=花生" }
+  ];
+
+  let cart = {}; // { id: { qty, spicy } }
+  let orders = JSON.parse(localStorage.getItem('jiujiu_orders') || '[]');
+
+  // 渲染菜单
+  function renderMenu(filter = 'all') {
+    const container = document.getElementById('menuContainer');
+    const items = filter === 'all' ? menu : menu.filter(m => m.category === filter);
+    container.innerHTML = items.map(item => {
+      const cartItem = cart[item.id] || { qty: 0, spicy: '不辣' };
+      return `
+        <div class="menu-item">
+          <img src="${item.img}" alt="${item.name}" onerror="this.src='https://placehold.co/70x70/eee/999?text=🍖'">
+          <div class="item-info">
+            <div class="item-name">${item.name}</div>
+            <div class="item-price">¥${item.price}</div>
+            <div class="item-controls">
+              <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
+              <span class="qty-num">${cartItem.qty}</span>
+              <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+              <select class="spicy-select" onchange="changeSpicy(${item.id}, this.value)">
+                <option ${cartItem.spicy==='不辣'?'selected':''}>不辣</option>
+                <option ${cartItem.spicy==='微辣'?'selected':''}>微辣</option>
+                <option ${cartItem.spicy==='中辣'?'selected':''}>中辣</option>
+                <option ${cartItem.spicy==='特辣'?'selected':''}>特辣</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <button class="order-btn" id="orderBtn">📋 下单并打印</button>
-    </div>
+      `;
+    }).join('');
+    updateCartBar();
+  }
 
-    <!-- 打印小票内容区域（下单后动态填充） -->
-    <div id="printArea"></div>
+  function changeQty(id, delta) {
+    if (!cart[id]) cart[id] = { qty: 0, spicy: '不辣' };
+    cart[id].qty = Math.max(0, cart[id].qty + delta);
+    renderMenu(document.querySelector('.category-nav button.active')?.dataset?.cat || 'all');
+  }
 
-    <script>
-        // ==================== 菜品数据配置 ====================
-        // 商家可自行替换每道菜的图片链接（支持网络图片或相对路径）
-        const menuData = [
-            // 肉类
-            { name: "大串猪肉", price: 1, cat: "meat", img: "" },
-            { name: "鲜切羊肉", price: 3, cat: "meat", img: "" },
-            { name: "香辣梅肉", price: 2, cat: "meat", img: "" },
-            { name: "猪脆骨", price: 2.5, cat: "meat", img: "" },
-            { name: "蒜瓣肉", price: 2, cat: "meat", img: "" },
-            { name: "望京小腰", price: 3, cat: "meat", img: "" },
-            { name: "鱼豆腐", price: 2, cat: "meat", img: "" },
-            { name: "掌中宝", price: 3, cat: "meat", img: "" },
-            { name: "烤肠", price: 2, cat: "meat", img: "" },
-            { name: "牛心管", price: 2, cat: "meat", img: "" },
-            { name: "烤鱿鱼", price: 8, cat: "meat", img: "" },
-            { name: "烤翅中（大）", price: 7, cat: "meat", img: "" },
-            { name: "多味鱼", price: 4, cat: "meat", img: "" },
-            { name: "碳烤猪皮", price: 1, cat: "meat", img: "" },
-            // 蔬菜
-            { name: "烤韭菜", price: 10, cat: "veg", img: "" },
-            { name: "烤面筋", price: 2, cat: "veg", img: "" },
-            { name: "烤豆干", price: 1, cat: "veg", img: "" },
-            { name: "烤辣椒", price: 1, cat: "veg", img: "" },
-            { name: "烤包菜", price: 10, cat: "veg", img: "" },
-            { name: "烤金针菇", price: 10, cat: "veg", img: "" },
-            { name: "卤花生", price: 8, cat: "veg", img: "" },
-            // 主食
-            { name: "烤馒头", price: 1, cat: "staple", img: "" }
-        ];
+  function changeSpicy(id, value) {
+    if (!cart[id]) cart[id] = { qty: 0, spicy: '不辣' };
+    cart[id].spicy = value;
+  }
 
-        // 当前选中的分类
-        let currentCat = "meat";
-        // 购物车：{ index: quantity }
-        let cart = {};
+  function filterCategory(cat) {
+    document.querySelectorAll('.category-nav button').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    event.target.dataset.cat = cat;
+    renderMenu(cat);
+  }
 
-        // ==================== Webhook 通知配置 ====================
-        // 使用 Server酱 或其他推送服务，将下方链接替换为你自己的 Webhook 地址
-        const WEBHOOK_URL = ""; // 例如 "https://sctapi.ftqq.com/你的SENDKEY.send"
+  function updateCartBar() {
+    let count = 0, total = 0;
+    Object.entries(cart).forEach(([id, val]) => {
+      if (val.qty > 0) {
+        const item = menu.find(m => m.id == id);
+        count += val.qty;
+        total += item.price * val.qty;
+      }
+    });
+    document.getElementById('cartCount').innerText = count;
+    document.getElementById('cartTotal').innerText = total.toFixed(2);
+  }
 
-        // ==================== 渲染函数 ====================
-        function renderMenu() {
-            const filtered = menuData.filter(item => item.cat === currentCat);
-            const container = document.getElementById("menuList");
-            container.innerHTML = filtered.map((item, idx) => {
-                const globalIndex = menuData.indexOf(item);
-                const qty = cart[globalIndex] || 0;
-                const imgHtml = item.img 
-                    ? `<img src="${item.img}" alt="${item.name}" style="display:block;">` 
-                    : `<img src="" style="display:none;">`;
-                return `
-                    <div class="menu-item">
-                        <div class="info">
-                            ${imgHtml}
-                            <div class="name-price">
-                                <div class="name">${item.name}</div>
-                                <div class="price">¥${item.price.toFixed(2)}</div>
-                            </div>
-                        </div>
-                        <div class="qty-ctrl">
-                            <button onclick="changeQty(${globalIndex}, -1)">−</button>
-                            <span class="qty">${qty}</span>
-                            <button onclick="changeQty(${globalIndex}, 1)">+</button>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-            updateTotal();
-        }
+  function submitOrder() {
+    const items = Object.entries(cart).filter(([id, val]) => val.qty > 0).map(([id, val]) => {
+      const item = menu.find(m => m.id == id);
+      return { name: item.name, price: item.price, qty: val.qty, spicy: val.spicy, subtotal: item.price * val.qty };
+    });
+    if (items.length === 0) return alert('请先选择菜品');
+    const total = items.reduce((sum, i) => sum + i.subtotal, 0);
+    const order = {
+      time: new Date().toLocaleString(),
+      items,
+      total: total.toFixed(2)
+    };
+    orders.push(order);
+    localStorage.setItem('jiujiu_orders', JSON.stringify(orders));
+    alert(`下单成功！合计 ¥${total.toFixed(2)}，店家已收到订单。`);
+    cart = {};
+    renderMenu('all');
+    // 可选：自动弹出打印小票
+    if (confirm('是否需要打印小票？')) printOrder(order);
+  }
 
-        function changeQty(index, delta) {
-            if (!cart[index]) cart[index] = 0;
-            const newQty = cart[index] + delta;
-            if (newQty < 0) return;
-            cart[index] = newQty;
-            renderMenu();
-        }
+  // 店家面板
+  function showAdmin() {
+    document.getElementById('customerView').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+    renderOrders();
+  }
 
-        function updateTotal() {
-            let total = 0;
-            for (const [idx, qty] of Object.entries(cart)) {
-                if (qty > 0) total += menuData[idx].price * qty;
-            }
-            document.getElementById("totalDisplay").textContent = `¥${total.toFixed(2)}`;
-        }
+  function hideAdmin() {
+    document.getElementById('customerView').style.display = 'block';
+    document.getElementById('adminPanel').style.display = 'none';
+  }
 
-        // ==================== 分类切换 ====================
-        document.querySelectorAll(".tab").forEach(tab => {
-            tab.addEventListener("click", function() {
-                document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-                this.classList.add("active");
-                currentCat = this.dataset.cat;
-                renderMenu();
-            });
-        });
+  function renderOrders() {
+    const list = document.getElementById('orderList');
+    if (orders.length === 0) {
+      list.innerHTML = '<p style="color:#999;">暂无订单</p>';
+      return;
+    }
+    list.innerHTML = orders.map((order, idx) => `
+      <div class="order-card" id="order-${idx}">
+        <strong>🕒 ${order.time}</strong> | 合计 ¥${order.total}
+        <ul style="margin:6px 0; padding-left:20px;">
+          ${order.items.map(i => `<li>${i.name} x${i.qty}（${i.spicy}） - ¥${i.subtotal}</li>`).join('')}
+        </ul>
+        <button class="print-btn" onclick="printOrderById(${idx})">🖨️ 打印小票</button>
+      </div>
+    `).join('');
+  }
 
-        // ==================== 下单 & 打印 ====================
-        document.getElementById("orderBtn").addEventListener("click", function() {
-            const orderedItems = [];
-            let total = 0;
-            for (const [idx, qty] of Object.entries(cart)) {
-                if (qty > 0) {
-                    const item = menuData[idx];
-                    const subtotal = item.price * qty;
-                    orderedItems.push({ name: item.name, price: item.price, qty, subtotal });
-                    total += subtotal;
-                }
-            }
-            if (orderedItems.length === 0) {
-                alert("请至少选择一道菜品");
-                return;
-            }
+  function printOrderById(idx) {
+    printOrder(orders[idx]);
+  }
 
-            const orderId = "JJBQ" + Date.now().toString(36).toUpperCase();
-            const now = new Date();
-            const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-            
-            // 构建打印小票内容
-            let printHtml = `
-                <div style="text-align:center; font-size:16px; font-weight:bold; margin-bottom:5px;">久久家烧烤</div>
-                <div style="text-align:center; font-size:12px; margin-bottom:10px;">订单号：${orderId}<br>${timeStr}</div>
-                <hr>
-                <table style="width:100%; font-size:14px; border-collapse:collapse;">
-                    <tr><td>菜品</td><td>单价</td><td>数量</td><td>小计</td></tr>
-            `;
-            orderedItems.forEach(it => {
-                printHtml += `<tr><td>${it.name}</td><td>¥${it.price.toFixed(2)}</td><td>${it.qty}</td><td>¥${it.subtotal.toFixed(2)}</td></tr>`;
-            });
-            printHtml += `</table><hr>`;
-            printHtml += `<div style="text-align:right; font-size:16px; font-weight:bold;">合计：¥${total.toFixed(2)}</div>`;
-            printHtml += `<div style="text-align:center; margin-top:10px; font-size:12px;">谢谢惠顾，祝您用餐愉快！</div>`;
+  function printOrder(order) {
+    const printWindow = window.open('', '_blank', 'width=300,height=400');
+    printWindow.document.write(`
+      <html>
+      <head><title>久久家烧烤·订单小票</title>
+      <style>body{font-family:monospace;font-size:13px;width:280px;margin:0 auto;} h2{text-align:center;margin:8px 0;} .line{border-top:1px dashed #000;margin:6px 0;} .right{text-align:right;}</style>
+      </head>
+      <body>
+        <h2>久久家烧烤</h2>
+        <p style="text-align:center;">${order.time}</p>
+        <div class="line"></div>
+        ${order.items.map(i => `<div>${i.name} x${i.qty} <span style="float:right;">¥${i.subtotal}</span><br/><small>辣度:${i.spicy}</small></div>`).join('<div class="line"></div>')}
+        <div class="line"></div>
+        <h3 class="right">合计: ¥${order.total}</h3>
+        <p style="text-align:center;">谢谢惠顾，欢迎再次光临</p>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  }
 
-            document.getElementById("printArea").innerHTML = printHtml;
+  function clearOrders() {
+    if (confirm('确定清空所有订单吗？')) {
+      orders = [];
+      localStorage.removeItem('jiujiu_orders');
+      renderOrders();
+    }
+  }
 
-            // 发送 Webhook 通知店家（如已配置）
-            if (WEBHOOK_URL) {
-                const payload = {
-                    title: "久久家烧烤 · 新订单",
-                    desp: `## 新订单 ${orderId}\n时间：${timeStr}\n\n${orderedItems.map(i=>`- ${i.name} x${i.qty}  ¥${i.subtotal.toFixed(2)}`).join('\n')}\n\n**合计：¥${total.toFixed(2)}**`
-                };
-                fetch(WEBHOOK_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                }).catch(e => console.log("通知发送失败，请检查Webhook配置", e));
-            }
-
-            // 调用浏览器打印（自动弹出打印对话框，用户可选择打印机）
-            window.print();
-
-            // 下单后清空购物车（可选）
-            cart = {};
-            renderMenu();
-        });
-
-        // 初始渲染
-        renderMenu();
-    </script>
+  // 初始加载
+  renderMenu('all');
+</script>
 </body>
 </html>
