@@ -4,13 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>久久家烧烤 · 扫码点餐</title>
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <!-- GBK 编码支持库 -->
   <script src="https://cdn.jsdelivr.net/npm/encoding-japanese@2.0.0/encoding.min.js"></script>
   <style>
-    /* 与之前完全一致，此处省略保持原样 */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f8f8f8; max-width: 500px; margin: 0 auto; padding: 10px; }
     .header { background: #c0392b; color: white; padding: 18px; text-align: center; border-radius: 12px; margin-bottom: 10px; }
@@ -41,12 +39,10 @@
     .clear-btn { background: #e67e22; color: white; border: none; padding: 8px 20px; border-radius: 15px; margin-bottom: 15px; cursor: pointer; }
     .bluetooth-btn { background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; display: none; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
     #loginBox { max-width: 300px; margin: 60px auto; background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     #loginBox input { width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
     #loginBox button { background: #c0392b; color: white; border: none; padding: 10px 30px; border-radius: 20px; font-size: 16px; cursor: pointer; }
     #loginError { color: red; font-size: 13px; margin-top: 10px; }
-
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: flex; align-items: center; justify-content: center; }
     .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; padding: 20px; }
     .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; }
@@ -64,8 +60,6 @@
     .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 20px; font-size: 16px; cursor: pointer; }
     .btn-confirm { background: #c0392b; color: white; }
     .btn-cancel { background: #ddd; color: #333; }
-
-    /* 备用浏览器打印样式（72mm纸） */
     @media print {
       @page { size: 72mm auto; margin: 0; }
       body { width: 72mm; padding: 2mm; font-size: 11px; }
@@ -73,255 +67,447 @@
   </style>
 </head>
 <body>
-  <!-- 点餐界面（略，与之前一致） -->
-  <div id="customerView">
-    <div class="header">
-      <h1>🍖 久久家烧烤</h1>
-      <p>扫码点餐 · 干净卫生 · 现串现烤</p>
+
+<div id="customerView">
+  <div class="header">
+    <h1>🍖 久久家烧烤</h1>
+    <p>扫码点餐 · 干净卫生 · 现串现烤</p>
+  </div>
+  <div class="category-nav">
+    <button class="active" onclick="filterCategory('all')">全部</button>
+    <button onclick="filterCategory('meat')">🥩 肉类</button>
+    <button onclick="filterCategory('veg')">🥬 蔬菜</button>
+    <button onclick="filterCategory('staple')">🍚 主食</button>
+    <button onclick="filterCategory('other')">🥜 其他</button>
+  </div>
+  <div class="menu-list" id="menuContainer"></div>
+  <div class="cart-bar">
+    <div class="cart-info">
+      已选 <span id="cartCount">0</span> 件 | 合计 <span class="cart-total" id="cartTotal">0.00</span> 元
     </div>
-    <div class="category-nav">
-      <button class="active" onclick="filterCategory('all')">全部</button>
-      <button onclick="filterCategory('meat')">🥩 肉类</button>
-      <button onclick="filterCategory('veg')">🥬 蔬菜</button>
-      <button onclick="filterCategory('staple')">🍚 主食</button>
-      <button onclick="filterCategory('other')">🥜 其他</button>
-    </div>
-    <div class="menu-list" id="menuContainer"></div>
-    <div class="cart-bar">
-      <div class="cart-info">
-        已选 <span id="cartCount">0</span> 件 | 合计 <span class="cart-total" id="cartTotal">0.00</span> 元
+    <button class="submit-btn" onclick="showConfirmModal()">下单</button>
+  </div>
+</div>
+
+<div id="adminPanel">
+  <h3 style="margin-bottom:15px;">📋 实时订单（自动接收）</h3>
+  <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
+  <button class="clear-btn" onclick="clearOrders()">清空已完成订单</button>
+  <div id="orderList"></div>
+  <button onclick="hideAdmin()" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回点餐页</button>
+</div>
+
+<script>
+  // Firebase 配置
+  const firebaseConfig = {
+    apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
+    authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
+    databaseURL: "https://jiujiukaorou-53a3d-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "jiujiukaorou-53a3d",
+    storageBucket: "jiujiukaorou-53a3d.firebasestorage.app",
+    messagingSenderId: "499822532464",
+    appId: "1:499822532464:web:93d49aba6e5b3d524761b5"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+  const ordersRef = database.ref('orders');
+
+  const menu = [
+    { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪肉" },
+    { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=羊肉" },
+    { id:3, name:"香辣梅肉", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=梅肉" },
+    { id:4, name:"猪脆骨", price:2.5, category:"meat", img:"https://placehold.co/150x150/eee/999?text=脆骨" },
+    { id:5, name:"蒜瓣肉", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=蒜瓣肉" },
+    { id:6, name:"望京小腰", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=小腰" },
+    { id:7, name:"鱼豆腐", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鱼豆腐" },
+    { id:8, name:"掌中宝", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=掌中宝" },
+    { id:9, name:"烤肠", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=烤肠" },
+    { id:10, name:"牛心管", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=心管" },
+    { id:11, name:"烤翅中(大)", price:7, category:"meat", img:"https://placehold.co/150x150/eee/999?text=翅中" },
+    { id:12, name:"多味鱼", price:4, category:"meat", img:"https://placehold.co/150x150/eee/999?text=多味鱼" },
+    { id:13, name:"碳烤猪皮", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪皮" },
+    { id:14, name:"烤面筋", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=面筋" },
+    { id:15, name:"烤鱿鱼", price:8, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鱿鱼" },
+    { id:16, name:"烤韭菜", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=韭菜" },
+    { id:17, name:"烤豆干", price:1, category:"veg", img:"https://placehold.co/150x150/eee/999?text=豆干" },
+    { id:18, name:"烤辣椒", price:1, category:"veg", img:"https://placehold.co/150x150/eee/999?text=辣椒" },
+    { id:19, name:"烤包菜", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=包菜" },
+    { id:20, name:"烤金针菇", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=金针菇" },
+    { id:21, name:"烤馒头", price:1, category:"staple", img:"https://placehold.co/150x150/eee/999?text=馒头" },
+    { id:22, name:"卤花生", price:8, category:"other", img:"https://placehold.co/150x150/eee/999?text=花生" }
+  ];
+
+  let cart = {};
+  const ADMIN_PASSWORD = '888';
+  let isAdmin = window.location.search.includes('admin');
+  let currentFilter = 'all';
+  let bluetoothDevice = null;
+  let bluetoothCharacteristic = null;
+
+  // 初始化
+  if (isAdmin) {
+    showLoginForm();
+  } else {
+    document.getElementById('customerView').style.display = 'block';
+    document.getElementById('adminPanel').style.display = 'none';
+    document.body.insertAdjacentHTML('beforeend', '<div class="admin-link"><a href="?admin">🔐 店家管理</a></div>');
+    renderMenu('all');
+  }
+
+  function showLoginForm() {
+    document.getElementById('customerView').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'none';
+    const html = `
+      <div id="loginBox">
+        <h3>🔐 店家登录</h3>
+        <input id="pwdInput" type="password" placeholder="请输入管理密码">
+        <button onclick="checkPassword()">进入管理</button>
+        <p id="loginError"></p>
+        <a href="${window.location.pathname}" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a>
       </div>
-      <button class="submit-btn" onclick="showConfirmModal()">下单</button>
-    </div>
-  </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
 
-  <!-- 管理员面板 -->
-  <div id="adminPanel">
-    <h3 style="margin-bottom:15px;">📋 实时订单（自动接收）</h3>
-    <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
-    <button class="clear-btn" onclick="clearOrders()">清空已完成订单</button>
-    <div id="orderList"></div>
-    <button onclick="hideAdmin()" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回点餐页</button>
-  </div>
-
-  <script>
-    // Firebase 配置（已填写真实密钥，请保留）
-    const firebaseConfig = {
-      apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
-      authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
-      databaseURL: "https://jiujiukaorou-53a3d-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "jiujiukaorou-53a3d",
-      storageBucket: "jiujiukaorou-53a3d.firebasestorage.app",
-      messagingSenderId: "499822532464",
-      appId: "1:499822532464:web:93d49aba6e5b3d524761b5"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-    const ordersRef = database.ref('orders');
-
-    // 菜单数据（您可替换图片地址）
-    const menu = [
-      { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪肉" },
-      { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=羊肉" },
-      { id:3, name:"香辣梅肉", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=梅肉" },
-      { id:4, name:"猪脆骨", price:2.5, category:"meat", img:"https://placehold.co/150x150/eee/999?text=脆骨" },
-      { id:5, name:"蒜瓣肉", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=蒜瓣肉" },
-      { id:6, name:"望京小腰", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=小腰" },
-      { id:7, name:"鱼豆腐", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鱼豆腐" },
-      { id:8, name:"掌中宝", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=掌中宝" },
-      { id:9, name:"烤肠", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=烤肠" },
-      { id:10, name:"牛心管", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=心管" },
-      { id:11, name:"烤翅中(大)", price:7, category:"meat", img:"https://placehold.co/150x150/eee/999?text=翅中" },
-      { id:12, name:"多味鱼", price:4, category:"meat", img:"https://placehold.co/150x150/eee/999?text=多味鱼" },
-      { id:13, name:"碳烤猪皮", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪皮" },
-      { id:14, name:"烤面筋", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=面筋" },
-      { id:15, name:"烤鱿鱼", price:8, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鱿鱼" },
-      { id:16, name:"烤韭菜", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=韭菜" },
-      { id:17, name:"烤豆干", price:1, category:"veg", img:"https://placehold.co/150x150/eee/999?text=豆干" },
-      { id:18, name:"烤辣椒", price:1, category:"veg", img:"https://placehold.co/150x150/eee/999?text=辣椒" },
-      { id:19, name:"烤包菜", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=包菜" },
-      { id:20, name:"烤金针菇", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=金针菇" },
-      { id:21, name:"烤馒头", price:1, category:"staple", img:"https://placehold.co/150x150/eee/999?text=馒头" },
-      { id:22, name:"卤花生", price:8, category:"other", img:"https://placehold.co/150x150/eee/999?text=花生" }
-    ];
-
-    let cart = {};
-    const ADMIN_PASSWORD = '888';
-    let isAdmin = window.location.search.includes('admin');
-    let currentFilter = 'all';
-    let bluetoothDevice = null;
-    let bluetoothCharacteristic = null;
-
-    // 初始化
-    if (isAdmin) {
-      showLoginForm();
+  function checkPassword() {
+    if (document.getElementById('pwdInput').value === ADMIN_PASSWORD) {
+      document.getElementById('loginBox').remove();
+      document.getElementById('adminPanel').style.display = 'block';
+      if (navigator.bluetooth) {
+        document.getElementById('connectPrinterBtn').style.display = 'inline-block';
+      }
+      startListening();
     } else {
-      document.getElementById('customerView').style.display = 'block';
-      document.getElementById('adminPanel').style.display = 'none';
-      document.body.insertAdjacentHTML('beforeend', '<div class="admin-link"><a href="?admin">🔐 店家管理</a></div>');
-      renderMenu('all');
+      document.getElementById('loginError').innerText = '密码错误，请重试';
     }
+  }
 
-    function showLoginForm() {
-      document.getElementById('customerView').style.display = 'none';
-      document.getElementById('adminPanel').style.display = 'none';
-      const html = `
-        <div id="loginBox">
-          <h3>🔐 店家登录</h3>
-          <input id="pwdInput" type="password" placeholder="请输入管理密码">
-          <button onclick="checkPassword()">进入管理</button>
-          <p id="loginError"></p>
-          <a href="${window.location.pathname}" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a>
+  function filterCategory(cat) {
+    document.querySelectorAll('.category-nav button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    currentFilter = cat;
+    renderMenu(cat);
+  }
+
+  function renderMenu(filter = 'all') {
+    const container = document.getElementById('menuContainer');
+    const items = filter === 'all' ? menu : menu.filter(m => m.category === filter);
+    container.innerHTML = items.map(item => {
+      const cartItem = cart[item.id] || { qty: 0, spicy: '不辣' };
+      return `
+        <div class="menu-item">
+          <img src="${item.img}" alt="${item.name}" onerror="this.src='https://placehold.co/70x70/eee/999?text=🍖'">
+          <div class="item-info">
+            <div class="item-name">${item.name}</div>
+            <div class="item-price">¥${item.price}</div>
+            <div class="item-controls">
+              <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
+              <span class="qty-num" onclick="editQty(${item.id})">${cartItem.qty}</span>
+              <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+              <select class="spicy-select" onchange="changeSpicy(${item.id}, this.value)">
+                <option ${cartItem.spicy==='不辣'?'selected':''}>不辣</option>
+                <option ${cartItem.spicy==='微辣'?'selected':''}>微辣</option>
+                <option ${cartItem.spicy==='中辣'?'selected':''}>中辣</option>
+                <option ${cartItem.spicy==='特辣'?'selected':''}>特辣</option>
+              </select>
+            </div>
+          </div>
         </div>
       `;
-      document.body.insertAdjacentHTML('beforeend', html);
-    }
+    }).join('');
+    updateCartBar();
+  }
 
-    function checkPassword() {
-      if (document.getElementById('pwdInput').value === ADMIN_PASSWORD) {
-        document.getElementById('loginBox').remove();
-        document.getElementById('adminPanel').style.display = 'block';
-        if (navigator.bluetooth) {
-          document.getElementById('connectPrinterBtn').style.display = 'inline-block';
-        }
-        startListening();
-      } else {
-        document.getElementById('loginError').innerText = '密码错误，请重试';
+  function changeQty(id, delta) {
+    if (!cart[id]) cart[id] = { qty: 0, spicy: '不辣' };
+    cart[id].qty = Math.max(0, cart[id].qty + delta);
+    renderMenu(currentFilter);
+  }
+
+  function editQty(id) {
+    const current = cart[id] ? cart[id].qty : 0;
+    const input = prompt(`请输入【${menu.find(m=>m.id==id).name}】的数量：`, current);
+    if (input === null) return;
+    const num = parseInt(input);
+    if (isNaN(num) || num < 0) {
+      alert('请输入正确的数字');
+      return;
+    }
+    if (!cart[id]) cart[id] = { qty: 0, spicy: '不辣' };
+    cart[id].qty = num;
+    renderMenu(currentFilter);
+  }
+
+  function changeSpicy(id, value) {
+    if (!cart[id]) cart[id] = { qty: 0, spicy: '不辣' };
+    cart[id].spicy = value;
+  }
+
+  function updateCartBar() {
+    let count = 0, total = 0;
+    Object.entries(cart).forEach(([id, val]) => {
+      if (val.qty > 0) {
+        const item = menu.find(m => m.id == id);
+        count += val.qty;
+        total += item.price * val.qty;
       }
-    }
+    });
+    document.getElementById('cartCount').innerText = count;
+    document.getElementById('cartTotal').innerText = total.toFixed(2);
+  }
 
-    // 省略点餐界面其他函数（与原来相同）
-    function filterCategory(cat) { /* 同上 */ }
-    function renderMenu(filter = 'all') { /* 同上 */ }
-    function changeQty(id, delta) { /* 同上 */ }
-    function editQty(id) { /* 同上 */ }
-    function changeSpicy(id, value) { /* 同上 */ }
-    function updateCartBar() { /* 同上 */ }
-    function getCartItems() { /* 同上 */ }
-    function showConfirmModal() { /* 同上 */ }
-    function closeModal() { /* 同上 */ }
-    function confirmOrder() { /* 同上 */ }
-
-    // 由于回复长度限制，以上函数内容请直接使用上一版完整代码中的函数，或通过我提供的完整文件保证功能。
-
-    // ========== 核心改动：蓝牙打印 + GBK 编码 ==========
-    async function connectBluetoothPrinter() {
-      try {
-        bluetoothDevice = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-        });
-        const server = await bluetoothDevice.gatt.connect();
-        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-        bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-        alert('蓝牙打印机已连接！');
-        bluetoothDevice.addEventListener('gattserverdisconnected', () => {
-          alert('打印机已断开');
-          bluetoothDevice = null;
-          bluetoothCharacteristic = null;
-        });
-      } catch (error) {
-        console.error(error);
-        alert('连接失败，请确保打印机已开启并处于可发现状态。');
-      }
-    }
-
-    async function sendBluetoothData(data) {
-      if (!bluetoothCharacteristic) throw new Error('打印机未连接');
-      const chunkSize = 20;
-      for (let i = 0; i < data.length; i += chunkSize) {
-        await bluetoothCharacteristic.writeValue(data.slice(i, i + chunkSize));
-      }
-    }
-
-    // 构建 72mm 热敏纸 ESC/POS 指令（GBK编码）
-    function build72mmESC(order) {
-      let str = '';
-      // 初始化
-      str += '\x1B\x40';
-      // 居中
-      str += '\x1B\x61\x01';
-      // 放大标题
-      str += '\x1B\x21\x30';
-      str += '久久家烧烤\n';
-      str += '\x1B\x21\x00';
-      str += '--------------------------------\n';
-      // 左对齐
-      str += '\x1B\x61\x00';
-      str += `时间：${order.time}\n`;
-      str += `桌号：${order.table || '无'}  ${order.isPack || '堂食'}\n`;
-      str += '--------------------------------\n';
-      str += '品名        数量  小计\n';
-      order.items.forEach(item => {
-        // 每行32字符，中文占2个
-        const name = item.name.padEnd(8, ' ');  // 8个中文字符宽度
-        const qty = item.qty.toString().padStart(2, ' ');
-        const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
-        str += `${name} ${qty} ${subtotal}\n`;
-        str += `  辣度: ${item.spicy}\n`;
+  function getCartItems() {
+    return Object.entries(cart)
+      .filter(([id, val]) => val.qty > 0)
+      .map(([id, val]) => {
+        const item = menu.find(m => m.id == id);
+        return {
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          qty: val.qty,
+          spicy: val.spicy,
+          subtotal: item.price * val.qty
+        };
       });
-      str += '--------------------------------\n';
-      str += '\x1B\x61\x02'; // 右对齐
-      str += `合计：¥ ${order.total}\n`;
-      str += '\x1B\x61\x01'; // 居中
-      str += '谢谢惠顾，欢迎再次光临\n';
-      str += '\n\n\n';
-      // 切纸
-      str += '\x1D\x56\x42\x00';
+  }
 
-      // 使用 encoding.js 转换为 GBK 编码的 Uint8Array
-      return new Uint8Array(Encoding.convert(str, 'GBK'));
+  function showConfirmModal() {
+    const items = getCartItems();
+    if (items.length === 0) {
+      alert('请先选择菜品');
+      return;
     }
+    const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
+    let itemsHtml = items.map(i => `
+      <div class="modal-item">
+        <div class="modal-item-name">
+          ${i.name} 
+          <span class="modal-item-detail">x${i.qty} (${i.spicy})</span>
+        </div>
+        <div class="modal-item-subtotal">¥${i.subtotal.toFixed(2)}</div>
+      </div>
+    `).join('');
 
-    // 自动打印：优先蓝牙，否则浏览器
-    function autoPrint(order) {
-      if (bluetoothCharacteristic) {
-        const command = build72mmESC(order);
-        sendBluetoothData(command).catch(err => {
-          console.error('蓝牙打印失败:', err);
-          fallbackPrint(order);
-        });
-      } else {
+    const modalHtml = `
+      <div class="modal-overlay" id="confirmModal">
+        <div class="modal-content">
+          <div class="modal-title">📋 确认订单</div>
+          <div class="modal-items">${itemsHtml}</div>
+          <div class="modal-total">合计：¥${total}</div>
+          <div class="modal-input-group">
+            <label>🪑 桌号</label>
+            <input type="text" id="tableNumberInput" placeholder="请输入桌号">
+          </div>
+          <div class="modal-checkbox">
+            <input type="checkbox" id="packCheckbox">
+            <label for="packCheckbox">🥡 打包</label>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn-confirm" onclick="confirmOrder()">确认下单</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  function closeModal() {
+    document.getElementById('confirmModal')?.remove();
+  }
+
+  function confirmOrder() {
+    const tableNumber = document.getElementById('tableNumberInput').value.trim() || '未填';
+    const isPack = document.getElementById('packCheckbox').checked;
+    const items = getCartItems();
+    const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
+    const order = {
+      time: new Date().toLocaleString(),
+      table: tableNumber,
+      isPack: isPack ? '打包' : '堂食',
+      items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })),
+      total: total,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    ordersRef.push(order)
+      .then(() => {
+        closeModal();
+        alert(`下单成功！合计 ¥${total}，店家已收到订单。`);
+        cart = {};
+        renderMenu(currentFilter);
+      })
+      .catch(err => {
+        alert('提交失败，请检查网络后重试');
+        console.error(err);
+      });
+  }
+
+  // ========== 管理员功能 ==========
+  function startListening() {
+    ordersRef.on('child_added', (snapshot) => {
+      const order = snapshot.val();
+      displayOrder(snapshot.key, order);
+      autoPrint(order);
+      playNotification();
+    });
+  }
+
+  function displayOrder(key, order) {
+    const list = document.getElementById('orderList');
+    const div = document.createElement('div');
+    div.className = 'order-card';
+    div.id = 'order-' + key;
+    div.innerHTML = `
+      <strong>🕒 ${order.time}</strong> | 🪑 ${order.table || '无'} | ${order.isPack || '堂食'}
+      <br>合计 ¥${order.total}
+      <ul style="margin:6px 0; padding-left:20px;">
+        ${order.items.map(i => `<li>${i.name} x${i.qty}（${i.spicy}） - ¥${i.subtotal}</li>`).join('')}
+      </ul>
+      <button class="print-btn" onclick="reprint('${key}')">🖨️ 补打小票</button>
+      <button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${key}')">删除</button>
+    `;
+    list.prepend(div);
+  }
+
+  async function connectBluetoothPrinter() {
+    try {
+      bluetoothDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+      });
+      const server = await bluetoothDevice.gatt.connect();
+      const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+      bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+      alert('蓝牙打印机已连接！');
+      bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+        alert('打印机已断开');
+        bluetoothDevice = null;
+        bluetoothCharacteristic = null;
+      });
+    } catch (error) {
+      console.error(error);
+      alert('连接失败，请确保打印机已开启并处于可发现状态。');
+    }
+  }
+
+  async function sendBluetoothData(data) {
+    if (!bluetoothCharacteristic) throw new Error('打印机未连接');
+    const chunkSize = 20;
+    for (let i = 0; i < data.length; i += chunkSize) {
+      await bluetoothCharacteristic.writeValue(data.slice(i, i + chunkSize));
+    }
+  }
+
+  function build72mmESC(order) {
+    let str = '';
+    str += '\x1B\x40';
+    str += '\x1B\x61\x01';
+    str += '\x1B\x21\x30';
+    str += '久久家烧烤\n';
+    str += '\x1B\x21\x00';
+    str += '--------------------------------\n';
+    str += '\x1B\x61\x00';
+    str += `时间：${order.time}\n`;
+    str += `桌号：${order.table || '无'}  ${order.isPack || '堂食'}\n`;
+    str += '--------------------------------\n';
+    str += '品名        数量  小计\n';
+    order.items.forEach(item => {
+      const name = item.name.padEnd(8, ' ');
+      const qty = item.qty.toString().padStart(2, ' ');
+      const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
+      str += `${name} ${qty} ${subtotal}\n`;
+      str += `  辣度: ${item.spicy}\n`;
+    });
+    str += '--------------------------------\n';
+    str += '\x1B\x61\x02';
+    str += `合计：¥ ${order.total}\n`;
+    str += '\x1B\x61\x01';
+    str += '谢谢惠顾，欢迎再次光临\n';
+    str += '\n\n\n';
+    str += '\x1D\x56\x42\x00';
+    return new Uint8Array(Encoding.convert(str, 'GBK'));
+  }
+
+  function autoPrint(order) {
+    if (bluetoothCharacteristic) {
+      const command = build72mmESC(order);
+      sendBluetoothData(command).catch(err => {
+        console.error('蓝牙打印失败:', err);
         fallbackPrint(order);
-      }
+      });
+    } else {
+      fallbackPrint(order);
     }
+  }
 
-    // 备用浏览器打印（72mm适配）
-    function fallbackPrint(order) {
-      const w = window.open('', '_blank', 'width=300,height=400');
-      if (!w) return;
-      w.document.write(`
-        <html>
-        <head><title>久久家烧烤·新订单</title>
-        <style>
-          @page { size: 72mm auto; margin: 0; }
-          body { width: 72mm; font-family: monospace; font-size: 11px; padding: 2mm; margin: 0 auto; }
-          h2 { text-align: center; font-size: 15px; margin: 4px 0; }
-          .line { border-top: 1px dashed #000; margin: 4px 0; }
-          .right { text-align: right; }
-          .item { margin: 2px 0; }
-        </style>
-        </head>
-        <body>
-          <h2>久久家烧烤</h2>
-          <p style="text-align:center;">${order.time}</p>
-          <p>桌号：${order.table || '无'} | ${order.isPack || '堂食'}</p>
-          <div class="line"></div>
-          ${order.items.map(i => `<div class="item">${i.name} x${i.qty} <span style="float:right;">¥${i.subtotal}</span><br/><small>辣度:${i.spicy}</small></div>`).join('<div class="line"></div>')}
-          <div class="line"></div>
-          <h3 class="right">合计: ¥${order.total}</h3>
-          <p style="text-align:center; margin-top:8px;">新订单 - 请及时处理</p>
-        </body>
-        </html>
-      `);
-      w.document.close();
-      w.focus();
-      w.print();
-      setTimeout(() => w.close(), 2000);
+  function fallbackPrint(order) {
+    const w = window.open('', '_blank', 'width=300,height=400');
+    if (!w) return;
+    w.document.write(`
+      <html>
+      <head><title>久久家烧烤·新订单</title>
+      <style>
+        @page { size: 72mm auto; margin: 0; }
+        body { width: 72mm; font-family: monospace; font-size: 11px; padding: 2mm; margin: 0 auto; }
+        h2 { text-align: center; font-size: 15px; margin: 4px 0; }
+        .line { border-top: 1px dashed #000; margin: 4px 0; }
+        .right { text-align: right; }
+        .item { margin: 2px 0; }
+      </style>
+      </head>
+      <body>
+        <h2>久久家烧烤</h2>
+        <p style="text-align:center;">${order.time}</p>
+        <p>桌号：${order.table || '无'} | ${order.isPack || '堂食'}</p>
+        <div class="line"></div>
+        ${order.items.map(i => `<div class="item">${i.name} x${i.qty} <span style="float:right;">¥${i.subtotal}</span><br/><small>辣度:${i.spicy}</small></div>`).join('<div class="line"></div>')}
+        <div class="line"></div>
+        <h3 class="right">合计: ¥${order.total}</h3>
+        <p style="text-align:center; margin-top:8px;">新订单 - 请及时处理</p>
+      </body>
+      </html>
+    `);
+    w.document.close();
+    w.focus();
+    w.print();
+    setTimeout(() => w.close(), 2000);
+  }
+
+  function reprint(key) {
+    ordersRef.child(key).once('value').then(snap => {
+      if (snap.exists()) autoPrint(snap.val());
+    });
+  }
+
+  function deleteOrder(key) {
+    if (confirm('确定删除此订单？')) {
+      ordersRef.child(key).remove();
+      document.getElementById('order-' + key)?.remove();
     }
+  }
 
-    // 管理员监听等其他函数保持与之前一致（限于篇幅不重复列出，请复制上一版完整代码）
-  </script>
+  function clearOrders() {
+    if (confirm('确定清空所有订单？')) {
+      ordersRef.remove().then(() => document.getElementById('orderList').innerHTML = '');
+    }
+  }
+
+  function playNotification() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+  }
+
+  function hideAdmin() {
+    window.location.href = window.location.pathname;
+  }
+</script>
 </body>
 </html>
