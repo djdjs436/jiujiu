@@ -63,7 +63,7 @@
     .btn-confirm { background: #c0392b; color: white; }
     .btn-cancel { background: #ddd; color: #333; }
 
-    /* 打印样式（浏览器弹窗专用，适配80mm宽） */
+    /* 打印样式（浏览器弹窗专用，80mm纸张） */
     @media print {
       @page { size: 80mm auto; margin: 0; }
       body { width: 80mm; padding: 2mm; font-size: 12px; }
@@ -153,7 +153,7 @@
   let isAdmin = window.location.search.includes('admin');
   let currentFilter = 'all';
 
-  // ========== 蓝牙打印变量 ==========
+  // 蓝牙打印变量
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
@@ -182,11 +182,11 @@
     `;
     document.body.insertAdjacentHTML('beforeend', html);
   }
+
   function checkPassword() {
     if (document.getElementById('pwdInput').value === ADMIN_PASSWORD) {
       document.getElementById('loginBox').remove();
       document.getElementById('adminPanel').style.display = 'block';
-      // 若浏览器支持蓝牙，显示连接按钮
       if (navigator.bluetooth) {
         document.getElementById('connectPrinterBtn').style.display = 'inline-block';
       }
@@ -391,8 +391,7 @@
   // 自动打印：优先蓝牙，否则浏览器窗口
   function autoPrint(order) {
     if (bluetoothCharacteristic) {
-      // 蓝牙打印
-      const command = build80mmESC(order);
+      const command = build72mmESC(order);
       sendBluetoothData(command).catch(err => {
         console.error('蓝牙打印失败:', err);
         fallbackPrint(order);
@@ -499,41 +498,34 @@
     }
   }
 
-  // 构建80mm热敏纸 ESC/POS 指令（UTF-8编码，如打印机需GBK请修改）
-  function build80mmESC(order) {
+  // 构建72mm热敏纸 ESC/POS 指令（适配鹭岛宸芯72mm有效宽度）
+  function build72mmESC(order) {
     let str = '';
-    // 初始化
-    str += '\x1B\x40';
-    // 居中对齐
-    str += '\x1B\x61\x01';
-    // 放大字体
-    str += '\x1B\x21\x30';
+    str += '\x1B\x40';                 // 初始化
+    str += '\x1B\x61\x01';            // 居中
+    str += '\x1B\x21\x30';            // 放大字体
     str += '久久家烧烤\n';
-    str += '\x1B\x21\x00';
-    str += '--------------------------------\n';
-    str += '\x1B\x61\x00'; // 左对齐
+    str += '\x1B\x21\x00';            // 恢复普通
+    str += '----------------------------\n';  // 28个横线，适配72mm宽度
+    str += '\x1B\x61\x00';            // 左对齐
     str += `时间：${order.time}\n`;
     str += `桌号：${order.table || '无'}  ${order.isPack || '堂食'}\n`;
-    str += '--------------------------------\n';
-    // 表头
-    str += '品名        数量  小计\n';
+    str += '----------------------------\n';
+    str += '品名       数量  小计\n';
     order.items.forEach(item => {
-      const name = item.name.padEnd(8, ' ');
+      const name = item.name.padEnd(7, ' ');     // 缩短品名宽度以适应72mm
       const qty = item.qty.toString().padStart(2, ' ');
       const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
       str += `${name} ${qty} ${subtotal}\n`;
       str += `  辣度: ${item.spicy}\n`;
     });
-    str += '--------------------------------\n';
-    str += '\x1B\x61\x02'; // 右对齐
+    str += '----------------------------\n';
+    str += '\x1B\x61\x02';            // 右对齐
     str += `合计：¥ ${order.total}\n`;
-    str += '\x1B\x61\x01'; // 居中
+    str += '\x1B\x61\x01';            // 居中
     str += '谢谢惠顾，欢迎再次光临\n';
     str += '\n\n\n';
-    // 切纸
-    str += '\x1D\x56\x42\x00';
-
-    // 转换为 Uint8Array（默认 UTF-8，如打印机要求 GBK 可自行引入编码库）
+    str += '\x1D\x56\x42\x00';        // 切纸
     return new TextEncoder().encode(str);
   }
 </script>
