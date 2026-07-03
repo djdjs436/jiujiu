@@ -6,8 +6,7 @@
   <title>久久家烧烤 · 扫码点餐</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <!-- GBK 编码支持库 -->
-  <script src="https://cdn.jsdelivr.net/npm/encoding-japanese@2.0.0/encoding.min.js"></script>
+  <!-- 不再需要 encoding-japanese 库，已改用 UTF-8 编码 -->
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f8f8f8; max-width: 500px; margin: 0 auto; padding: 10px; }
@@ -92,6 +91,8 @@
 <div id="adminPanel">
   <h3 style="margin-bottom:15px;">📋 实时订单（自动接收）</h3>
   <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
+  <!-- 测试打印按钮 -->
+  <button onclick="testPrint()" style="background:#f39c12; color:white; border:none; padding:8px 16px; border-radius:15px; margin-bottom:10px; cursor:pointer; display:none;" id="testPrintBtn">🧪 测试打印</button>
   <button class="clear-btn" onclick="clearOrders()">清空已完成订单</button>
   <div id="orderList"></div>
   <button onclick="hideAdmin()" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回点餐页</button>
@@ -176,6 +177,7 @@
       document.getElementById('adminPanel').style.display = 'block';
       if (navigator.bluetooth) {
         document.getElementById('connectPrinterBtn').style.display = 'inline-block';
+        document.getElementById('testPrintBtn').style.display = 'inline-block';
       }
       startListening();
     } else {
@@ -401,9 +403,14 @@
     }
   }
 
+  // 构建 72mm 热敏纸 ESC/POS 指令（UTF-8编码，适配鹭岛宸芯）
   function build72mmESC(order) {
     let str = '';
+    // 初始化
     str += '\x1B\x40';
+    // 切换到中文模式（关键指令，解决部分打印机中文打印问题）
+    str += '\x1C\x26';
+    // 居中对齐
     str += '\x1B\x61\x01';
     str += '\x1B\x21\x30';
     str += '久久家烧烤\n';
@@ -427,8 +434,10 @@
     str += '\x1B\x61\x01';
     str += '谢谢惠顾，欢迎再次光临\n';
     str += '\n\n\n';
-    str += '\x1D\x56\x42\x00';
-    return new Uint8Array(Encoding.convert(str, 'GBK'));
+    str += '\x1D\x56\x42\x00'; // 切纸
+
+    // 使用 UTF-8 编码（鹭岛宸芯多数型号默认支持）
+    return new TextEncoder().encode(str);
   }
 
   function autoPrint(order) {
@@ -507,6 +516,22 @@
 
   function hideAdmin() {
     window.location.href = window.location.pathname;
+  }
+
+  // ========== 测试打印函数 ==========
+  function testPrint() {
+    if (!bluetoothCharacteristic) {
+      alert('请先连接蓝牙打印机');
+      return;
+    }
+    // 发送一段简单的测试数据，包含英文和中文，并切纸
+    const testStr = '\x1B\x40\x1C\x26Hello 久久家烧烤\n\x1D\x56\x42\x00';
+    const data = new TextEncoder().encode(testStr);
+    sendBluetoothData(data).then(() => {
+      alert('测试打印指令已发送，请检查打印机');
+    }).catch(err => {
+      alert('测试打印失败：' + err.message);
+    });
   }
 </script>
 </body>
