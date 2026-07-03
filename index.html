@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>久久家烧烤 · 扫码点餐</title>
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <style>
@@ -40,13 +39,11 @@
     .status { margin: 8px 0; font-size: 14px; color: #555; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* 登录框 */
     #loginBox { max-width: 300px; margin: 60px auto; background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     #loginBox input { width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
     #loginBox button { background: #c0392b; color: white; border: none; padding: 10px 30px; border-radius: 20px; font-size: 16px; cursor: pointer; }
     #loginError { color: red; font-size: 13px; margin-top: 10px; }
 
-    /* 下单确认弹窗 */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: flex; align-items: center; justify-content: center; }
     .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; padding: 20px; }
     .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; }
@@ -65,7 +62,6 @@
     .btn-confirm { background: #c0392b; color: white; }
     .btn-cancel { background: #ddd; color: #333; }
 
-    /* 打印样式（浏览器弹窗专用，80mm纸张） */
     @media print {
       @page { size: 80mm auto; margin: 0; }
       body { width: 80mm; padding: 2mm; font-size: 12px; }
@@ -73,14 +69,11 @@
   </style>
 </head>
 <body>
-
-<!-- 点餐界面 -->
 <div id="customerView">
   <div class="header">
     <h1>🍖 久久家烧烤</h1>
     <p>扫码点餐 · 干净卫生 · 现串现烤</p>
   </div>
-
   <div class="category-nav">
     <button class="active" onclick="filterCategory('all', event)">全部</button>
     <button onclick="filterCategory('meat', event)">🥩 肉类</button>
@@ -88,9 +81,7 @@
     <button onclick="filterCategory('staple', event)">🍚 主食</button>
     <button onclick="filterCategory('other', event)">🥜 其他</button>
   </div>
-
   <div class="menu-list" id="menuContainer"></div>
-
   <div class="cart-bar">
     <div class="cart-info">
       已选 <span id="cartCount">0</span> 件 | 合计 <span class="cart-total" id="cartTotal">0.00</span> 元
@@ -98,8 +89,6 @@
     <button class="submit-btn" onclick="showConfirmModal()">下单</button>
   </div>
 </div>
-
-<!-- 管理员面板 -->
 <div id="adminPanel">
   <h3 style="margin-bottom:15px;">📋 实时订单（自动接收）</h3>
   <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
@@ -110,7 +99,6 @@
 </div>
 
 <script>
-  // Firebase 配置
   const firebaseConfig = {
     apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
     authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
@@ -120,12 +108,10 @@
     messagingSenderId: "499822532464",
     appId: "1:499822532464:web:93d49aba6e5b3d524761b5"
   };
-
   firebase.initializeApp(firebaseConfig);
   const database = firebase.database();
   const ordersRef = database.ref('orders');
 
-  // 菜单
   const menu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪肉" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=羊肉" },
@@ -155,11 +141,9 @@
   const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
   let currentFilter = 'all';
-
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
-  // 初始化
   if (isAdmin) {
     showLoginForm();
   } else {
@@ -376,23 +360,23 @@
   function fallbackPrint(order) {
     const w = window.open('', '_blank', 'width=320,height=400');
     if (!w) return;
-    w.document.write(`
-      <html><head><title>久久家烧烤·新订单</title>
-      <style>@page { size: 80mm auto; margin: 0; } body { width: 80mm; font-family: monospace; font-size: 12px; padding: 2mm; } h2 { text-align: center; font-size: 16px; } .line { border-top: 1px dashed #000; margin: 4px 0; } .right { text-align: right; } .item { margin: 2px 0; }</style></head>
-      <body>
-        <h2>久久家烧烤</h2>
-        <p style="text-align:center;">${order.time}</p>
-        <p>桌号：${order.table || '无'} | ${order.isPack || '堂食'}</p>
-        <div class="line"></div>
-        ${order.items.map(i => `<div class="item">${i.name} x${i.qty} <span style="float:right;">¥${i.subtotal}</span><br/><small>辣度:${i.spicy}</small></div>`).join('<div class="line"></div>')}
-        <div class="line"></div>
-        <h3 class="right">合计: ¥${order.total}</h3>
-        <p style="text-align:center;">新订单 - 请及时处理</p>
-      </body></html>`);
+    let html = '<html><head><title>久久家烧烤·新订单</title>';
+    html += '<style>@page { size: 80mm auto; margin: 0; } body { width: 80mm; font-family: monospace; font-size: 12px; padding: 2mm; } h2 { text-align: center; font-size: 16px; } .line { border-top: 1px dashed #000; margin: 4px 0; } .right { text-align: right; } .item { margin: 2px 0; }</style></head>';
+    html += '<body><h2>久久家烧烤</h2>';
+    html += '<p style="text-align:center;">' + order.time + '</p>';
+    html += '<p>桌号：' + (order.table || '无') + ' | ' + (order.isPack || '堂食') + '</p>';
+    html += '<div class="line"></div>';
+    order.items.forEach(function(item) {
+      html += '<div class="item">' + item.name + ' x' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span><br/><small>辣度:' + item.spicy + '</small></div><div class="line"></div>';
+    });
+    html += '<h3 class="right">合计: ¥' + order.total + '</h3>';
+    html += '<p style="text-align:center;">新订单 - 请及时处理</p>';
+    html += '</body></html>';
+    w.document.write(html);
     w.document.close();
     w.focus();
     w.print();
-    setTimeout(() => w.close(), 2000);
+    setTimeout(function() { w.close(); }, 2000);
   }
 
   function reprint(key) {
@@ -464,7 +448,7 @@
     }
   }
 
-  // ========== 内置 GBK 编码（解决中文乱码） ==========
+  // ========== 内置 GBK 编码表（完整） ==========
   const gbkEncodeMap = new Map([
     ['久', [0xBE, 0xC3]], ['家', [0xBC, 0xD2]], ['烧', [0xC9, 0xD5]], ['烤', [0xBF, 0xBE]],
     ['大', [0xB4, 0xF3]], ['串', [0xB4, 0xAE]], ['猪', [0xD6, 0xED]], ['肉', [0xC8, 0xE2]],
@@ -488,7 +472,7 @@
     ['度', [0xB6, 0xC8]], ['不', [0xB2, 0xBB]], ['微', [0xCE, 0xA2]], ['特', [0xCC, 0xD8]],
     ['谢', [0xD0, 0xBB]], ['惠', [0xBB, 0xDD]], ['顾', [0xB9, 0xCB]], ['欢', [0xBB, 0xB6]], ['迎', [0xD3, 0xAD]], ['再', [0xD4, 0xD9]], ['次', [0xB4, 0xCE]], ['光', [0xB9, 0xE2]], ['临', [0xC1, 0xD9]],
     ['新', [0xD0, 0xC2]], ['订', [0xB6, 0xA9]], ['单', [0xB5, 0xA5]], ['请', [0xC7, 0xEB]], ['及', [0xBC, 0xB0]], ['处', [0xB4, 0xA6]], ['理', [0xC0, 0xED]],
-    ['：', [0xA3, 0xBA]], ['。', [0xA1, 0xA3]], ['，', [0xA1, 0xA2]],
+    ['：', [0xA3, 0xBA]], ['。', [0xA1, 0xA3]], ['，', [0xA1, 0xA2]]
   ]);
 
   function encodeGBK(str) {
@@ -503,15 +487,13 @@
         if (gbk) {
           bytes.push(gbk[0], gbk[1]);
         } else {
-          // 缺字用空格代替，避免乱码
-          bytes.push(0x20);
+          bytes.push(0x20); // 缺字用空格
         }
       }
     }
     return new Uint8Array(bytes);
   }
 
-  // 构建72mm热敏纸 ESC/POS 指令（使用内置GBK编码）
   function build72mmESC(order) {
     let str = '';
     str += '\x1B\x40';
