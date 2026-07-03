@@ -83,11 +83,11 @@
   </div>
 
   <div class="category-nav">
-    <button class="active" onclick="filterCategory('all')">全部</button>
-    <button onclick="filterCategory('meat')">🥩 肉类</button>
-    <button onclick="filterCategory('veg')">🥬 蔬菜</button>
-    <button onclick="filterCategory('staple')">🍚 主食</button>
-    <button onclick="filterCategory('other')">🥜 其他</button>
+    <button class="active" onclick="filterCategory('all', event)">全部</button>
+    <button onclick="filterCategory('meat', event)">🥩 肉类</button>
+    <button onclick="filterCategory('veg', event)">🥬 蔬菜</button>
+    <button onclick="filterCategory('staple', event)">🍚 主食</button>
+    <button onclick="filterCategory('other', event)">🥜 其他</button>
   </div>
 
   <div class="menu-list" id="menuContainer"></div>
@@ -199,10 +199,10 @@
     }
   }
 
-  // 分类切换
-  function filterCategory(cat) {
+  // 分类切换（显式接收事件对象）
+  function filterCategory(cat, e) {
     document.querySelectorAll('.category-nav button').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+    e.target.classList.add('active');
     currentFilter = cat;
     renderMenu(cat);
   }
@@ -391,7 +391,6 @@
     list.prepend(div);
   }
 
-  // 自动打印：优先蓝牙，否则浏览器窗口
   function autoPrint(order) {
     if (bluetoothCharacteristic) {
       const command = build72mmESC(order);
@@ -404,7 +403,6 @@
     }
   }
 
-  // 备用浏览器打印
   function fallbackPrint(order) {
     const w = window.open('', '_blank', 'width=320,height=400');
     if (!w) return;
