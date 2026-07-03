@@ -7,8 +7,6 @@
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <!-- GBK 编码库（解决中文乱码） -->
-  <script src="https://cdn.jsdelivr.net/npm/gbk-encoding@1.0.0/dist/gbk-encoding.umd.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f8f8f8; max-width: 500px; margin: 0 auto; padding: 10px; }
@@ -39,6 +37,7 @@
     .print-btn { background: #27ae60; color: white; border: none; padding: 6px 16px; border-radius: 15px; font-size: 13px; cursor: pointer; margin-right: 5px; }
     .clear-btn { background: #e67e22; color: white; border: none; padding: 8px 20px; border-radius: 15px; margin-bottom: 15px; cursor: pointer; }
     .bluetooth-btn { background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; display: none; }
+    .status { margin: 8px 0; font-size: 14px; color: #555; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
     /* 登录框 */
@@ -104,6 +103,7 @@
 <div id="adminPanel">
   <h3 style="margin-bottom:15px;">📋 实时订单（自动接收）</h3>
   <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
+  <div id="printerStatus" class="status">打印机未连接</div>
   <button class="clear-btn" onclick="clearOrders()">清空已完成订单</button>
   <div id="orderList"></div>
   <button onclick="hideAdmin()" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回点餐页</button>
@@ -156,7 +156,6 @@
   let isAdmin = window.location.search.includes('admin');
   let currentFilter = 'all';
 
-  // 蓝牙打印变量
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
@@ -170,7 +169,6 @@
     renderMenu('all');
   }
 
-  // 登录
   function showLoginForm() {
     document.getElementById('customerView').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'none';
@@ -199,7 +197,6 @@
     }
   }
 
-  // 分类切换（显式接收事件对象）
   function filterCategory(cat, e) {
     document.querySelectorAll('.category-nav button').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
@@ -207,7 +204,6 @@
     renderMenu(cat);
   }
 
-  // 渲染菜单
   function renderMenu(filter = 'all') {
     const container = document.getElementById('menuContainer');
     const items = filter === 'all' ? menu : menu.filter(m => m.category === filter);
@@ -280,34 +276,19 @@
       .filter(([id, val]) => val.qty > 0)
       .map(([id, val]) => {
         const item = menu.find(m => m.id == id);
-        return {
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          qty: val.qty,
-          spicy: val.spicy,
-          subtotal: item.price * val.qty
-        };
+        return { id: item.id, name: item.name, price: item.price, qty: val.qty, spicy: val.spicy, subtotal: item.price * val.qty };
       });
   }
 
-  // 下单确认弹窗
   function showConfirmModal() {
     const items = getCartItems();
-    if (items.length === 0) {
-      alert('请先选择菜品');
-      return;
-    }
+    if (items.length === 0) { alert('请先选择菜品'); return; }
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
-    let itemsHtml = items.map(i => `
+    const itemsHtml = items.map(i => `
       <div class="modal-item">
-        <div class="modal-item-name">
-          ${i.name} 
-          <span class="modal-item-detail">x${i.qty} (${i.spicy})</span>
-        </div>
+        <div class="modal-item-name">${i.name} <span class="modal-item-detail">x${i.qty} (${i.spicy})</span></div>
         <div class="modal-item-subtotal">¥${i.subtotal.toFixed(2)}</div>
-      </div>
-    `).join('');
+      </div>`).join('');
 
     const modalHtml = `
       <div class="modal-overlay" id="confirmModal">
@@ -315,27 +296,18 @@
           <div class="modal-title">📋 确认订单</div>
           <div class="modal-items">${itemsHtml}</div>
           <div class="modal-total">合计：¥${total}</div>
-          <div class="modal-input-group">
-            <label>🪑 桌号</label>
-            <input type="text" id="tableNumberInput" placeholder="请输入桌号">
-          </div>
-          <div class="modal-checkbox">
-            <input type="checkbox" id="packCheckbox">
-            <label for="packCheckbox">🥡 打包</label>
-          </div>
+          <div class="modal-input-group"><label>🪑 桌号</label><input type="text" id="tableNumberInput" placeholder="请输入桌号"></div>
+          <div class="modal-checkbox"><input type="checkbox" id="packCheckbox"><label>🥡 打包</label></div>
           <div class="modal-actions">
             <button class="btn-cancel" onclick="closeModal()">取消</button>
             <button class="btn-confirm" onclick="confirmOrder()">确认下单</button>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
   }
 
-  function closeModal() {
-    document.getElementById('confirmModal')?.remove();
-  }
+  function closeModal() { document.getElementById('confirmModal')?.remove(); }
 
   function confirmOrder() {
     const tableNumber = document.getElementById('tableNumberInput').value.trim() || '未填';
@@ -350,21 +322,18 @@
       total: total,
       timestamp: firebase.database.ServerValue.TIMESTAMP
     };
-
-    ordersRef.push(order)
-      .then(() => {
-        closeModal();
-        alert(`下单成功！合计 ¥${total}，店家已收到订单。`);
-        cart = {};
-        renderMenu(currentFilter);
-      })
-      .catch(err => {
-        alert('提交失败，请检查网络后重试');
-        console.error(err);
-      });
+    ordersRef.push(order).then(() => {
+      closeModal();
+      alert(`下单成功！合计 ¥${total}，店家已收到订单。`);
+      cart = {};
+      renderMenu(currentFilter);
+    }).catch(err => {
+      alert('提交失败，请检查网络后重试');
+      console.error(err);
+    });
   }
 
-  // ========== 管理员功能 ==========
+  // ========== 管理员 ==========
   function startListening() {
     ordersRef.on('child_added', (snapshot) => {
       const order = snapshot.val();
@@ -386,18 +355,19 @@
         ${order.items.map(i => `<li>${i.name} x${i.qty}（${i.spicy}） - ¥${i.subtotal}</li>`).join('')}
       </ul>
       <button class="print-btn" onclick="reprint('${key}')">🖨️ 补打小票</button>
-      <button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${key}')">删除</button>
-    `;
+      <button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${key}')">删除</button>`;
     list.prepend(div);
   }
 
   function autoPrint(order) {
     if (bluetoothCharacteristic) {
-      const command = build72mmESC(order);
-      sendBluetoothData(command).catch(err => {
-        console.error('蓝牙打印失败:', err);
+      try {
+        const command = build72mmESC(order);
+        sendBluetoothData(command);
+      } catch (e) {
+        console.error('蓝牙指令生成失败，回退到浏览器打印', e);
         fallbackPrint(order);
-      });
+      }
     } else {
       fallbackPrint(order);
     }
@@ -407,17 +377,8 @@
     const w = window.open('', '_blank', 'width=320,height=400');
     if (!w) return;
     w.document.write(`
-      <html>
-      <head><title>久久家烧烤·新订单</title>
-      <style>
-        @page { size: 80mm auto; margin: 0; }
-        body { width: 80mm; font-family: monospace; font-size: 12px; padding: 2mm; margin: 0 auto; }
-        h2 { text-align: center; font-size: 16px; margin: 4px 0; }
-        .line { border-top: 1px dashed #000; margin: 4px 0; }
-        .right { text-align: right; }
-        .item { margin: 2px 0; }
-      </style>
-      </head>
+      <html><head><title>久久家烧烤·新订单</title>
+      <style>@page { size: 80mm auto; margin: 0; } body { width: 80mm; font-family: monospace; font-size: 12px; padding: 2mm; } h2 { text-align: center; font-size: 16px; } .line { border-top: 1px dashed #000; margin: 4px 0; } .right { text-align: right; } .item { margin: 2px 0; }</style></head>
       <body>
         <h2>久久家烧烤</h2>
         <p style="text-align:center;">${order.time}</p>
@@ -426,10 +387,8 @@
         ${order.items.map(i => `<div class="item">${i.name} x${i.qty} <span style="float:right;">¥${i.subtotal}</span><br/><small>辣度:${i.spicy}</small></div>`).join('<div class="line"></div>')}
         <div class="line"></div>
         <h3 class="right">合计: ¥${order.total}</h3>
-        <p style="text-align:center; margin-top:8px;">新订单 - 请及时处理</p>
-      </body>
-      </html>
-    `);
+        <p style="text-align:center;">新订单 - 请及时处理</p>
+      </body></html>`);
     w.document.close();
     w.focus();
     w.print();
@@ -465,28 +424,34 @@
     osc.stop(ctx.currentTime + 0.15);
   }
 
-  function hideAdmin() {
-    window.location.href = window.location.pathname;
+  function hideAdmin() { window.location.href = window.location.pathname; }
+
+  // ========== 蓝牙打印 ==========
+  function updatePrinterStatus(text) {
+    document.getElementById('printerStatus').innerText = text;
   }
 
-  // ========== 蓝牙打印功能 ==========
   async function connectBluetoothPrinter() {
     try {
+      updatePrinterStatus('正在搜索打印机...');
       bluetoothDevice = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
       });
+      updatePrinterStatus('正在连接...');
       const server = await bluetoothDevice.gatt.connect();
       const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
       bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+      updatePrinterStatus('✅ 打印机已连接');
       alert('蓝牙打印机已连接！');
       bluetoothDevice.addEventListener('gattserverdisconnected', () => {
-        alert('打印机已断开');
+        updatePrinterStatus('⚠️ 打印机已断开');
         bluetoothDevice = null;
         bluetoothCharacteristic = null;
       });
     } catch (error) {
       console.error(error);
+      updatePrinterStatus('❌ 连接失败');
       alert('连接失败，请确保打印机已开启并处于可发现状态。');
     }
   }
@@ -499,36 +464,35 @@
     }
   }
 
-  // 构建72mm热敏纸 ESC/POS 指令（使用GBK编码，解决中文乱码）
+  // 构建打印指令（使用 UTF-8，如有乱码后续可调整）
   function build72mmESC(order) {
     let str = '';
-    str += '\x1B\x40';                 // 初始化
-    str += '\x1B\x61\x01';            // 居中
-    str += '\x1B\x21\x30';            // 放大字体
+    str += '\x1B\x40';
+    str += '\x1B\x61\x01';
+    str += '\x1B\x21\x30';
     str += '久久家烧烤\n';
-    str += '\x1B\x21\x00';            // 恢复普通
-    str += '----------------------------\n';  // 28个横线，适配72mm宽度
-    str += '\x1B\x61\x00';            // 左对齐
+    str += '\x1B\x21\x00';
+    str += '----------------------------\n';
+    str += '\x1B\x61\x00';
     str += `时间：${order.time}\n`;
     str += `桌号：${order.table || '无'}  ${order.isPack || '堂食'}\n`;
     str += '----------------------------\n';
     str += '品名       数量  小计\n';
     order.items.forEach(item => {
-      const name = item.name.padEnd(7, ' ');     // 缩短品名宽度以适应72mm
+      const name = item.name.padEnd(7, ' ');
       const qty = item.qty.toString().padStart(2, ' ');
       const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
       str += `${name} ${qty} ${subtotal}\n`;
       str += `  辣度: ${item.spicy}\n`;
     });
     str += '----------------------------\n';
-    str += '\x1B\x61\x02';            // 右对齐
+    str += '\x1B\x61\x02';
     str += `合计：¥ ${order.total}\n`;
-    str += '\x1B\x61\x01';            // 居中
+    str += '\x1B\x61\x01';
     str += '谢谢惠顾，欢迎再次光临\n';
     str += '\n\n\n';
-    str += '\x1D\x56\x42\x00';        // 切纸
-    // 使用 GBK 编码，解决中文乱码
-    return new Uint8Array(gbk.encode(str));
+    str += '\x1D\x56\x42\x00';
+    return new TextEncoder().encode(str);
   }
 </script>
 </body>
