@@ -127,14 +127,14 @@
   const menuImagesRef = database.ref('menuImages');
   const storage = firebase.storage();
 
-  // 基础菜单数据（默认图片占位）
+  // ========== 基础菜单（已替换您提供的真实图片链接） ==========
   const baseMenu = [
-    { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪肉" },
-    { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=羊肉" },
+    { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
+    { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
     { id:3, name:"鸡翅尖", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鸡翅尖" },
-    { id:4, name:"猪脆骨", price:2.5, category:"meat", img:"https://placehold.co/150x150/eee/999?text=脆骨" },
-    { id:5, name:"蒜瓣肉", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=蒜瓣肉" },
-    { id:6, name:"望京小腰", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=小腰" },
+    { id:4, name:"猪脆骨", price:2.5, category:"meat", img:"https://i.ibb.co/5hBXNf0y/46cf9a75aee33c3f873e43f6c6d9594cd6ac19c89e28be02a502cc061c2a6523-0.png" },
+    { id:5, name:"蒜瓣肉", price:2, category:"meat", img:"https://i.ibb.co/LD9JphHr/6942b374c94750f5c0328524b98c62b3c83f3ff1809f2ded53acf24592b5f090-0.jpg" },
+    { id:6, name:"望京小腰", price:3, category:"meat", img:"https://i.ibb.co/d4nn96DF/7d8d592666932d658f373957b87a315777c3fcd4902c7af7e449cf4ee9b6a19a-0.webp" },
     { id:7, name:"鱼豆腐", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鱼豆腐" },
     { id:8, name:"掌中宝", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=掌中宝" },
     { id:9, name:"烤肠", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=烤肠" },
@@ -177,12 +177,10 @@
       if (images[item.id]) {
         item.img = images[item.id];
       } else {
-        // 恢复默认占位图
         const baseItem = baseMenu.find(b => b.id === item.id);
         item.img = baseItem ? baseItem.img : "https://placehold.co/150x150/eee/999?text=🍖";
       }
     });
-    // 重新渲染当前页面
     if (!isAdmin) {
       renderMenu(currentFilter);
     }
@@ -610,20 +608,23 @@
   function uploadImage(itemId, file) {
     const storageRef = storage.ref(`menu_images/${itemId}`);
     const uploadTask = storageRef.put(file);
-    uploadTask.on('state_changed', null, (error) => {
-      alert('上传失败：' + error.message);
-    }, async () => {
-      const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-      await menuImagesRef.child(itemId).set(downloadURL);
-      alert('上传成功！');
-    });
+    uploadTask.on('state_changed', 
+      (snapshot) => {}, 
+      (error) => {
+        alert('上传失败：' + error.message);
+        console.error('Storage错误:', error.code, error.serverResponse);
+      }, 
+      async () => {
+        const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+        await menuImagesRef.child(itemId).set(downloadURL);
+        alert('上传成功！');
+      }
+    );
   }
 
   function deleteImage(itemId) {
     if (!confirm('确定删除自定义图片，恢复默认图片吗？')) return;
-    // 删除数据库记录
     menuImagesRef.child(itemId).remove();
-    // 同时删除 Storage 中的文件（可选）
     storage.ref(`menu_images/${itemId}`).delete().catch(() => {});
     alert('已恢复默认图片');
   }
@@ -661,7 +662,7 @@
     }
   }
 
-  // GBK编码表（同前）
+  // ========== GBK编码表 ==========
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
