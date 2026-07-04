@@ -126,7 +126,7 @@
 </div>
 
 <script>
-  // ========== Firebase 配置 ==========
+  // Firebase 配置（仅使用 Realtime Database）
   const firebaseConfig = {
     apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
     authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
@@ -140,7 +140,7 @@
   const database = firebase.database();
   const ordersRef = database.ref('orders');
 
-  // ========== 菜单（固定图片，无动态管理） ==========
+  // ========== 固定菜单（不会再被动态覆盖） ==========
   const menu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
