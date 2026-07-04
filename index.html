@@ -6,7 +6,6 @@
   <title>久久家烧烤 · 扫码点餐</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f8f8f8; max-width: 500px; margin: 0 auto; padding: 10px; }
@@ -45,7 +44,6 @@
     .bluetooth-btn { background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; display: none; }
     .settle-btn { background: #9b59b6; color: white; border: none; padding: 6px 14px; border-radius: 15px; font-size: 13px; cursor: pointer; margin-left: 5px; }
     .status { margin: 8px 0; font-size: 14px; color: #555; }
-    .image-manager-btn { background: #f39c12; color: white; border: none; padding: 8px 16px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; }
     .admin-order-btn { background: #8e44ad; color: white; border: none; padding: 8px 16px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -57,13 +55,6 @@
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: flex; align-items: center; justify-content: center; }
     .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; padding: 20px; }
     .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; }
-    .img-manager-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-    .img-manager-item img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; margin-right: 12px; background: #eee; }
-    .img-manager-name { flex: 1; font-size: 14px; font-weight: bold; }
-    .img-manager-actions { display: flex; gap: 5px; }
-    .img-manager-actions button { padding: 4px 10px; border: none; border-radius: 10px; font-size: 12px; cursor: pointer; }
-    .btn-upload { background: #3498db; color: white; }
-    .btn-delete { background: #e74c3c; color: white; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 20px; font-size: 16px; cursor: pointer; }
     .btn-confirm { background: #c0392b; color: white; }
@@ -104,7 +95,6 @@
   <h3 style="margin-bottom:15px;">📋 实时订单（自动接收）</h3>
   <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
   <div id="printerStatus" class="status">打印机未连接</div>
-  <button class="image-manager-btn" onclick="showImageManager()">📷 菜品图片管理</button>
   <button class="admin-order-btn" onclick="showAdminOrderPanel()">📝 代客点餐</button>
   <div class="table-nav" id="tableNav">
     <button class="active" onclick="filterTable('all', event)">全部</button>
@@ -115,7 +105,6 @@
   <div id="orderList"></div>
   <button onclick="hideAdmin()" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回点餐页</button>
 </div>
-<!-- 管理员点餐面板 -->
 <div id="adminOrderPanel" style="display:none; background:white; padding:15px; border-radius:12px; margin-top:15px;">
   <h3>📝 代客点餐</h3>
   <div class="category-nav" id="adminCategoryNav">
@@ -137,6 +126,7 @@
 </div>
 
 <script>
+  // ========== Firebase 配置 ==========
   const firebaseConfig = {
     apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
     authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
@@ -149,10 +139,9 @@
   firebase.initializeApp(firebaseConfig);
   const database = firebase.database();
   const ordersRef = database.ref('orders');
-  const menuImagesRef = database.ref('menuImages');
-  const storage = firebase.storage();
 
-  const baseMenu = [
+  // ========== 菜单（固定图片，无动态管理） ==========
+  const menu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
     { id:3, name:"鸡翅尖", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鸡翅尖" },
@@ -182,10 +171,9 @@
     { id:27, name:"崂山啤酒", price:6, category:"drink", img:"https://placehold.co/150x150/eee/999?text=崂山" }
   ];
 
-  let menu = JSON.parse(JSON.stringify(baseMenu));
   const spicyLevels = ['不辣', '微辣', '中辣', '特辣'];
-  let cart = {};           // 客人购物车
-  let adminCart = {};      // 管理员代客点餐购物车
+  let cart = {};
+  let adminCart = {};
   const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
   let currentFilter = 'all';
@@ -193,23 +181,6 @@
   let currentTableFilter = 'all';
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
-
-  // 菜单图片监听
-  menuImagesRef.on('value', (snapshot) => {
-    const images = snapshot.val() || {};
-    menu.forEach(item => {
-      if (images[item.id]) item.img = images[item.id];
-      else {
-        const baseItem = baseMenu.find(b => b.id === item.id);
-        item.img = baseItem ? baseItem.img : "https://placehold.co/150x150/eee/999?text=🍖";
-      }
-    });
-    if (!isAdmin) renderMenu(currentFilter);
-    else {
-      renderAdminMenu();
-      renderMenu(currentFilter, 'menuContainer', cart, updateCartBar);
-    }
-  });
 
   // ========== 初始化 ==========
   if (isAdmin) {
@@ -527,7 +498,7 @@
     });
   }
 
-  // ========== 管理员其他功能（订单管理、蓝牙打印、图片管理） ==========
+  // ========== 管理员订单管理 ==========
   let allOrders = [];
   function startListening() {
     ordersRef.on('value', (snapshot) => {
@@ -681,55 +652,6 @@
         nav.appendChild(btn);
       }
     }
-  }
-
-  // ========== 菜品图片管理 ==========
-  function showImageManager() {
-    let html = '<div class="modal-overlay" id="imageManagerModal"><div class="modal-content" style="max-width:450px;">';
-    html += '<div class="modal-title">📷 菜品图片管理</div>';
-    menu.forEach(item => {
-      html += `<div class="img-manager-item">
-                <img src="${item.img}" onerror="this.src='https://placehold.co/60x60/eee/999?text=?'">
-                <span class="img-manager-name">${item.name}</span>
-                <div class="img-manager-actions">
-                  <button class="btn-upload" onclick="triggerUpload(${item.id})">上传</button>
-                  <button class="btn-delete" onclick="deleteImage(${item.id})">删除</button>
-                </div>
-              </div>`;
-    });
-    html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'imageManagerModal\').remove()">关闭</button></div>';
-    html += '</div></div>';
-    document.body.insertAdjacentHTML('beforeend', html);
-  }
-
-  function triggerUpload(itemId) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) uploadImage(itemId, file);
-    };
-    input.click();
-  }
-
-  function uploadImage(itemId, file) {
-    const storageRef = storage.ref(`menu_images/${itemId}`);
-    const uploadTask = storageRef.put(file);
-    uploadTask.on('state_changed', null, (error) => {
-      alert('上传失败：' + error.message);
-    }, async () => {
-      const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-      await menuImagesRef.child(itemId).set(downloadURL);
-      alert('上传成功！');
-    });
-  }
-
-  function deleteImage(itemId) {
-    if (!confirm('确定删除自定义图片，恢复默认图片吗？')) return;
-    menuImagesRef.child(itemId).remove();
-    storage.ref(`menu_images/${itemId}`).delete().catch(() => {});
-    alert('已恢复默认图片');
   }
 
   // ========== 蓝牙打印 ==========
