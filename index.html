@@ -46,6 +46,7 @@
     .settle-btn { background: #9b59b6; color: white; border: none; padding: 6px 14px; border-radius: 15px; font-size: 13px; cursor: pointer; margin-left: 5px; }
     .status { margin: 8px 0; font-size: 14px; color: #555; }
     .image-manager-btn { background: #f39c12; color: white; border: none; padding: 8px 16px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; }
+    .admin-order-btn { background: #8e44ad; color: white; border: none; padding: 8px 16px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
     #loginBox { max-width: 300px; margin: 60px auto; background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
@@ -67,6 +68,9 @@
     .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 20px; font-size: 16px; cursor: pointer; }
     .btn-confirm { background: #c0392b; color: white; }
     .btn-cancel { background: #ddd; color: #333; }
+
+    .quick-row { display: flex; align-items: center; justify-content: space-between; margin: 10px 0; }
+    .quick-row input { width: 60px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 6px; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -101,6 +105,7 @@
   <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
   <div id="printerStatus" class="status">打印机未连接</div>
   <button class="image-manager-btn" onclick="showImageManager()">📷 菜品图片管理</button>
+  <button class="admin-order-btn" onclick="showAdminOrderPanel()">📝 代客点餐</button>
   <div class="table-nav" id="tableNav">
     <button class="active" onclick="filterTable('all', event)">全部</button>
   </div>
@@ -109,6 +114,26 @@
   <button class="settle-btn" id="settleTableBtn" onclick="settleCurrentTable()">结算当前桌</button>
   <div id="orderList"></div>
   <button onclick="hideAdmin()" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回点餐页</button>
+</div>
+<!-- 管理员点餐面板 -->
+<div id="adminOrderPanel" style="display:none; background:white; padding:15px; border-radius:12px; margin-top:15px;">
+  <h3>📝 代客点餐</h3>
+  <div class="category-nav" id="adminCategoryNav">
+    <button class="active" onclick="filterAdminCategory('all', event)">全部</button>
+    <button onclick="filterAdminCategory('meat', event)">🥩 肉类</button>
+    <button onclick="filterAdminCategory('veg', event)">🥬 蔬菜</button>
+    <button onclick="filterAdminCategory('staple', event)">🍚 主食</button>
+    <button onclick="filterAdminCategory('drink', event)">🥤 饮品</button>
+    <button onclick="filterAdminCategory('other', event)">🥜 其他</button>
+  </div>
+  <div class="menu-list" id="adminMenuContainer"></div>
+  <div class="cart-bar">
+    <div class="cart-info">
+      已选 <span id="adminCartCount">0</span> 件 | 合计 <span class="cart-total" id="adminCartTotal">0.00</span> 元
+    </div>
+    <button class="submit-btn" onclick="showAdminConfirmModal()">下单</button>
+  </div>
+  <button onclick="hideAdminOrderPanel()" style="margin-top:10px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回订单管理</button>
 </div>
 
 <script>
@@ -127,7 +152,6 @@
   const menuImagesRef = database.ref('menuImages');
   const storage = firebase.storage();
 
-  // 基础菜单（已替换真实图片）
   const baseMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
@@ -160,102 +184,65 @@
 
   let menu = JSON.parse(JSON.stringify(baseMenu));
   const spicyLevels = ['不辣', '微辣', '中辣', '特辣'];
-  let cart = {};
+  let cart = {};           // 客人购物车
+  let adminCart = {};      // 管理员代客点餐购物车
   const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
   let currentFilter = 'all';
+  let currentAdminFilter = 'all';
   let currentTableFilter = 'all';
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
+  // 菜单图片监听
   menuImagesRef.on('value', (snapshot) => {
     const images = snapshot.val() || {};
     menu.forEach(item => {
-      if (images[item.id]) {
-        item.img = images[item.id];
-      } else {
+      if (images[item.id]) item.img = images[item.id];
+      else {
         const baseItem = baseMenu.find(b => b.id === item.id);
         item.img = baseItem ? baseItem.img : "https://placehold.co/150x150/eee/999?text=🍖";
       }
     });
     if (!isAdmin) renderMenu(currentFilter);
+    else {
+      renderAdminMenu();
+      renderMenu(currentFilter, 'menuContainer', cart, updateCartBar);
+    }
   });
 
+  // ========== 初始化 ==========
   if (isAdmin) {
     showLoginForm();
   } else {
     document.getElementById('customerView').style.display = 'block';
     document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('adminOrderPanel').style.display = 'none';
     document.body.insertAdjacentHTML('beforeend', '<div class="admin-link"><a href="?admin">🔐 店家管理</a></div>');
     renderMenu('all');
   }
 
-  function initTableNav() {
-    const nav = document.getElementById('tableNav');
-    for (let i = 1; i <= 10; i++) {
-      if (!nav.querySelector(`button[data-table="${i}"]`)) {
-        const btn = document.createElement('button');
-        btn.setAttribute('data-table', i);
-        btn.innerText = `🪑 ${i}号桌`;
-        btn.onclick = function(e) { filterTable(i, e); };
-        nav.appendChild(btn);
-      }
-    }
+  // ========== 通用函数 ==========
+  function getTotalQty(itemId, cartObj = cart) {
+    return Object.values(cartObj[itemId] || {}).reduce((a, b) => a + b, 0);
   }
 
-  function showLoginForm() {
-    document.getElementById('customerView').style.display = 'none';
-    document.getElementById('adminPanel').style.display = 'none';
-    document.body.insertAdjacentHTML('beforeend', `
-      <div id="loginBox">
-        <h3>🔐 店家登录</h3>
-        <input id="pwdInput" type="password" placeholder="请输入管理密码">
-        <button onclick="checkPassword()">进入管理</button>
-        <p id="loginError"></p>
-        <a href="${window.location.pathname}" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a>
-      </div>
-    `);
-  }
-
-  function checkPassword() {
-    if (document.getElementById('pwdInput').value === ADMIN_PASSWORD) {
-      document.getElementById('loginBox').remove();
-      document.getElementById('adminPanel').style.display = 'block';
-      if (navigator.bluetooth) {
-        document.getElementById('connectPrinterBtn').style.display = 'inline-block';
-      }
-      startListening();
-      initTableNav();
-    } else {
-      document.getElementById('loginError').innerText = '密码错误，请重试';
-    }
-  }
-
-  function filterCategory(cat, e) {
-    document.querySelectorAll('.category-nav button').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-    currentFilter = cat;
-    renderMenu(cat);
-  }
-
-  function getTotalQty(itemId) {
-    return Object.values(cart[itemId] || {}).reduce((a, b) => a + b, 0);
-  }
-
-  function renderMenu(filter = 'all') {
-    const container = document.getElementById('menuContainer');
+  function renderMenu(filter = 'all', containerId = 'menuContainer', cartObj = cart, updateCartFn = updateCartBar) {
+    const container = document.getElementById(containerId);
     if (!container) return;
     const items = filter === 'all' ? menu : menu.filter(m => m.category === filter);
     container.innerHTML = items.map(item => {
-      const itemCart = cart[item.id] || {};
-      const total = getTotalQty(item.id);
+      const itemCart = cartObj[item.id] || {};
+      const total = getTotalQty(item.id, cartObj);
       let tagsHtml = spicyLevels.map(level => {
         const qty = itemCart[level] || 0;
-        return `<span class="spicy-tag ${qty > 0 ? 'active' : ''}" onclick="addSpicy(${item.id}, '${level}')">${level} ${qty}</span>`;
+        const type = cartObj === adminCart ? 'admin' : 'guest';
+        return `<span class="spicy-tag ${qty > 0 ? 'active' : ''}" onclick="addSpicy(${item.id}, '${level}', '${type}')">${level} ${qty}</span>`;
       }).join('');
       let quickHtml = '';
       if (item.price < 5) {
-        quickHtml = '<div class="quick-btns">' + [10,20,30,40,50].map(n => `<button class="quick-btn" onclick="quickAdd(${item.id}, ${n})">${n}串</button>`).join('') + '</div>';
+        const type = cartObj === adminCart ? 'admin' : 'guest';
+        quickHtml = '<div class="quick-btns">' + [10,20,30,40,50].map(n => `<button class="quick-btn" onclick="quickAdd(${item.id}, ${n}, '${type}')">${n}串</button>`).join('') + '</div>';
       }
       return `
         <div class="menu-item">
@@ -265,128 +252,147 @@
             <div class="item-price">¥${item.price}</div>
             <div class="spicy-tags">${tagsHtml}</div>
             <div style="margin-top:4px; display:flex; align-items:center;">
-              <span class="qty-num" onclick="editDetail(${item.id})">${total}</span> 串/份
+              <span class="qty-num" onclick="editDetail(${item.id}, '${type}')">${total}</span> 串/份
             </div>
             ${quickHtml}
           </div>
         </div>
       `;
     }).join('');
-    updateCartBar();
+    updateCartFn(cartObj);
   }
 
-  function addSpicy(itemId, level) {
-    if (!cart[itemId]) cart[itemId] = {};
-    const cur = cart[itemId][level] || 0;
+  function addSpicy(itemId, level, type = 'guest') {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    if (!cartObj[itemId]) cartObj[itemId] = {};
+    const cur = cartObj[itemId][level] || 0;
     if (cur > 0) {
-      cart[itemId][level] = cur - 1;
-      if (cart[itemId][level] === 0) delete cart[itemId][level];
+      cartObj[itemId][level] = cur - 1;
+      if (cartObj[itemId][level] === 0) delete cartObj[itemId][level];
     } else {
-      cart[itemId][level] = 1;
+      cartObj[itemId][level] = 1;
     }
-    if (Object.keys(cart[itemId]).length === 0) delete cart[itemId];
-    renderMenu(currentFilter);
+    if (Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
+    if (type === 'admin') {
+      renderAdminMenu();
+    } else {
+      renderMenu(currentFilter);
+    }
   }
 
-  function quickAdd(itemId, total) {
+  function quickAdd(itemId, total, type = 'guest') {
     const item = menu.find(m => m.id === itemId);
     let html = `<div class="modal-overlay" id="quickAddModal"><div class="modal-content">
       <div class="modal-title">分配【${item.name}】${total}串辣度</div>
-      <p style="text-align:center; margin-bottom:10px;">剩余 <span id="remainCount">${total}</span> 串</p>`;
+      <p style="text-align:center; margin-bottom:5px; color:#c0392b;">未分配数量将自动归为微辣</p>
+      <p style="text-align:center; margin-bottom:10px;">剩余 <span id="remainCount">0</span> 串</p>`;
     spicyLevels.forEach(level => {
+      const defaultVal = level === '微辣' ? total : 0;
       html += `
-        <div class="quick-row" style="display:flex; align-items:center; justify-content:space-between; margin:10px 0;">
+        <div class="quick-row">
           <span>${level}</span>
-          <div>
-            <button onclick="changeQuickQty('${level}', -1, ${total})">−</button>
-            <span id="quickQty_${level}" style="margin:0 10px;">0</span>
-            <button onclick="changeQuickQty('${level}', 1, ${total})">+</button>
-          </div>
+          <input type="number" id="quickQty_${level}" value="${defaultVal}" min="0" max="${total}" onchange="updateQuickRemain(${total})" onfocus="this.select()" inputmode="numeric">
         </div>`;
     });
     html += `<div class="modal-actions">
       <button class="btn-cancel" onclick="document.getElementById('quickAddModal').remove()">取消</button>
-      <button class="btn-confirm" onclick="confirmQuickAdd(${itemId}, ${total})">确认添加</button>
+      <button class="btn-confirm" onclick="confirmQuickAdd(${itemId}, ${total}, '${type}')">确认添加</button>
     </div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
+    setTimeout(() => updateQuickRemain(total), 100);
   }
 
-  function changeQuickQty(level, delta, total) {
-    const span = document.getElementById('quickQty_' + level);
-    let cur = parseInt(span.innerText);
-    const remainSpan = document.getElementById('remainCount');
-    let remain = parseInt(remainSpan.innerText);
-    if (delta > 0 && remain <= 0) return;
-    if (delta < 0 && cur <= 0) return;
-    cur += delta;
-    remain -= delta;
-    span.innerText = cur;
-    remainSpan.innerText = remain;
+  function updateQuickRemain(total) {
+    let used = 0;
+    spicyLevels.forEach(level => {
+      const val = parseInt(document.getElementById(`quickQty_${level}`).value) || 0;
+      used += val;
+    });
+    document.getElementById('remainCount').innerText = total - used;
   }
 
-  function confirmQuickAdd(itemId, total) {
+  function confirmQuickAdd(itemId, total, type) {
     const remain = parseInt(document.getElementById('remainCount').innerText);
-    if (remain !== 0) {
-      alert(`请分配完所有${total}串，还剩余${remain}串`);
+    if (remain < 0) {
+      alert(`总数不能超过${total}串，请调整`);
       return;
     }
-    if (!cart[itemId]) cart[itemId] = {};
+    const cartObj = type === 'admin' ? adminCart : cart;
+    if (!cartObj[itemId]) cartObj[itemId] = {};
+    let unallocated = total;
     spicyLevels.forEach(level => {
-      const qty = parseInt(document.getElementById('quickQty_' + level).innerText);
-      if (qty > 0) cart[itemId][level] = (cart[itemId][level] || 0) + qty;
+      const val = parseInt(document.getElementById(`quickQty_${level}`).value) || 0;
+      unallocated -= val;
+      if (val > 0) {
+        cartObj[itemId][level] = (cartObj[itemId][level] || 0) + val;
+      }
     });
+    if (unallocated > 0) {
+      cartObj[itemId]['微辣'] = (cartObj[itemId]['微辣'] || 0) + unallocated;
+    }
     document.getElementById('quickAddModal').remove();
-    renderMenu(currentFilter);
+    if (type === 'admin') {
+      renderAdminMenu();
+    } else {
+      renderMenu(currentFilter);
+    }
   }
 
-  function editDetail(itemId) {
-    const itemCart = cart[itemId] || {};
+  function editDetail(itemId, type = 'guest') {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    const itemCart = cartObj[itemId] || {};
     let html = `<div class="modal-overlay" id="detailModal"><div class="modal-content">
       <div class="modal-title">调整【${menu.find(m=>m.id==itemId).name}】各辣度数量</div>`;
     spicyLevels.forEach(level => {
       const qty = itemCart[level] || 0;
       html += `<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0;">
         <span>${level}</span>
-        <div>
-          <button onclick="changeDetailQty(${itemId}, '${level}', -1)">−</button>
-          <span style="margin:0 10px;" id="detailQty_${itemId}_${level}">${qty}</span>
-          <button onclick="changeDetailQty(${itemId}, '${level}', 1)">+</button>
-        </div>
+        <input type="number" id="detailQty_${itemId}_${level}" value="${qty}" min="0" style="width:60px; text-align:center;" inputmode="numeric">
       </div>`;
     });
-    html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'detailModal\').remove()">完成</button></div></div></div>';
+    html += `<div class="modal-actions"><button class="btn-cancel" onclick="closeDetailModal(${itemId}, '${type}')">完成</button></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
   }
 
-  function changeDetailQty(itemId, level, delta) {
-    if (!cart[itemId]) cart[itemId] = {};
-    const cur = cart[itemId][level] || 0;
-    const newQty = Math.max(0, cur + delta);
-    if (newQty === 0) delete cart[itemId][level];
-    else cart[itemId][level] = newQty;
-    if (Object.keys(cart[itemId]).length === 0) delete cart[itemId];
-    document.getElementById(`detailQty_${itemId}_${level}`).innerText = newQty;
-    renderMenu(currentFilter);
+  function closeDetailModal(itemId, type) {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    spicyLevels.forEach(level => {
+      const val = parseInt(document.getElementById(`detailQty_${itemId}_${level}`).value) || 0;
+      if (val === 0) {
+        if (cartObj[itemId]) delete cartObj[itemId][level];
+      } else {
+        if (!cartObj[itemId]) cartObj[itemId] = {};
+        cartObj[itemId][level] = val;
+      }
+    });
+    if (cartObj[itemId] && Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
+    document.getElementById('detailModal').remove();
+    if (type === 'admin') {
+      renderAdminMenu();
+    } else {
+      renderMenu(currentFilter);
+    }
   }
 
-  function closeDetailModal() { document.getElementById('detailModal')?.remove(); renderMenu(currentFilter); }
-
-  function updateCartBar() {
+  function updateCartBar(cartObj = cart) {
+    const countSpan = document.getElementById('cartCount');
+    const totalSpan = document.getElementById('cartTotal');
+    if (!countSpan || !totalSpan) return;
     let totalCount = 0, totalPrice = 0;
-    Object.entries(cart).forEach(([itemId, levels]) => {
+    Object.entries(cartObj).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
       Object.values(levels).forEach(qty => {
         totalCount += qty;
         totalPrice += item.price * qty;
       });
     });
-    document.getElementById('cartCount').innerText = totalCount;
-    document.getElementById('cartTotal').innerText = totalPrice.toFixed(2);
+    countSpan.innerText = totalCount;
+    totalSpan.innerText = totalPrice.toFixed(2);
   }
 
-  function getCartItems() {
+  function getCartItems(cartObj = cart) {
     let items = [];
-    Object.entries(cart).forEach(([itemId, levels]) => {
+    Object.entries(cartObj).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
       Object.entries(levels).forEach(([level, qty]) => {
         if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty });
@@ -395,11 +401,24 @@
     return items;
   }
 
+  // ========== 客人点餐 ==========
+  function filterCategory(cat, e) {
+    document.querySelectorAll('#customerView .category-nav button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentFilter = cat;
+    renderMenu(cat);
+  }
+
   function showConfirmModal() {
-    const items = getCartItems();
+    const items = getCartItems(cart);
     if (items.length === 0) { alert('请先选择菜品'); return; }
+    showCommonConfirm(items, 'guest');
+  }
+
+  function showCommonConfirm(items, type) {
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
     const itemsHtml = items.map(i => `<div class="modal-item"><div class="modal-item-name">${i.name} <span class="modal-item-detail">${i.spicy} ×${i.qty}</span></div><div class="modal-item-subtotal">¥${i.subtotal.toFixed(2)}</div></div>`).join('');
+    const confirmFn = type === 'admin' ? 'confirmAdminOrder()' : 'confirmOrder()';
     const modalHtml = `
       <div class="modal-overlay" id="confirmModal">
         <div class="modal-content">
@@ -410,7 +429,7 @@
           <div class="modal-checkbox"><input type="checkbox" id="packCheckbox"><label>🥡 打包</label></div>
           <div class="modal-actions">
             <button class="btn-cancel" onclick="document.getElementById('confirmModal').remove()">取消</button>
-            <button class="btn-confirm" onclick="confirmOrder()">确认下单</button>
+            <button class="btn-confirm" onclick="${confirmFn}">确认下单</button>
           </div>
         </div>
       </div>`;
@@ -420,7 +439,7 @@
   function confirmOrder() {
     const tableNumber = document.getElementById('tableNumberInput').value.trim() || '未填';
     const isPack = document.getElementById('packCheckbox').checked;
-    const items = getCartItems();
+    const items = getCartItems(cart);
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
     const order = {
       time: new Date().toLocaleString(),
@@ -433,16 +452,82 @@
     };
     ordersRef.push(order).then(() => {
       document.getElementById('confirmModal').remove();
-      alert(`下单成功！合计 ¥${total}，店家已收到订单。`);
+      alert(`下单成功！合计 ¥${total}`);
       cart = {};
       renderMenu(currentFilter);
-    }).catch(err => {
-      alert('提交失败，请检查网络后重试');
-      console.error(err);
     });
   }
 
-  // ========== 管理员 ==========
+  // ========== 管理员代客点餐 ==========
+  function showAdminOrderPanel() {
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('adminOrderPanel').style.display = 'block';
+    currentAdminFilter = 'all';
+    renderAdminMenu();
+  }
+
+  function hideAdminOrderPanel() {
+    document.getElementById('adminOrderPanel').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+    renderOrders();
+  }
+
+  function filterAdminCategory(cat, e) {
+    document.querySelectorAll('#adminCategoryNav button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentAdminFilter = cat;
+    renderAdminMenu();
+  }
+
+  function renderAdminMenu() {
+    renderMenu(currentAdminFilter, 'adminMenuContainer', adminCart, updateAdminCartBar);
+  }
+
+  function updateAdminCartBar() {
+    const countSpan = document.getElementById('adminCartCount');
+    const totalSpan = document.getElementById('adminCartTotal');
+    if (!countSpan || !totalSpan) return;
+    let totalCount = 0, totalPrice = 0;
+    Object.entries(adminCart).forEach(([itemId, levels]) => {
+      const item = menu.find(m => m.id == itemId);
+      Object.values(levels).forEach(qty => {
+        totalCount += qty;
+        totalPrice += item.price * qty;
+      });
+    });
+    countSpan.innerText = totalCount;
+    totalSpan.innerText = totalPrice.toFixed(2);
+  }
+
+  function showAdminConfirmModal() {
+    const items = getCartItems(adminCart);
+    if (items.length === 0) { alert('请先选择菜品'); return; }
+    showCommonConfirm(items, 'admin');
+  }
+
+  function confirmAdminOrder() {
+    const tableNumber = document.getElementById('tableNumberInput').value.trim() || '未填';
+    const isPack = document.getElementById('packCheckbox').checked;
+    const items = getCartItems(adminCart);
+    const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
+    const order = {
+      time: new Date().toLocaleString(),
+      table: tableNumber,
+      isPack: isPack ? '打包' : '堂食',
+      items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })),
+      total: total,
+      settled: false,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+    ordersRef.push(order).then(() => {
+      document.getElementById('confirmModal').remove();
+      alert(`代客下单成功！合计 ¥${total}`);
+      adminCart = {};
+      renderAdminMenu();
+    });
+  }
+
+  // ========== 管理员其他功能（订单管理、蓝牙打印、图片管理） ==========
   let allOrders = [];
   function startListening() {
     ordersRef.on('value', (snapshot) => {
@@ -555,19 +640,62 @@
 
   function hideAdmin() { window.location.href = window.location.pathname; }
 
+  // ========== 登录 ==========
+  function showLoginForm() {
+    document.getElementById('customerView').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('adminOrderPanel').style.display = 'none';
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="loginBox">
+        <h3>🔐 店家登录</h3>
+        <input id="pwdInput" type="password" placeholder="请输入管理密码">
+        <button onclick="checkPassword()">进入管理</button>
+        <p id="loginError"></p>
+        <a href="${window.location.pathname}" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a>
+      </div>
+    `);
+  }
+
+  function checkPassword() {
+    if (document.getElementById('pwdInput').value === ADMIN_PASSWORD) {
+      document.getElementById('loginBox').remove();
+      document.getElementById('adminPanel').style.display = 'block';
+      if (navigator.bluetooth) {
+        document.getElementById('connectPrinterBtn').style.display = 'inline-block';
+      }
+      initTableNav();
+      startListening();
+    } else {
+      document.getElementById('loginError').innerText = '密码错误，请重试';
+    }
+  }
+
+  function initTableNav() {
+    const nav = document.getElementById('tableNav');
+    for (let i = 1; i <= 10; i++) {
+      if (!nav.querySelector(`button[data-table="${i}"]`)) {
+        const btn = document.createElement('button');
+        btn.setAttribute('data-table', i);
+        btn.innerText = `🪑 ${i}号桌`;
+        btn.onclick = function(e) { filterTable(i, e); };
+        nav.appendChild(btn);
+      }
+    }
+  }
+
   // ========== 菜品图片管理 ==========
   function showImageManager() {
     let html = '<div class="modal-overlay" id="imageManagerModal"><div class="modal-content" style="max-width:450px;">';
     html += '<div class="modal-title">📷 菜品图片管理</div>';
     menu.forEach(item => {
-      html += '<div class="img-manager-item">' +
-                '<img src="' + item.img + '" onerror="this.src=\'https://placehold.co/60x60/eee/999?text=?\'">' +
-                '<span class="img-manager-name">' + item.name + '</span>' +
-                '<div class="img-manager-actions">' +
-                  '<button class="btn-upload" onclick="triggerUpload(' + item.id + ')">上传</button>' +
-                  '<button class="btn-delete" onclick="deleteImage(' + item.id + ')">删除</button>' +
-                '</div>' +
-              '</div>';
+      html += `<div class="img-manager-item">
+                <img src="${item.img}" onerror="this.src='https://placehold.co/60x60/eee/999?text=?'">
+                <span class="img-manager-name">${item.name}</span>
+                <div class="img-manager-actions">
+                  <button class="btn-upload" onclick="triggerUpload(${item.id})">上传</button>
+                  <button class="btn-delete" onclick="deleteImage(${item.id})">删除</button>
+                </div>
+              </div>`;
     });
     html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'imageManagerModal\').remove()">关闭</button></div>';
     html += '</div></div>';
@@ -637,7 +765,7 @@
     }
   }
 
-  // GBK编码表
+  // ========== GBK编码打印 ==========
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -714,4 +842,3 @@
 </script>
 </body>
 </html>
-```
