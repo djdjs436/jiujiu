@@ -127,7 +127,7 @@
   const menuImagesRef = database.ref('menuImages');
   const storage = firebase.storage();
 
-  // ========== 基础菜单（已替换您提供的真实图片链接） ==========
+  // 基础菜单（已替换真实图片）
   const baseMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
@@ -158,9 +158,7 @@
     { id:27, name:"崂山啤酒", price:6, category:"drink", img:"https://placehold.co/150x150/eee/999?text=崂山" }
   ];
 
-  // 实际使用的菜单数组，img 会根据数据库动态更新
   let menu = JSON.parse(JSON.stringify(baseMenu));
-
   const spicyLevels = ['不辣', '微辣', '中辣', '特辣'];
   let cart = {};
   const ADMIN_PASSWORD = '888';
@@ -170,7 +168,6 @@
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
-  // 初始化菜单图片监听
   menuImagesRef.on('value', (snapshot) => {
     const images = snapshot.val() || {};
     menu.forEach(item => {
@@ -181,9 +178,7 @@
         item.img = baseItem ? baseItem.img : "https://placehold.co/150x150/eee/999?text=🍖";
       }
     });
-    if (!isAdmin) {
-      renderMenu(currentFilter);
-    }
+    if (!isAdmin) renderMenu(currentFilter);
   });
 
   if (isAdmin) {
@@ -211,7 +206,7 @@
   function showLoginForm() {
     document.getElementById('customerView').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'none';
-    const html = `
+    document.body.insertAdjacentHTML('beforeend', `
       <div id="loginBox">
         <h3>🔐 店家登录</h3>
         <input id="pwdInput" type="password" placeholder="请输入管理密码">
@@ -219,8 +214,7 @@
         <p id="loginError"></p>
         <a href="${window.location.pathname}" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a>
       </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', html);
+    `);
   }
 
   function checkPassword() {
@@ -259,15 +253,10 @@
         const qty = itemCart[level] || 0;
         return `<span class="spicy-tag ${qty > 0 ? 'active' : ''}" onclick="addSpicy(${item.id}, '${level}')">${level} ${qty}</span>`;
       }).join('');
-
       let quickHtml = '';
       if (item.price < 5) {
-        const quickNums = [10, 20, 30, 40, 50];
-        quickHtml = '<div class="quick-btns">' + quickNums.map(n => 
-          `<button class="quick-btn" onclick="quickAdd(${item.id}, ${n})">${n}串</button>`
-        ).join('') + '</div>';
+        quickHtml = '<div class="quick-btns">' + [10,20,30,40,50].map(n => `<button class="quick-btn" onclick="quickAdd(${item.id}, ${n})">${n}串</button>`).join('') + '</div>';
       }
-
       return `
         <div class="menu-item">
           <img src="${item.img}" alt="${item.name}" onerror="this.src='https://placehold.co/70x70/eee/999?text=🍖'">
@@ -288,9 +277,9 @@
 
   function addSpicy(itemId, level) {
     if (!cart[itemId]) cart[itemId] = {};
-    const current = cart[itemId][level] || 0;
-    if (current > 0) {
-      cart[itemId][level] = current - 1;
+    const cur = cart[itemId][level] || 0;
+    if (cur > 0) {
+      cart[itemId][level] = cur - 1;
       if (cart[itemId][level] === 0) delete cart[itemId][level];
     } else {
       cart[itemId][level] = 1;
@@ -324,14 +313,14 @@
 
   function changeQuickQty(level, delta, total) {
     const span = document.getElementById('quickQty_' + level);
-    let current = parseInt(span.innerText);
+    let cur = parseInt(span.innerText);
     const remainSpan = document.getElementById('remainCount');
     let remain = parseInt(remainSpan.innerText);
     if (delta > 0 && remain <= 0) return;
-    if (delta < 0 && current <= 0) return;
-    current += delta;
+    if (delta < 0 && cur <= 0) return;
+    cur += delta;
     remain -= delta;
-    span.innerText = current;
+    span.innerText = cur;
     remainSpan.innerText = remain;
   }
 
@@ -344,9 +333,7 @@
     if (!cart[itemId]) cart[itemId] = {};
     spicyLevels.forEach(level => {
       const qty = parseInt(document.getElementById('quickQty_' + level).innerText);
-      if (qty > 0) {
-        cart[itemId][level] = (cart[itemId][level] || 0) + qty;
-      }
+      if (qty > 0) cart[itemId][level] = (cart[itemId][level] || 0) + qty;
     });
     document.getElementById('quickAddModal').remove();
     renderMenu(currentFilter);
@@ -367,14 +354,14 @@
         </div>
       </div>`;
     });
-    html += `<div class="modal-actions"><button class="btn-cancel" onclick="closeDetailModal()">完成</button></div></div></div>`;
+    html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'detailModal\').remove()">完成</button></div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
   }
 
   function changeDetailQty(itemId, level, delta) {
     if (!cart[itemId]) cart[itemId] = {};
-    const current = cart[itemId][level] || 0;
-    const newQty = Math.max(0, current + delta);
+    const cur = cart[itemId][level] || 0;
+    const newQty = Math.max(0, cur + delta);
     if (newQty === 0) delete cart[itemId][level];
     else cart[itemId][level] = newQty;
     if (Object.keys(cart[itemId]).length === 0) delete cart[itemId];
@@ -412,9 +399,7 @@
     const items = getCartItems();
     if (items.length === 0) { alert('请先选择菜品'); return; }
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
-    const itemsHtml = items.map(i =>
-      `<div class="modal-item"><div class="modal-item-name">${i.name} <span class="modal-item-detail">${i.spicy} ×${i.qty}</span></div><div class="modal-item-subtotal">¥${i.subtotal.toFixed(2)}</div></div>`
-    ).join('');
+    const itemsHtml = items.map(i => `<div class="modal-item"><div class="modal-item-name">${i.name} <span class="modal-item-detail">${i.spicy} ×${i.qty}</span></div><div class="modal-item-subtotal">¥${i.subtotal.toFixed(2)}</div></div>`).join('');
     const modalHtml = `
       <div class="modal-overlay" id="confirmModal">
         <div class="modal-content">
@@ -424,15 +409,13 @@
           <div class="modal-input-group"><label>🪑 桌号</label><input type="text" id="tableNumberInput" placeholder="请输入桌号（1-10）"></div>
           <div class="modal-checkbox"><input type="checkbox" id="packCheckbox"><label>🥡 打包</label></div>
           <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn-cancel" onclick="document.getElementById('confirmModal').remove()">取消</button>
             <button class="btn-confirm" onclick="confirmOrder()">确认下单</button>
           </div>
         </div>
       </div>`;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
   }
-
-  function closeModal() { document.getElementById('confirmModal')?.remove(); }
 
   function confirmOrder() {
     const tableNumber = document.getElementById('tableNumberInput').value.trim() || '未填';
@@ -449,7 +432,7 @@
       timestamp: firebase.database.ServerValue.TIMESTAMP
     };
     ordersRef.push(order).then(() => {
-      closeModal();
+      document.getElementById('confirmModal').remove();
       alert(`下单成功！合计 ¥${total}，店家已收到订单。`);
       cart = {};
       renderMenu(currentFilter);
@@ -488,11 +471,9 @@
     } else {
       settleBtn.style.display = 'none';
     }
-
     let tableTotal = 0;
     filtered.forEach(o => { if (!o.settled) tableTotal += parseFloat(o.total); });
     tableTotalDiv.innerText = currentTableFilter === 'all' ? '' : `桌号 ${currentTableFilter} 未结算总额：¥${tableTotal.toFixed(2)}`;
-
     if (filtered.length === 0) {
       list.innerHTML = '<p style="color:#999;">暂无订单</p>';
       return;
@@ -579,15 +560,14 @@
     let html = '<div class="modal-overlay" id="imageManagerModal"><div class="modal-content" style="max-width:450px;">';
     html += '<div class="modal-title">📷 菜品图片管理</div>';
     menu.forEach(item => {
-      html += `
-        <div class="img-manager-item">
-          <img src="${item.img}" onerror="this.src='https://placehold.co/60x60/eee/999?text=?'">
-          <span class="img-manager-name">${item.name}</span>
-          <div class="img-manager-actions">
-            <button class="btn-upload" onclick="triggerUpload(${item.id})">上传</button>
-            <button class="btn-delete" onclick="deleteImage(${item.id})">删除</button>
-          </div>
-        </div>`;
+      html += '<div class="img-manager-item">' +
+                '<img src="' + item.img + '" onerror="this.src=\'https://placehold.co/60x60/eee/999?text=?\'">' +
+                '<span class="img-manager-name">' + item.name + '</span>' +
+                '<div class="img-manager-actions">' +
+                  '<button class="btn-upload" onclick="triggerUpload(' + item.id + ')">上传</button>' +
+                  '<button class="btn-delete" onclick="deleteImage(' + item.id + ')">删除</button>' +
+                '</div>' +
+              '</div>';
     });
     html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'imageManagerModal\').remove()">关闭</button></div>';
     html += '</div></div>';
@@ -608,18 +588,13 @@
   function uploadImage(itemId, file) {
     const storageRef = storage.ref(`menu_images/${itemId}`);
     const uploadTask = storageRef.put(file);
-    uploadTask.on('state_changed', 
-      (snapshot) => {}, 
-      (error) => {
-        alert('上传失败：' + error.message);
-        console.error('Storage错误:', error.code, error.serverResponse);
-      }, 
-      async () => {
-        const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-        await menuImagesRef.child(itemId).set(downloadURL);
-        alert('上传成功！');
-      }
-    );
+    uploadTask.on('state_changed', null, (error) => {
+      alert('上传失败：' + error.message);
+    }, async () => {
+      const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+      await menuImagesRef.child(itemId).set(downloadURL);
+      alert('上传成功！');
+    });
   }
 
   function deleteImage(itemId) {
@@ -662,7 +637,7 @@
     }
   }
 
-  // ========== GBK编码表 ==========
+  // GBK编码表
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -739,3 +714,4 @@
 </script>
 </body>
 </html>
+```
