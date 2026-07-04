@@ -24,7 +24,6 @@
     .item-controls { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
     .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ccc; background: white; font-size: 18px; line-height: 1; cursor: pointer; }
     .qty-num { font-size: 16px; min-width: 22px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 4px; }
-    .spicy-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #ddd; font-size: 13px; }
     .cart-bar { position: sticky; bottom: 0; background: white; box-shadow: 0 -3px 10px rgba(0,0,0,0.08); padding: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; margin-top: 15px; }
     .cart-info { font-size: 16px; }
     .cart-total { color: #c0392b; font-weight: bold; font-size: 18px; }
@@ -137,7 +136,10 @@
     { id:22, name:"卤花生", price:8, category:"other", img:"https://placehold.co/150x150/eee/999?text=花生" }
   ];
 
-  let cart = {};
+  // 口味选项
+  const tasteOptions = ['不选', '麻辣', '孜然', '蜜汁', '蒜香'];
+
+  let cart = {};  // 键: id_spicy_taste, 值: { qty, spicy, taste }
   const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
   let currentFilter = 'all';
@@ -188,11 +190,18 @@
     renderMenu(cat);
   }
 
+  // 获取某菜品所有口味配置的总数量
+  function getItemTotalQty(itemId) {
+    return Object.values(cart)
+      .filter(entry => entry.id === itemId)
+      .reduce((sum, entry) => sum + entry.qty, 0);
+  }
+
   function renderMenu(filter = 'all') {
     const container = document.getElementById('menuContainer');
     const items = filter === 'all' ? menu : menu.filter(m => m.category === filter);
     container.innerHTML = items.map(item => {
-      const cartItem = cart[item.id] || { qty: 0, spicy: '不辣' };
+      const totalQty = getItemTotalQty(item.id);
       return `
         <div class="menu-item">
           <img src="${item.img}" alt="${item.name}" onerror="this.src='https://placehold.co/70x70/eee/999?text=🍖'">
@@ -201,14 +210,8 @@
             <div class="item-price">¥${item.price}</div>
             <div class="item-controls">
               <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
-              <span class="qty-num" onclick="editQty(${item.id})">${cartItem.qty}</span>
+              <span class="qty-num" onclick="editConfig(${item.id})">${totalQty}</span>
               <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
-              <select class="spicy-select" onchange="changeSpicy(${item.id}, this.value)">
-                <option ${cartItem.spicy==='不辣'?'selected':''}>不辣</option>
-                <option ${cartItem.spicy==='微辣'?'selected':''}>微辣</option>
-                <option ${cartItem.spicy==='中辣'?'selected':''}>中辣</option>
-                <option ${cartItem.spicy==='特辣'?'selected':''}>特辣</option>
-              </select>
             </div>
           </div>
         </div>
@@ -217,39 +220,85 @@
     updateCartBar();
   }
 
-  function changeQty(id, delta) {
-    if (!cart[id]) cart[id] = { qty: 0, spicy: '不辣' };
-    cart[id].qty = Math.max(0, cart[id].qty + delta);
-    renderMenu(currentFilter);
-  }
-
-  function editQty(id) {
-    const current = cart[id] ? cart[id].qty : 0;
-    const input = prompt(`请输入【${menu.find(m=>m.id==id).name}】的数量：`, current);
-    if (input === null) return;
-    const num = parseInt(input);
-    if (isNaN(num) || num < 0) {
-      alert('请输入正确的数字');
-      return;
+  // 加减默认创建或修改第一条匹配的配置，如果没有则创建默认配置
+  function changeQty(itemId, delta) {
+    // 找到该商品的第一条配置，如果没有则创建一条默认（不辣，不选口味）
+    const existingKeys = Object.keys(cart).filter(key => cart[key].id === itemId);
+    let targetKey;
+    if (existingKeys.length > 0) {
+      targetKey = existingKeys[0];
+    } else {
+      // 创建新配置
+      const defaultSpicy = '不辣';
+      const defaultTaste = '不选';
+      targetKey = `${itemId}_${defaultSpicy}_${defaultTaste}`;
+      cart[targetKey] = { id: itemId, qty: 0, spicy: defaultSpicy, taste: defaultTaste };
     }
-    if (!cart[id]) cart[id] = { qty: 0, spicy: '不辣' };
-    cart[id].qty = num;
+    cart[targetKey].qty = Math.max(0, cart[targetKey].qty + delta);
+    if (cart[targetKey].qty === 0) delete cart[targetKey];
     renderMenu(currentFilter);
   }
 
-  function changeSpicy(id, value) {
-    if (!cart[id]) cart[id] = { qty: 0, spicy: '不辣' };
-    cart[id].spicy = value;
+  // 点击数字，弹出编辑框，可修改数量和口味辣度
+  function editConfig(itemId) {
+    const entries = Object.entries(cart).filter(([, v]) => v.id === itemId);
+    let html = `<div class="modal-overlay" id="configModal"><div class="modal-content">
+      <div class="modal-title">修改【${menu.find(m=>m.id==itemId).name}】</div>`;
+    if (entries.length === 0) {
+      html += '<p>暂未添加</p>';
+    } else {
+      html += entries.map(([key, val]) => {
+        return `
+          <div class="modal-item" style="flex-wrap: wrap;">
+            <span>数量：<input type="number" id="qty_${key}" value="${val.qty}" min="0" style="width:60px;"></span>
+            <select id="spicy_${key}" style="margin-left:5px;">
+              <option value="不辣" ${val.spicy==='不辣'?'selected':''}>不辣</option>
+              <option value="微辣" ${val.spicy==='微辣'?'selected':''}>微辣</option>
+              <option value="中辣" ${val.spicy==='中辣'?'selected':''}>中辣</option>
+              <option value="特辣" ${val.spicy==='特辣'?'selected':''}>特辣</option>
+            </select>
+            <select id="taste_${key}" style="margin-left:5px;">
+              ${tasteOptions.map(t => `<option value="${t}" ${val.taste===t?'selected':''}>${t}</option>`).join('')}
+            </select>
+            <button onclick="deleteConfig('${key}')" style="background:#e74c3c;color:white;border:none;padding:2px 8px;border-radius:8px;margin-left:5px;">删除</button>
+          </div>`;
+      }).join('');
+    }
+    html += `<div class="modal-actions"><button class="btn-cancel" onclick="closeConfigModal()">取消</button><button class="btn-confirm" onclick="saveConfig('${itemId}')">保存</button></div></div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  function closeConfigModal() { document.getElementById('configModal')?.remove(); }
+
+  function saveConfig(itemId) {
+    const entries = Object.keys(cart).filter(key => cart[key].id === itemId);
+    entries.forEach(key => {
+      const qty = parseInt(document.getElementById('qty_' + key).value);
+      if (qty <= 0) {
+        delete cart[key];
+      } else {
+        cart[key].qty = qty;
+        cart[key].spicy = document.getElementById('spicy_' + key).value;
+        cart[key].taste = document.getElementById('taste_' + key).value;
+      }
+    });
+    closeConfigModal();
+    renderMenu(currentFilter);
+  }
+
+  function deleteConfig(key) {
+    if (confirm('删除该配置？')) {
+      delete cart[key];
+      renderMenu(currentFilter);
+    }
   }
 
   function updateCartBar() {
     let count = 0, total = 0;
-    Object.entries(cart).forEach(([id, val]) => {
-      if (val.qty > 0) {
-        const item = menu.find(m => m.id == id);
-        count += val.qty;
-        total += item.price * val.qty;
-      }
+    Object.values(cart).forEach(entry => {
+      const item = menu.find(m => m.id == entry.id);
+      count += entry.qty;
+      total += item.price * entry.qty;
     });
     document.getElementById('cartCount').innerText = count;
     document.getElementById('cartTotal').innerText = total.toFixed(2);
@@ -257,10 +306,18 @@
 
   function getCartItems() {
     return Object.entries(cart)
-      .filter(([id, val]) => val.qty > 0)
-      .map(([id, val]) => {
-        const item = menu.find(m => m.id == id);
-        return { id: item.id, name: item.name, price: item.price, qty: val.qty, spicy: val.spicy, subtotal: item.price * val.qty };
+      .filter(([, val]) => val.qty > 0)
+      .map(([, val]) => {
+        const item = menu.find(m => m.id == val.id);
+        return {
+          id: val.id,
+          name: item.name,
+          price: item.price,
+          qty: val.qty,
+          spicy: val.spicy,
+          taste: val.taste,
+          subtotal: item.price * val.qty
+        };
       });
   }
 
@@ -268,11 +325,13 @@
     const items = getCartItems();
     if (items.length === 0) { alert('请先选择菜品'); return; }
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
-    const itemsHtml = items.map(i => `
-      <div class="modal-item">
-        <div class="modal-item-name">${i.name} <span class="modal-item-detail">x${i.qty} (${i.spicy})</span></div>
+    const itemsHtml = items.map(i => {
+      const tasteStr = i.taste === '不选' ? '' : i.taste;
+      return `<div class="modal-item">
+        <div class="modal-item-name">${i.name} <span class="modal-item-detail">x${i.qty} ${i.spicy} ${tasteStr}</span></div>
         <div class="modal-item-subtotal">¥${i.subtotal.toFixed(2)}</div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
 
     const modalHtml = `
       <div class="modal-overlay" id="confirmModal">
@@ -302,7 +361,7 @@
       time: new Date().toLocaleString(),
       table: tableNumber,
       isPack: isPack ? '打包' : '堂食',
-      items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })),
+      items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, taste: i.taste, subtotal: i.subtotal })),
       total: total,
       timestamp: firebase.database.ServerValue.TIMESTAMP
     };
@@ -336,7 +395,10 @@
       <strong>🕒 ${order.time}</strong> | 🪑 ${order.table || '无'} | ${order.isPack || '堂食'}
       <br>合计 ¥${order.total}
       <ul style="margin:6px 0; padding-left:20px;">
-        ${order.items.map(i => `<li>${i.name} x${i.qty}（${i.spicy}） - ¥${i.subtotal}</li>`).join('')}
+        ${order.items.map(i => {
+          const tasteStr = i.taste === '不选' ? '' : i.taste;
+          return `<li>${i.name} x${i.qty}（${i.spicy} ${tasteStr}） - ¥${i.subtotal}</li>`;
+        }).join('')}
       </ul>
       <button class="print-btn" onclick="reprint('${key}')">🖨️ 补打小票</button>
       <button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${key}')">删除</button>`;
@@ -367,7 +429,8 @@
     html += '<p>桌号：' + (order.table || '无') + ' | ' + (order.isPack || '堂食') + '</p>';
     html += '<div class="line"></div>';
     order.items.forEach(function(item) {
-      html += '<div class="item">' + item.name + ' x' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span><br/><small>辣度:' + item.spicy + '</small></div><div class="line"></div>';
+      const tasteStr = item.taste === '不选' ? '' : item.taste;
+      html += '<div class="item">' + item.name + ' x' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span><br/><small>' + item.spicy + ' ' + tasteStr + '</small></div><div class="line"></div>';
     });
     html += '<h3 class="right">合计: ¥' + order.total + '</h3>';
     html += '<p style="text-align:center;">新订单 - 请及时处理</p>';
@@ -448,7 +511,7 @@
     }
   }
 
-  // ========== 内置 GBK 编码表（完整） ==========
+  // ========== 内置 GBK 编码表（含新增口味用字） ==========
   const gbkEncodeMap = new Map([
     ['久', [0xBE, 0xC3]], ['家', [0xBC, 0xD2]], ['烧', [0xC9, 0xD5]], ['烤', [0xBF, 0xBE]],
     ['大', [0xB4, 0xF3]], ['串', [0xB4, 0xAE]], ['猪', [0xD6, 0xED]], ['肉', [0xC8, 0xE2]],
@@ -472,7 +535,9 @@
     ['度', [0xB6, 0xC8]], ['不', [0xB2, 0xBB]], ['微', [0xCE, 0xA2]], ['特', [0xCC, 0xD8]],
     ['谢', [0xD0, 0xBB]], ['惠', [0xBB, 0xDD]], ['顾', [0xB9, 0xCB]], ['欢', [0xBB, 0xB6]], ['迎', [0xD3, 0xAD]], ['再', [0xD4, 0xD9]], ['次', [0xB4, 0xCE]], ['光', [0xB9, 0xE2]], ['临', [0xC1, 0xD9]],
     ['新', [0xD0, 0xC2]], ['订', [0xB6, 0xA9]], ['单', [0xB5, 0xA5]], ['请', [0xC7, 0xEB]], ['及', [0xBC, 0xB0]], ['处', [0xB4, 0xA6]], ['理', [0xC0, 0xED]],
-    ['：', [0xA3, 0xBA]], ['。', [0xA1, 0xA3]], ['，', [0xA1, 0xA2]]
+    ['：', [0xA3, 0xBA]], ['。', [0xA1, 0xA3]], ['，', [0xA1, 0xA2]],
+    // 新增口味用字
+    ['麻', [0xC2, 0xE9]], ['孜', [0xD7, 0xAC]], ['然', [0xC8, 0xBB]], ['蜜', [0xC3, 0xDB]], ['汁', [0xD6, 0xAD]]
   ]);
 
   function encodeGBK(str) {
@@ -487,7 +552,7 @@
         if (gbk) {
           bytes.push(gbk[0], gbk[1]);
         } else {
-          bytes.push(0x20); // 缺字用空格
+          bytes.push(0x20);
         }
       }
     }
@@ -496,23 +561,33 @@
 
   function build72mmESC(order) {
     let str = '';
+    // 初始化
     str += '\x1B\x40';
+    // 标题：双倍宽高
     str += '\x1B\x61\x01';
     str += '\x1B\x21\x30';
     str += '久久家烧烤\n';
     str += '\x1B\x21\x00';
     str += '----------------------------\n';
+    // 时间行
     str += '\x1B\x61\x00';
     str += `时间：${order.time}\n`;
+    // 桌号打包行：加粗+双倍宽高
+    str += '\x1B\x45\x01';  // 加粗
+    str += '\x1B\x21\x30';  // 放大
     str += `桌号：${order.table || '无'}  ${order.isPack || '堂食'}\n`;
+    str += '\x1B\x21\x00';
+    str += '\x1B\x45\x00';  // 取消加粗
     str += '----------------------------\n';
+    // 表头
     str += '品名       数量  小计\n';
     order.items.forEach(item => {
+      const tasteStr = item.taste === '不选' ? '' : item.taste;
       const name = item.name.padEnd(7, ' ');
       const qty = item.qty.toString().padStart(2, ' ');
       const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
       str += `${name} ${qty} ${subtotal}\n`;
-      str += `  辣度: ${item.spicy}\n`;
+      str += `  ${item.spicy} ${tasteStr}\n`;
     });
     str += '----------------------------\n';
     str += '\x1B\x61\x02';
@@ -520,7 +595,7 @@
     str += '\x1B\x61\x01';
     str += '谢谢惠顾，欢迎再次光临\n';
     str += '\n\n\n';
-    str += '\x1D\x56\x42\x00';
+    str += '\x1D\x56\x42\x00';  // 切纸
     return encodeGBK(str);
   }
 </script>
