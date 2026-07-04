@@ -370,7 +370,7 @@
     return items;
   }
 
-  // ========== 客人点餐 ==========
+  // 客人点餐
   function filterCategory(cat, e) {
     document.querySelectorAll('#customerView .category-nav button').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
@@ -429,7 +429,7 @@
     });
   }
 
-  // ========== 管理员代客点餐 ==========
+  // 管理员代客点餐
   function showAdminOrderPanel() {
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('adminOrderPanel').style.display = 'block';
@@ -498,7 +498,7 @@
     });
   }
 
-  // ========== 管理员订单管理 ==========
+  // 管理员订单管理
   let allOrders = [];
   function startListening() {
     ordersRef.on('value', (snapshot) => {
@@ -615,7 +615,7 @@
 
   function hideAdmin() { window.location.href = window.location.pathname; }
 
-  // ========== 登录 ==========
+  // 登录
   function showLoginForm() {
     document.getElementById('customerView').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'none';
@@ -650,7 +650,7 @@
     }
   }
 
-  // ========== 蓝牙打印 ==========
+  // 蓝牙打印
   function updatePrinterStatus(text) { document.getElementById('printerStatus').innerText = text; }
   async function connectBluetoothPrinter() {
     try {
