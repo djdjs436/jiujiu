@@ -25,6 +25,8 @@
     .spicy-tag { background: #f0f0f0; border: 1px solid #ddd; padding: 4px 10px; border-radius: 15px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
     .spicy-tag.active { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
     .qty-num { font-size: 16px; min-width: 22px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 4px; display: inline-block; margin-left: 6px; }
+    .quick-btns { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+    .quick-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; border-radius: 15px; font-size: 12px; cursor: pointer; }
     .cart-bar { position: sticky; bottom: 0; background: white; box-shadow: 0 -3px 10px rgba(0,0,0,0.08); padding: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; margin-top: 15px; }
     .cart-info { font-size: 16px; }
     .cart-total { color: #c0392b; font-weight: bold; font-size: 18px; }
@@ -67,6 +69,10 @@
     .btn-confirm { background: #c0392b; color: white; }
     .btn-cancel { background: #ddd; color: #333; }
 
+    .quick-row { display: flex; align-items: center; justify-content: space-between; margin: 10px 0; }
+    .quick-row span { min-width: 40px; }
+    .quick-row input { width: 60px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 6px; }
+
     @media print {
       @page { size: 80mm auto; margin: 0; }
       body { width: 80mm; padding: 2mm; font-size: 12px; }
@@ -84,6 +90,7 @@
     <button onclick="filterCategory('meat', event)">🥩 肉类</button>
     <button onclick="filterCategory('veg', event)">🥬 蔬菜</button>
     <button onclick="filterCategory('staple', event)">🍚 主食</button>
+    <button onclick="filterCategory('drink', event)">🥤 饮品</button>
     <button onclick="filterCategory('other', event)">🥜 其他</button>
   </div>
   <div class="menu-list" id="menuContainer"></div>
@@ -125,7 +132,7 @@
   const menu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪肉" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=羊肉" },
-    { id:3, name:"香辣梅肉", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=梅肉" },
+    { id:3, name:"鸡翅尖", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鸡翅尖" },
     { id:4, name:"猪脆骨", price:2.5, category:"meat", img:"https://placehold.co/150x150/eee/999?text=脆骨" },
     { id:5, name:"蒜瓣肉", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=蒜瓣肉" },
     { id:6, name:"望京小腰", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=小腰" },
@@ -144,17 +151,20 @@
     { id:19, name:"烤包菜", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=包菜" },
     { id:20, name:"烤金针菇", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=金针菇" },
     { id:21, name:"烤馒头", price:1, category:"staple", img:"https://placehold.co/150x150/eee/999?text=馒头" },
-    { id:22, name:"卤花生", price:8, category:"other", img:"https://placehold.co/150x150/eee/999?text=花生" }
+    { id:22, name:"卤花生", price:8, category:"other", img:"https://placehold.co/150x150/eee/999?text=花生" },
+    { id:23, name:"黄瓜拌面酱", price:16, category:"other", img:"https://placehold.co/150x150/eee/999?text=黄瓜拌面酱" },
+    { id:24, name:"青岛啤酒", price:8, category:"drink", img:"https://placehold.co/150x150/eee/999?text=啤酒" },
+    { id:25, name:"大窑", price:5, category:"drink", img:"https://placehold.co/150x150/eee/999?text=大窑" },
+    { id:26, name:"京8啤酒", price:8, category:"drink", img:"https://placehold.co/150x150/eee/999?text=京8" },
+    { id:27, name:"崂山啤酒", price:6, category:"drink", img:"https://placehold.co/150x150/eee/999?text=崂山" }
   ];
 
   const spicyLevels = ['不辣', '微辣', '中辣', '特辣'];
-
-  // 购物车结构：{ [itemId]: { '不辣': qty, '微辣': qty, ... } }
   let cart = {};
   const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
   let currentFilter = 'all';
-  let currentTableFilter = 'all'; // 管理页桌号筛选
+  let currentTableFilter = 'all';
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
@@ -165,15 +175,18 @@
     document.getElementById('adminPanel').style.display = 'none';
     document.body.insertAdjacentHTML('beforeend', '<div class="admin-link"><a href="?admin">🔐 店家管理</a></div>');
     renderMenu('all');
-    // 初始化桌号导航
-    initTableNav();
   }
 
-  // ========== 初始化桌号导航 ==========
   function initTableNav() {
     const nav = document.getElementById('tableNav');
     for (let i = 1; i <= 10; i++) {
-      nav.innerHTML += `<button onclick="filterTable('${i}', event)">🪑 ${i}号桌</button>`;
+      if (!nav.querySelector(`button[data-table="${i}"]`)) {
+        const btn = document.createElement('button');
+        btn.setAttribute('data-table', i);
+        btn.innerText = `🪑 ${i}号桌`;
+        btn.onclick = function(e) { filterTable(i, e); };
+        nav.appendChild(btn);
+      }
     }
   }
 
@@ -201,13 +214,18 @@
       }
       startListening();
       initTableNav();
-      renderOrders();
     } else {
       document.getElementById('loginError').innerText = '密码错误，请重试';
     }
   }
 
-  // ========== 客人点餐功能 ==========
+  function filterCategory(cat, e) {
+    document.querySelectorAll('.category-nav button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentFilter = cat;
+    renderMenu(cat);
+  }
+
   function getTotalQty(itemId) {
     return Object.values(cart[itemId] || {}).reduce((a, b) => a + b, 0);
   }
@@ -220,9 +238,18 @@
       const total = getTotalQty(item.id);
       let tagsHtml = spicyLevels.map(level => {
         const qty = itemCart[level] || 0;
-        const activeClass = qty > 0 ? 'active' : '';
-        return `<span class="spicy-tag ${activeClass}" onclick="addSpicy(${item.id}, '${level}')">${level} ${qty}</span>`;
+        return `<span class="spicy-tag ${qty > 0 ? 'active' : ''}" onclick="addSpicy(${item.id}, '${level}')">${level} ${qty}</span>`;
       }).join('');
+
+      // 单价低于5元显示快捷数量按钮
+      let quickHtml = '';
+      if (item.price < 5) {
+        const quickNums = [10, 20, 30, 40, 50];
+        quickHtml = '<div class="quick-btns">' + quickNums.map(n => 
+          `<button class="quick-btn" onclick="quickAdd(${item.id}, ${n})">${n}串</button>`
+        ).join('') + '</div>';
+      }
+
       return `
         <div class="menu-item">
           <img src="${item.img}" alt="${item.name}" onerror="this.src='https://placehold.co/70x70/eee/999?text=🍖'">
@@ -231,8 +258,9 @@
             <div class="item-price">¥${item.price}</div>
             <div class="spicy-tags">${tagsHtml}</div>
             <div style="margin-top:4px; display:flex; align-items:center;">
-              <span class="qty-num" onclick="editDetail(${item.id})">${total}</span> 串
+              <span class="qty-num" onclick="editDetail(${item.id})">${total}</span> 串/份
             </div>
+            ${quickHtml}
           </div>
         </div>
       `;
@@ -243,7 +271,6 @@
   function addSpicy(itemId, level) {
     if (!cart[itemId]) cart[itemId] = {};
     const current = cart[itemId][level] || 0;
-    // 如果已有数量，则再次点击减少（可根据需要调整）
     if (current > 0) {
       cart[itemId][level] = current - 1;
       if (cart[itemId][level] === 0) delete cart[itemId][level];
@@ -254,7 +281,60 @@
     renderMenu(currentFilter);
   }
 
-  // 点击总数量弹出详细编辑
+  // 快捷添加：弹出分配界面
+  function quickAdd(itemId, total) {
+    const item = menu.find(m => m.id === itemId);
+    let html = `<div class="modal-overlay" id="quickAddModal"><div class="modal-content">
+      <div class="modal-title">分配【${item.name}】${total}串辣度</div>
+      <p style="text-align:center; margin-bottom:10px;">剩余 <span id="remainCount">${total}</span> 串</p>`;
+    spicyLevels.forEach(level => {
+      html += `
+        <div class="quick-row">
+          <span>${level}</span>
+          <div>
+            <button onclick="changeQuickQty('${level}', -1, ${total})">−</button>
+            <span id="quickQty_${level}" style="margin:0 10px;">0</span>
+            <button onclick="changeQuickQty('${level}', 1, ${total})">+</button>
+          </div>
+        </div>`;
+    });
+    html += `<div class="modal-actions">
+      <button class="btn-cancel" onclick="document.getElementById('quickAddModal').remove()">取消</button>
+      <button class="btn-confirm" onclick="confirmQuickAdd(${itemId}, ${total})">确认添加</button>
+    </div></div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  function changeQuickQty(level, delta, total) {
+    const span = document.getElementById('quickQty_' + level);
+    let current = parseInt(span.innerText);
+    const remainSpan = document.getElementById('remainCount');
+    let remain = parseInt(remainSpan.innerText);
+    if (delta > 0 && remain <= 0) return;
+    if (delta < 0 && current <= 0) return;
+    current += delta;
+    remain -= delta;
+    span.innerText = current;
+    remainSpan.innerText = remain;
+  }
+
+  function confirmQuickAdd(itemId, total) {
+    const remain = parseInt(document.getElementById('remainCount').innerText);
+    if (remain !== 0) {
+      alert(`请分配完所有${total}串，还剩余${remain}串`);
+      return;
+    }
+    if (!cart[itemId]) cart[itemId] = {};
+    spicyLevels.forEach(level => {
+      const qty = parseInt(document.getElementById('quickQty_' + level).innerText);
+      if (qty > 0) {
+        cart[itemId][level] = (cart[itemId][level] || 0) + qty;
+      }
+    });
+    document.getElementById('quickAddModal').remove();
+    renderMenu(currentFilter);
+  }
+
   function editDetail(itemId) {
     const itemCart = cart[itemId] || {};
     let html = `<div class="modal-overlay" id="detailModal"><div class="modal-content">
@@ -285,10 +365,7 @@
     renderMenu(currentFilter);
   }
 
-  function closeDetailModal() {
-    document.getElementById('detailModal')?.remove();
-    renderMenu(currentFilter);
-  }
+  function closeDetailModal() { document.getElementById('detailModal')?.remove(); renderMenu(currentFilter); }
 
   function updateCartBar() {
     let totalCount = 0, totalPrice = 0;
@@ -308,16 +385,7 @@
     Object.entries(cart).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
       Object.entries(levels).forEach(([level, qty]) => {
-        if (qty > 0) {
-          items.push({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            qty: qty,
-            spicy: level,
-            subtotal: item.price * qty
-          });
-        }
+        if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty });
       });
     });
     return items;
@@ -374,15 +442,13 @@
     });
   }
 
-  // ========== 管理员功能 ==========
+  // ========== 管理员 ==========
   let allOrders = [];
   function startListening() {
     ordersRef.on('value', (snapshot) => {
       allOrders = [];
-      snapshot.forEach(child => {
-        allOrders.push({ key: child.key, ...child.val() });
-      });
-      allOrders.reverse(); // 最新在前
+      snapshot.forEach(child => { allOrders.push({ key: child.key, ...child.val() }); });
+      allOrders.reverse();
       renderOrders();
     });
   }
@@ -406,7 +472,6 @@
       settleBtn.style.display = 'none';
     }
 
-    // 计算当前桌未结算总金额
     let tableTotal = 0;
     filtered.forEach(o => { if (!o.settled) tableTotal += parseFloat(o.total); });
     tableTotalDiv.innerText = currentTableFilter === 'all' ? '' : `桌号 ${currentTableFilter} 未结算总额：¥${tableTotal.toFixed(2)}`;
@@ -438,21 +503,15 @@
         updates[order.key + '/settled'] = true;
       }
     });
-    ordersRef.update(updates).then(() => {
-      alert('已结算！');
-    });
+    ordersRef.update(updates).then(() => alert('已结算！'));
   }
 
   function deleteOrder(key) {
-    if (confirm('确定删除此订单？')) {
-      ordersRef.child(key).remove();
-    }
+    if (confirm('确定删除此订单？')) ordersRef.child(key).remove();
   }
 
   function clearOrders() {
-    if (confirm('确定清空所有订单？')) {
-      ordersRef.remove();
-    }
+    if (confirm('确定清空所有订单？')) ordersRef.remove();
   }
 
   function reprint(key) {
@@ -465,9 +524,7 @@
       try {
         const command = build72mmESC(order);
         sendBluetoothData(command);
-      } catch (e) {
-        fallbackPrint(order);
-      }
+      } catch (e) { fallbackPrint(order); }
     } else {
       fallbackPrint(order);
     }
@@ -476,11 +533,11 @@
   function fallbackPrint(order) {
     const w = window.open('', '_blank', 'width=320,height=400');
     if (!w) return;
-    let html = '<html><head><title>久久家烧烤·新订单</title><style>@page { size: 80mm auto; margin: 0; } body { width: 80mm; font-family: monospace; font-size: 12px; padding: 2mm; } h2 { text-align: center; font-size: 16px; } .line { border-top: 1px dashed #000; margin: 4px 0; } .right { text-align: right; }</style></head><body><h2>久久家烧烤</h2><p style="text-align:center;">' + order.time + '</p><p>桌号：' + (order.table || '无') + ' | ' + (order.isPack || '堂食') + '</p><div class="line"></div>';
+    let html = '<html><head><title>久久家烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家烧烤</h2><p style="text-align:center;">'+order.time+'</p><p>桌号：'+(order.table||'无')+' | '+(order.isPack||'堂食')+'</p><div class="line"></div>';
     order.items.forEach(item => {
-      html += '<div>' + item.name + ' ' + item.spicy + ' ×' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span></div><div class="line"></div>';
+      html += '<div>'+item.name+' '+item.spicy+' ×'+item.qty+' <span style="float:right;">¥'+item.subtotal+'</span></div><div class="line"></div>';
     });
-    html += '<h3 class="right">合计: ¥' + order.total + '</h3><p style="text-align:center;">新订单 - 请及时处理</p></body></html>';
+    html += '<h3 class="right">合计: ¥'+order.total+'</h3><p style="text-align:center;">新订单 - 请及时处理</p></body></html>';
     w.document.write(html);
     w.document.close();
     w.focus();
@@ -502,7 +559,6 @@
 
   // ========== 蓝牙打印 ==========
   function updatePrinterStatus(text) { document.getElementById('printerStatus').innerText = text; }
-
   async function connectBluetoothPrinter() {
     try {
       updatePrinterStatus('正在搜索...');
@@ -526,7 +582,6 @@
       alert('连接失败，请确保打印机已开启并处于可发现状态。');
     }
   }
-
   async function sendBluetoothData(data) {
     if (!bluetoothCharacteristic) throw new Error('未连接打印机');
     const chunkSize = 20;
@@ -535,31 +590,33 @@
     }
   }
 
-  // GBK编码表（包含所有用字）
+  // ========== GBK 编码表 ==========
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
-    ['鲜',[0xCF,0xCA]],['切',[0xC7,0xD0]],['羊',[0xD1,0xF2]],['香',[0xCF,0xE3]],
-    ['辣',[0xC0,0xB1]],['梅',[0xC3,0xB7]],['脆',[0xB4,0xE0]],['骨',[0xB9,0xC7]],
+    ['鲜',[0xCF,0xCA]],['切',[0xC7,0xD0]],['羊',[0xD1,0xF2]],['鸡',[0xBC,0xA6]],
+    ['翅',[0xB3,0xE1]],['尖',[0xBC,0xE2]],['脆',[0xB4,0xE0]],['骨',[0xB9,0xC7]],
     ['蒜',[0xCB,0xE2]],['瓣',[0xB0,0xEA]],['望',[0xCD,0xFB]],['京',[0xBE,0xA9]],
     ['小',[0xD0,0xA1]],['腰',[0xD1,0xFC]],['鱼',[0xD3,0xE3]],['豆',[0xB6,0xB9]],
     ['腐',[0xB8,0xAF]],['掌',[0xD5,0xC6]],['中',[0xD6,0xD0]],['宝',[0xB1,0xA6]],
     ['肠',[0xB3,0xA6]],['牛',[0xC5,0xA3]],['心',[0xD0,0xC4]],['管',[0xB9,0xDC]],
-    ['翅',[0xB3,0xE1]],['多',[0xB6,0xE0]],['味',[0xCE,0xB6]],['碳',[0xCC,0xBC]],
-    ['皮',[0xC6,0xA4]],['面',[0xC3,0xE6]],['筋',[0xBD,0xEE]],['鱿',[0xF6,0xD9]],
-    ['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],['椒',[0xBD,0xB7]],
-    ['包',[0xB0,0xFC]],['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],['菇',[0xB9,0xBD]],
-    ['馒',[0xC2,0xF8]],['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],['花',[0xBB,0xA8]],
-    ['生',[0xC9,0xFA]],['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],
-    ['间',[0xBC,0xE4]],['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],
-    ['合',[0xBA,0xCF]],['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],
-    ['数',[0xCA,0xFD]],['量',[0xC1,0xBF]],['度',[0xB6,0xC8]],['不',[0xB2,0xBB]],
-    ['微',[0xCE,0xA2]],['特',[0xCC,0xD8]],['谢',[0xD0,0xBB]],['惠',[0xBB,0xDD]],
-    ['顾',[0xB9,0xCB]],['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],['再',[0xD4,0xD9]],
-    ['次',[0xB4,0xCE]],['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],['新',[0xD0,0xC2]],
-    ['订',[0xB6,0xA9]],['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],['及',[0xBC,0xB0]],
-    ['处',[0xB4,0xA6]],['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],
-    ['，',[0xA1,0xA2]]
+    ['多',[0xB6,0xE0]],['味',[0xCE,0xB6]],['碳',[0xCC,0xBC]],['皮',[0xC6,0xA4]],
+    ['面',[0xC3,0xE6]],['筋',[0xBD,0xEE]],['鱿',[0xF6,0xD9]],['韭',[0xBE,0xC2]],
+    ['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],
+    ['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],
+    ['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],
+    ['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],['拌',[0xB0,0xE8]],['酱',[0xBD,0xB4]],
+    ['青',[0xC7,0xE0]],['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],
+    ['窑',[0xDB,0xC9]],['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],
+    ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
+    ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
+    ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
+    ['量',[0xC1,0xBF]],['度',[0xB6,0xC8]],['不',[0xB2,0xBB]],['微',[0xCE,0xA2]],
+    ['特',[0xCC,0xD8]],['谢',[0xD0,0xBB]],['惠',[0xBB,0xDD]],['顾',[0xB9,0xCB]],
+    ['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],['再',[0xD4,0xD9]],['次',[0xB4,0xCE]],
+    ['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],
+    ['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],
+    ['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],['，',[0xA1,0xA2]]
   ]);
 
   function encodeGBK(str) {
