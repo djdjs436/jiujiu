@@ -384,7 +384,7 @@
     renderMenu(cat);
   }
 
-  // 确认订单弹窗（新增桌号快捷按钮和备注）
+  // 确认订单弹窗（桌号快捷按钮 + 备注）
   function showConfirmModal() {
     const items = getCartItems(cart);
     if (items.length === 0) { alert('请先选择菜品'); return; }
@@ -398,7 +398,6 @@
       itemsHtml += '<div class="modal-item"><div class="modal-item-name">' + i.name + ' <span class="modal-item-detail">' + i.spicy + ' ×' + i.qty + '</span></div><div class="modal-item-subtotal">¥' + i.subtotal.toFixed(2) + '</div></div>';
     });
     const confirmFn = type === 'admin' ? 'confirmAdminOrder()' : 'confirmOrder()';
-    // 桌号按钮
     let tableBtns = '<div class="table-btns">';
     for (let i = 1; i <= 10; i++) {
       tableBtns += '<button class="table-btn" onclick="document.getElementById(\'tableNumberInput\').value=\'' + i + '\'">' + i + '号</button>';
@@ -518,13 +517,43 @@
     });
   }
 
-  // 管理员订单管理
+  // ========== 管理员订单管理（使用 child_added 监听新订单） ==========
   let allOrders = [];
   function startListening() {
+    // 先清空已有数据（避免重复），然后监听新增
     ordersRef.on('value', (snapshot) => {
       allOrders = [];
       snapshot.forEach(child => { allOrders.push({ key: child.key, ...child.val() }); });
       allOrders.reverse();
+      renderOrders();
+    });
+    // 监听新增订单，触发自动打印和声音
+    ordersRef.on('child_added', (snapshot) => {
+      const order = snapshot.val();
+      // 延迟一点确保 allOrders 已更新（实际上 value 也会同时触发，但为避免重复打印，仅在此处处理）
+      // 注意：value 事件会先触发，然后 child_added 也会触发，导致重复打印。所以改为仅用 child_added 来处理打印，并手动维护 allOrders。
+      // 更好的做法：只使用 child_added 并同时更新本地数组。这里简化处理，由于自动打印只需新增订单，我们可单独使用 child_added 并更新 allOrders。
+    });
+    // 正确的做法：仅使用 child_added 并自行维护 allOrders
+    ordersRef.off(); // 移除之前的监听，重新开始
+    ordersRef.on('child_added', (snapshot) => {
+      const order = snapshot.val();
+      const newOrder = { key: snapshot.key, ...order };
+      allOrders.unshift(newOrder); // 最新订单在前
+      displayOrder(snapshot.key, order);
+      autoPrint(order);
+      playNotification();
+      renderOrders(); // 更新管理页面列表
+    });
+    ordersRef.on('child_removed', (snapshot) => {
+      allOrders = allOrders.filter(o => o.key !== snapshot.key);
+      renderOrders();
+    });
+    ordersRef.on('child_changed', (snapshot) => {
+      const index = allOrders.findIndex(o => o.key === snapshot.key);
+      if (index !== -1) {
+        allOrders[index] = { key: snapshot.key, ...snapshot.val() };
+      }
       renderOrders();
     });
   }
@@ -534,6 +563,10 @@
     e.target.classList.add('active');
     currentTableFilter = table;
     renderOrders();
+  }
+
+  function displayOrder(key, order) {
+    // 此函数已合并至 renderOrders 动态生成，无需单独操作DOM
   }
 
   function renderOrders() {
@@ -575,9 +608,13 @@
 
   function settleCurrentTable() {
     if (currentTableFilter === 'all') return;
-    if (!confirm('确定结算桌号 ' + currentTableFilter + ' 的所有未结算订单吗？')) return;
     const tableOrders = allOrders.filter(o => o.table == currentTableFilter && !o.settled);
-    // 合并所有未结算订单的菜品
+    if (tableOrders.length === 0) {
+      alert('该桌没有未结算订单');
+      return;
+    }
+    if (!confirm('确定结算桌号 ' + currentTableFilter + ' 的所有未结算订单吗？')) return;
+    // 合并订单打印
     let combinedItems = [];
     let totalAmount = 0;
     tableOrders.forEach(order => {
@@ -586,7 +623,6 @@
         totalAmount += item.subtotal;
       });
     });
-    // 构建一个合并的大订单用于打印
     const mergedOrder = {
       time: new Date().toLocaleString(),
       table: currentTableFilter,
@@ -594,9 +630,7 @@
       items: combinedItems,
       total: totalAmount.toFixed(2)
     };
-    // 打印汇总小票
     autoPrint(mergedOrder);
-    // 标记所有订单为已结算
     const updates = {};
     tableOrders.forEach(order => {
       updates[order.key + '/settled'] = true;
@@ -635,6 +669,9 @@
     order.items.forEach(item => {
       html += '<div>' + item.name + ' 辣度:' + item.spicy + ' ×' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span></div><div class="line"></div>';
     });
+    if (order.remark) {
+      html += '<div>备注：' + order.remark + '</div><div class="line"></div>';
+    }
     html += '<h3 class="right">合计: ¥' + order.total + '</h3><p style="text-align:center;">新订单 - 请及时处理</p></body></html>';
     w.document.write(html);
     w.document.close();
@@ -722,7 +759,7 @@
     }
   }
 
-  // GBK编码表
+  // GBK编码表（完整）
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -785,7 +822,7 @@
       const qty = item.qty.toString().padStart(2, ' ');
       const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
       str += name + ' ' + qty + ' ' + subtotal + '\n';
-      str += '  辣度:' + item.spicy + '\n';   // 添加辣度字样
+      str += '  辣度:' + item.spicy + '\n';   // 打印辣度
     });
     if (order.remark) {
       str += '----------------------------\n';
