@@ -62,6 +62,9 @@
 
     .quick-row { display: flex; align-items: center; justify-content: space-between; margin: 10px 0; }
     .quick-row input { width: 60px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 6px; }
+    .table-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+    .table-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 4px 10px; border-radius: 12px; font-size: 13px; cursor: pointer; }
+    .table-btn.active { background: #c0392b; color: white; border-color: #c0392b; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -254,13 +257,14 @@
     const item = menu.find(m => m.id === itemId);
     let html = '<div class="modal-overlay" id="quickAddModal"><div class="modal-content">' +
       '<div class="modal-title">分配【' + item.name + '】' + total + '串辣度</div>' +
-      '<p style="text-align:center; margin-bottom:5px; color:#c0392b;">未分配数量将自动归为微辣</p>' +
-      '<p style="text-align:center; margin-bottom:10px;">剩余 <span id="remainCount">0</span> 串</p>';
+      '<p style="text-align:center; margin-bottom:5px; color:#c0392b;">调整其他辣度后，微辣数量自动计算</p>' +
+      '<p style="text-align:center; margin-bottom:10px;">剩余 <span id="remainCount">' + total + '</span> 串（将自动归为微辣）</p>';
     spicyLevels.forEach(level => {
       const defaultVal = level === '微辣' ? total : 0;
+      const readonlyAttr = level === '微辣' ? 'readonly' : '';
       html += '<div class="quick-row">' +
         '<span>' + level + '</span>' +
-        '<input type="number" id="quickQty_' + level + '" value="' + defaultVal + '" min="0" max="' + total + '" onchange="updateQuickRemain(' + total + ')" onfocus="this.select()" inputmode="numeric">' +
+        '<input type="number" id="quickQty_' + level + '" value="' + defaultVal + '" min="0" max="' + total + '" ' + readonlyAttr + ' onchange="updateQuickSpicy(' + total + ')" onfocus="this.select()" inputmode="numeric">' +
       '</div>';
     });
     html += '<div class="modal-actions">' +
@@ -268,37 +272,40 @@
       '<button class="btn-confirm" onclick="confirmQuickAdd(' + itemId + ',' + total + ',\'' + type + '\')">确认添加</button>' +
     '</div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
-    setTimeout(() => updateQuickRemain(total), 100);
+    setTimeout(() => updateQuickSpicy(total), 100);
   }
 
-  function updateQuickRemain(total) {
+  function updateQuickSpicy(total) {
     let used = 0;
     spicyLevels.forEach(level => {
       const val = parseInt(document.getElementById('quickQty_' + level).value) || 0;
-      used += val;
+      if (level !== '微辣') used += val;
     });
-    document.getElementById('remainCount').innerText = total - used;
+    const mildQty = Math.max(0, total - used);
+    const mildInput = document.getElementById('quickQty_微辣');
+    mildInput.value = mildQty;
+    document.getElementById('remainCount').innerText = mildQty;
   }
 
   function confirmQuickAdd(itemId, total, type) {
-    const remain = parseInt(document.getElementById('remainCount').innerText);
-    if (remain < 0) {
-      alert('总数不能超过' + total + '串，请调整');
+    const mildQty = parseInt(document.getElementById('quickQty_微辣').value) || 0;
+    const otherTotal = total - mildQty;
+    let sum = mildQty;
+    spicyLevels.forEach(level => {
+      if (level !== '微辣') sum += parseInt(document.getElementById('quickQty_' + level).value) || 0;
+    });
+    if (sum !== total) {
+      alert('总数必须为' + total + '串，请检查');
       return;
     }
     const cartObj = type === 'admin' ? adminCart : cart;
     if (!cartObj[itemId]) cartObj[itemId] = {};
-    let unallocated = total;
     spicyLevels.forEach(level => {
       const val = parseInt(document.getElementById('quickQty_' + level).value) || 0;
-      unallocated -= val;
       if (val > 0) {
         cartObj[itemId][level] = (cartObj[itemId][level] || 0) + val;
       }
     });
-    if (unallocated > 0) {
-      cartObj[itemId]['微辣'] = (cartObj[itemId]['微辣'] || 0) + unallocated;
-    }
     document.getElementById('quickAddModal').remove();
     if (type === 'admin') {
       renderAdminMenu();
@@ -370,7 +377,6 @@
     return items;
   }
 
-  // 客人点餐
   function filterCategory(cat, e) {
     document.querySelectorAll('#customerView .category-nav button').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
@@ -378,6 +384,7 @@
     renderMenu(cat);
   }
 
+  // 确认订单弹窗（新增桌号快捷按钮和备注）
   function showConfirmModal() {
     const items = getCartItems(cart);
     if (items.length === 0) { alert('请先选择菜品'); return; }
@@ -391,12 +398,21 @@
       itemsHtml += '<div class="modal-item"><div class="modal-item-name">' + i.name + ' <span class="modal-item-detail">' + i.spicy + ' ×' + i.qty + '</span></div><div class="modal-item-subtotal">¥' + i.subtotal.toFixed(2) + '</div></div>';
     });
     const confirmFn = type === 'admin' ? 'confirmAdminOrder()' : 'confirmOrder()';
+    // 桌号按钮
+    let tableBtns = '<div class="table-btns">';
+    for (let i = 1; i <= 10; i++) {
+      tableBtns += '<button class="table-btn" onclick="document.getElementById(\'tableNumberInput\').value=\'' + i + '\'">' + i + '号</button>';
+    }
+    tableBtns += '</div>';
+
     const modalHtml = '<div class="modal-overlay" id="confirmModal">' +
       '<div class="modal-content">' +
         '<div class="modal-title">📋 确认订单</div>' +
         '<div class="modal-items">' + itemsHtml + '</div>' +
         '<div class="modal-total">合计：¥' + total + '</div>' +
-        '<div class="modal-input-group"><label>🪑 桌号</label><input type="text" id="tableNumberInput" placeholder="请输入桌号（1-10）"></div>' +
+        '<div class="modal-input-group"><label>🪑 桌号</label><input type="text" id="tableNumberInput" placeholder="请选择或输入桌号"></div>' +
+        tableBtns +
+        '<div class="modal-input-group"><label>📝 备注</label><textarea id="remarkInput" rows="2" placeholder="如：少盐、多辣等" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px;"></textarea></div>' +
         '<div class="modal-checkbox"><input type="checkbox" id="packCheckbox"><label>🥡 打包</label></div>' +
         '<div class="modal-actions">' +
           '<button class="btn-cancel" onclick="document.getElementById(\'confirmModal\').remove()">取消</button>' +
@@ -410,12 +426,14 @@
   function confirmOrder() {
     const tableNumber = document.getElementById('tableNumberInput').value.trim() || '未填';
     const isPack = document.getElementById('packCheckbox').checked;
+    const remark = document.getElementById('remarkInput').value.trim();
     const items = getCartItems(cart);
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
     const order = {
       time: new Date().toLocaleString(),
       table: tableNumber,
       isPack: isPack ? '打包' : '堂食',
+      remark: remark,
       items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })),
       total: total,
       settled: false,
@@ -479,12 +497,14 @@
   function confirmAdminOrder() {
     const tableNumber = document.getElementById('tableNumberInput').value.trim() || '未填';
     const isPack = document.getElementById('packCheckbox').checked;
+    const remark = document.getElementById('remarkInput').value.trim();
     const items = getCartItems(adminCart);
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
     const order = {
       time: new Date().toLocaleString(),
       table: tableNumber,
       isPack: isPack ? '打包' : '堂食',
+      remark: remark,
       items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })),
       total: total,
       settled: false,
@@ -543,6 +563,7 @@
       });
       ordersHtml += '<div class="order-card ' + settledClass + '" id="order-' + order.key + '">' +
         '<strong>🕒 ' + order.time + '</strong> | 🪑 ' + (order.table || '无') + ' | ' + (order.isPack || '堂食') + (order.settled ? ' (已结算)' : '') +
+        (order.remark ? '<br>备注：' + order.remark : '') +
         '<br>合计 ¥' + order.total +
         '<ul style="margin:6px 0; padding-left:20px;">' + itemsHtml + '</ul>' +
         '<button class="print-btn" onclick="reprint(\'' + order.key + '\')">🖨️ 补打小票</button>' +
@@ -555,13 +576,32 @@
   function settleCurrentTable() {
     if (currentTableFilter === 'all') return;
     if (!confirm('确定结算桌号 ' + currentTableFilter + ' 的所有未结算订单吗？')) return;
-    const updates = {};
-    allOrders.forEach(order => {
-      if (order.table == currentTableFilter && !order.settled) {
-        updates[order.key + '/settled'] = true;
-      }
+    const tableOrders = allOrders.filter(o => o.table == currentTableFilter && !o.settled);
+    // 合并所有未结算订单的菜品
+    let combinedItems = [];
+    let totalAmount = 0;
+    tableOrders.forEach(order => {
+      order.items.forEach(item => {
+        combinedItems.push({ name: item.name, spicy: item.spicy, qty: item.qty, subtotal: item.subtotal });
+        totalAmount += item.subtotal;
+      });
     });
-    ordersRef.update(updates).then(() => alert('已结算！'));
+    // 构建一个合并的大订单用于打印
+    const mergedOrder = {
+      time: new Date().toLocaleString(),
+      table: currentTableFilter,
+      isPack: '堂食',
+      items: combinedItems,
+      total: totalAmount.toFixed(2)
+    };
+    // 打印汇总小票
+    autoPrint(mergedOrder);
+    // 标记所有订单为已结算
+    const updates = {};
+    tableOrders.forEach(order => {
+      updates[order.key + '/settled'] = true;
+    });
+    ordersRef.update(updates).then(() => alert('已结算并打印汇总小票！'));
   }
 
   function deleteOrder(key) {
@@ -593,7 +633,7 @@
     if (!w) return;
     let html = '<html><head><title>久久家烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家烧烤</h2><p style="text-align:center;">' + order.time + '</p><p>桌号：' + (order.table||'无') + ' | ' + (order.isPack||'堂食') + '</p><div class="line"></div>';
     order.items.forEach(item => {
-      html += '<div>' + item.name + ' ' + item.spicy + ' ×' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span></div><div class="line"></div>';
+      html += '<div>' + item.name + ' 辣度:' + item.spicy + ' ×' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span></div><div class="line"></div>';
     });
     html += '<h3 class="right">合计: ¥' + order.total + '</h3><p style="text-align:center;">新订单 - 请及时处理</p></body></html>';
     w.document.write(html);
@@ -615,7 +655,6 @@
 
   function hideAdmin() { window.location.href = window.location.pathname; }
 
-  // 登录
   function showLoginForm() {
     document.getElementById('customerView').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'none';
@@ -746,8 +785,12 @@
       const qty = item.qty.toString().padStart(2, ' ');
       const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
       str += name + ' ' + qty + ' ' + subtotal + '\n';
-      str += '  ' + item.spicy + '\n';
+      str += '  辣度:' + item.spicy + '\n';   // 添加辣度字样
     });
+    if (order.remark) {
+      str += '----------------------------\n';
+      str += '备注：' + order.remark + '\n';
+    }
     str += '----------------------------\n';
     str += '\x1B\x61\x02';
     str += '合计：¥ ' + order.total + '\n';
