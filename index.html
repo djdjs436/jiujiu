@@ -289,7 +289,6 @@
 
   function confirmQuickAdd(itemId, total, type) {
     const mildQty = parseInt(document.getElementById('quickQty_微辣').value) || 0;
-    const otherTotal = total - mildQty;
     let sum = mildQty;
     spicyLevels.forEach(level => {
       if (level !== '微辣') sum += parseInt(document.getElementById('quickQty_' + level).value) || 0;
@@ -384,7 +383,6 @@
     renderMenu(cat);
   }
 
-  // 确认订单弹窗（桌号快捷按钮 + 备注）
   function showConfirmModal() {
     const items = getCartItems(cart);
     if (items.length === 0) { alert('请先选择菜品'); return; }
@@ -517,33 +515,18 @@
     });
   }
 
-  // ========== 管理员订单管理（使用 child_added 监听新订单） ==========
+  // ========== 管理员订单管理 ==========
   let allOrders = [];
   function startListening() {
-    // 先清空已有数据（避免重复），然后监听新增
-    ordersRef.on('value', (snapshot) => {
-      allOrders = [];
-      snapshot.forEach(child => { allOrders.push({ key: child.key, ...child.val() }); });
-      allOrders.reverse();
-      renderOrders();
-    });
-    // 监听新增订单，触发自动打印和声音
-    ordersRef.on('child_added', (snapshot) => {
-      const order = snapshot.val();
-      // 延迟一点确保 allOrders 已更新（实际上 value 也会同时触发，但为避免重复打印，仅在此处处理）
-      // 注意：value 事件会先触发，然后 child_added 也会触发，导致重复打印。所以改为仅用 child_added 来处理打印，并手动维护 allOrders。
-      // 更好的做法：只使用 child_added 并同时更新本地数组。这里简化处理，由于自动打印只需新增订单，我们可单独使用 child_added 并更新 allOrders。
-    });
-    // 正确的做法：仅使用 child_added 并自行维护 allOrders
-    ordersRef.off(); // 移除之前的监听，重新开始
+    ordersRef.off(); // 移除之前的监听
     ordersRef.on('child_added', (snapshot) => {
       const order = snapshot.val();
       const newOrder = { key: snapshot.key, ...order };
-      allOrders.unshift(newOrder); // 最新订单在前
+      allOrders.unshift(newOrder);
       displayOrder(snapshot.key, order);
       autoPrint(order);
       playNotification();
-      renderOrders(); // 更新管理页面列表
+      renderOrders();
     });
     ordersRef.on('child_removed', (snapshot) => {
       allOrders = allOrders.filter(o => o.key !== snapshot.key);
@@ -566,7 +549,7 @@
   }
 
   function displayOrder(key, order) {
-    // 此函数已合并至 renderOrders 动态生成，无需单独操作DOM
+    // 已整合至 renderOrders
   }
 
   function renderOrders() {
@@ -614,7 +597,6 @@
       return;
     }
     if (!confirm('确定结算桌号 ' + currentTableFilter + ' 的所有未结算订单吗？')) return;
-    // 合并订单打印
     let combinedItems = [];
     let totalAmount = 0;
     tableOrders.forEach(order => {
@@ -759,7 +741,7 @@
     }
   }
 
-  // GBK编码表（完整）
+  // ========== GBK编码表（确保所有汉字完整） ==========
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -785,7 +767,10 @@
     ['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],['再',[0xD4,0xD9]],['次',[0xB4,0xCE]],
     ['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],
     ['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],
-    ['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],['，',[0xA1,0xA2]]
+    ['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],
+    // 以下为补充的常用字（确保辣字等无误）
+    ['辣',[0xC0,0xB1]],['盐',[0xD1,0xCE]],['少',[0xC9,0xD9]],['多',[0xB6,0xE0]],
+    ['注',[0xD7,0xA2]],['备',[0xB1,0xB8]]
   ]);
 
   function encodeGBK(str) {
@@ -796,7 +781,7 @@
       else {
         const gbk = gbkMap.get(c);
         if (gbk) { bytes.push(gbk[0], gbk[1]); }
-        else { bytes.push(0x20); }
+        else { bytes.push(0x20); } // 不存在的字用空格代替
       }
     }
     return new Uint8Array(bytes);
@@ -822,7 +807,7 @@
       const qty = item.qty.toString().padStart(2, ' ');
       const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
       str += name + ' ' + qty + ' ' + subtotal + '\n';
-      str += '  辣度:' + item.spicy + '\n';   // 打印辣度
+      str += '  辣度:' + item.spicy + '\n';
     });
     if (order.remark) {
       str += '----------------------------\n';
