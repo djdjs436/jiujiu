@@ -17,6 +17,7 @@
     .table-select span { font-weight: bold; }
     .table-select button { background: #f0f0f0; border: 1px solid #ddd; padding: 6px 12px; border-radius: 15px; font-size: 13px; cursor: pointer; }
     .table-select button.active { background: #c0392b; color: white; border-color: #c0392b; }
+    .copy-link-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 15px; font-size: 12px; cursor: pointer; }
     .category-nav { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin-bottom: 12px; }
     .category-nav button { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 14px; cursor: pointer; transition: 0.2s; }
     .category-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
@@ -32,9 +33,13 @@
     .spicy-tag.selected { border: 2px solid #c0392b; box-shadow: 0 0 0 1px #c0392b; }
     .qty-num { font-size: 16px; min-width: 22px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 4px; display: inline-block; margin-left: 6px; }
     .clear-item-btn { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; line-height: 20px; text-align: center; cursor: pointer; margin-left: 6px; }
-    .quick-adjust { display: flex; gap: 4px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
-    .quick-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; border-radius: 15px; font-size: 12px; cursor: pointer; }
-    .spicy-indicator { font-size: 12px; color: #666; margin-right: 4px; }
+    .quick-adjust { display: flex; gap: 8px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
+    .stepper { display: flex; align-items: center; gap: 0; }
+    .stepper-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 8px 14px; font-size: 16px; cursor: pointer; min-width: 40px; }
+    .stepper-btn.left { border-radius: 20px 0 0 20px; }
+    .stepper-btn.right { border-radius: 0 20px 20px 0; }
+    .stepper-val { background: #fff; border-top: 1px solid #e0a0a0; border-bottom: 1px solid #e0a0a0; padding: 8px 10px; font-size: 16px; font-weight: bold; color: #c0392b; min-width: 40px; text-align: center; }
+    .spicy-indicator { font-size: 14px; color: #666; margin-right: 8px; }
     .cart-bar { position: sticky; bottom: 0; background: white; box-shadow: 0 -3px 10px rgba(0,0,0,0.08); padding: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; margin-top: 15px; }
     .cart-info { font-size: 16px; }
     .cart-total { color: #c0392b; font-weight: bold; font-size: 18px; }
@@ -70,6 +75,9 @@
     .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 20px; font-size: 16px; cursor: pointer; }
     .btn-confirm { background: #c0392b; color: white; }
     .btn-cancel { background: #ddd; color: #333; }
+    .table-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+    .table-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 6px 12px; border-radius: 12px; font-size: 14px; cursor: pointer; }
+    .table-btn.selected { background: #c0392b; color: white; border-color: #c0392b; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -84,18 +92,9 @@
     <p>扫码点餐 · 干净卫生 · 现串现烤</p>
   </div>
   <div class="hint-bar">
-    💡 点餐提示：先选桌号，再点辣度标签设为当前辣度，按+/-按钮调整数量。
+    💡 先选桌号，再点辣度标签设为当前辣度，使用步进器调整数量。
   </div>
-  <!-- 桌号选择区域 -->
-  <div class="table-select">
-    <span>桌号：</span>
-    <button id="tableBtn_none" class="active" onclick="setCustomerTable('')">无桌号</button>
-    <script>
-      for (let i = 1; i <= 10; i++) {
-        document.write('<button id="tableBtn_' + i + '" onclick="setCustomerTable(' + i + ')">' + i + '号</button>');
-      }
-    </script>
-  </div>
+  <div class="table-select" id="tableSelectContainer"></div>
   <div class="category-nav">
     <button class="active" onclick="filterCategory('all', event)">全部</button>
     <button onclick="filterCategory('meat', event)">🥩 肉类</button>
@@ -199,17 +198,64 @@
   let adminCart = {};
   let currentSpicy = '微辣';
   let adminCurrentSpicy = '微辣';
-  let customerTable = '';           // 客人端当前桌号
-  let adminSelectedTable = '';      // 管理端代客点餐桌号
+  let customerTable = '';
+  let adminSelectedTable = '';
   const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
   let currentFilter = 'all';
   let currentAdminFilter = 'all';
   let currentTableFilter = 'all';
-  let currentSearch = '';            // 管理端搜索关键词
+  let currentSearch = '';
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
+  // 根据URL参数初始化桌号
+  const urlParams = new URLSearchParams(window.location.search);
+  if (!isAdmin && urlParams.has('table')) {
+    const tableParam = urlParams.get('table');
+    if (tableParam === '' || tableParam === '0' || tableParam === 'none') {
+      customerTable = '';
+    } else {
+      const num = parseInt(tableParam);
+      if (!isNaN(num) && num >= 1 && num <= 10) customerTable = num;
+    }
+  }
+
+  function initTableSelect() {
+    const container = document.getElementById('tableSelectContainer');
+    if (!container) return;
+    let html = '<span>桌号：</span>';
+    html += '<button id="tableBtn_none" class="' + (customerTable === '' ? 'active' : '') + '" onclick="setCustomerTable(\'\')">无桌号</button>';
+    for (let i = 1; i <= 10; i++) {
+      html += '<button id="tableBtn_' + i + '" class="' + (customerTable === i ? 'active' : '') + '" onclick="setCustomerTable(' + i + ')">' + i + '号</button>';
+    }
+    html += '<button class="copy-link-btn" onclick="copyTableLink()">📋 复制点餐链接</button>';
+    container.innerHTML = html;
+  }
+
+  function setCustomerTable(num) {
+    customerTable = num;
+    initTableSelect();
+  }
+
+  function copyTableLink() {
+    const baseUrl = window.location.origin + window.location.pathname;
+    let link = baseUrl;
+    if (customerTable !== '') link += '?table=' + customerTable;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(link).then(() => alert('链接已复制！\n' + link));
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = link;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('链接已复制！\n' + link);
+    }
+  }
+
+  // 初始化界面
   if (isAdmin) {
     showLoginForm();
   } else {
@@ -217,14 +263,8 @@
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('adminOrderPanel').style.display = 'none';
     document.body.insertAdjacentHTML('beforeend', '<div class="admin-link"><a href="?admin">🔐 店家管理</a></div>');
+    initTableSelect();
     renderMenu('all');
-  }
-
-  function setCustomerTable(num) {
-    customerTable = num;
-    document.querySelectorAll('.table-select button').forEach(b => b.classList.remove('active'));
-    const targetBtn = num === '' ? document.getElementById('tableBtn_none') : document.getElementById('tableBtn_' + num);
-    if (targetBtn) targetBtn.classList.add('active');
   }
 
   function getTotalQty(itemId, cartObj = cart) {
@@ -252,19 +292,16 @@
       let quickHtml = '';
       if (item.price < 6) {
         quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">当前辣度：' + curSpicy + '</span>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1份</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1份</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5份</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5份</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10份</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10份</button>' +
+          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5</button><span class="stepper-val">5</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5</button></div>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10</button><span class="stepper-val">10</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10</button></div>' +
           '</div>' +
           '<div class="quick-adjust">' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 20, \'' + type + '\')">20串</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 30, \'' + type + '\')">30串</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 40, \'' + type + '\')">40串</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 50, \'' + type + '\')">50串</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 20, \'' + type + '\')">+20串</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 30, \'' + type + '\')">+30串</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 40, \'' + type + '\')">+40串</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 50, \'' + type + '\')">+50串</button>' +
           '</div>';
       }
 
