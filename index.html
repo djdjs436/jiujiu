@@ -12,6 +12,7 @@
     .header { background: #c0392b; color: white; padding: 18px; text-align: center; border-radius: 12px; margin-bottom: 10px; }
     .header h1 { font-size: 26px; margin-bottom: 4px; }
     .header p { font-size: 14px; opacity: 0.9; }
+    .hint-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; color: #856404; }
     .category-nav { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin-bottom: 12px; }
     .category-nav button { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 14px; cursor: pointer; transition: 0.2s; }
     .category-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
@@ -24,10 +25,12 @@
     .spicy-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
     .spicy-tag { background: #f0f0f0; border: 1px solid #ddd; padding: 4px 10px; border-radius: 15px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
     .spicy-tag.active { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
+    .spicy-tag.selected { border: 2px solid #c0392b; box-shadow: 0 0 0 1px #c0392b; }
     .qty-num { font-size: 16px; min-width: 22px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 4px; display: inline-block; margin-left: 6px; }
     .quick-btns { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
     .quick-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; border-radius: 15px; font-size: 12px; cursor: pointer; }
-    .quick-adjust { display: flex; gap: 4px; margin-top: 4px; }
+    .quick-adjust { display: flex; gap: 4px; margin-top: 4px; align-items: center; }
+    .spicy-indicator { font-size: 12px; color: #666; margin-right: 4px; }
     .cart-bar { position: sticky; bottom: 0; background: white; box-shadow: 0 -3px 10px rgba(0,0,0,0.08); padding: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; margin-top: 15px; }
     .cart-info { font-size: 16px; }
     .cart-total { color: #c0392b; font-weight: bold; font-size: 18px; }
@@ -66,6 +69,11 @@
     .table-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
     .table-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 4px 10px; border-radius: 12px; font-size: 13px; cursor: pointer; }
     .table-btn.active { background: #c0392b; color: white; border-color: #c0392b; }
+    /* 放大桌号输入框 */
+    #tableNumberInput { font-size: 18px !important; padding: 12px !important; }
+    /* 放大打包复选框 */
+    .modal-checkbox input[type="checkbox"] { transform: scale(1.5); margin-right: 8px; }
+    .modal-checkbox label { font-size: 18px; font-weight: bold; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -76,8 +84,11 @@
 <body>
 <div id="customerView">
   <div class="header">
-    <h1>🍖 久久家一元烧烤</h1>
+    <h1>久久家一元烧烤</h1>
     <p>扫码点餐 · 干净卫生 · 现串现烤</p>
+  </div>
+  <div class="hint-bar">
+    💡 点餐提示：点击辣度标签选择当前辣度（高亮），再按 +5/-5/+10/-10 快速调整数量。
   </div>
   <div class="category-nav">
     <button class="active" onclick="filterCategory('all', event)">全部</button>
@@ -130,7 +141,6 @@
 </div>
 
 <script>
-  // Firebase 配置
   const firebaseConfig = {
     apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
     authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
@@ -144,39 +154,43 @@
   const database = firebase.database();
   const ordersRef = database.ref('orders');
 
+  // 更新后的菜单（图片已替换，新增烤马步鱼，烤鸡翅中改名）
   const menu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
-    { id:3, name:"鸡翅尖", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鸡翅尖" },
+    { id:3, name:"鸡翅尖", price:2, category:"meat", img:"https://i.ibb.co/Q7V9nRMn/13fc9967947185e58b1cf4417b25f489.jpg" },
     { id:4, name:"猪脆骨", price:2.5, category:"meat", img:"https://i.ibb.co/5hBXNf0y/46cf9a75aee33c3f873e43f6c6d9594cd6ac19c89e28be02a502cc061c2a6523-0.png" },
     { id:5, name:"蒜瓣肉", price:2, category:"meat", img:"https://i.ibb.co/LD9JphHr/6942b374c94750f5c0328524b98c62b3c83f3ff1809f2ded53acf24592b5f090-0.jpg" },
     { id:6, name:"望京小腰", price:3, category:"meat", img:"https://i.ibb.co/d4nn96DF/7d8d592666932d658f373957b87a315777c3fcd4902c7af7e449cf4ee9b6a19a-0.webp" },
-    { id:7, name:"鱼豆腐", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鱼豆腐" },
-    { id:8, name:"掌中宝", price:3, category:"meat", img:"https://placehold.co/150x150/eee/999?text=掌中宝" },
-    { id:9, name:"烤肠", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=烤肠" },
-    { id:10, name:"牛心管", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=心管" },
-    { id:11, name:"烤翅中(大)", price:7, category:"meat", img:"https://placehold.co/150x150/eee/999?text=翅中" },
+    { id:7, name:"鱼豆腐", price:2, category:"meat", img:"https://i.ibb.co/dwzbwCh4/26dde9e342b203bfa8c54f3950b3a926.jpg" },
+    { id:8, name:"掌中宝", price:3, category:"meat", img:"https://i.ibb.co/Kzh6Rdpb/61dfd3be18c6fe664881f2a98b7c4a5090b099cadec32d0afb64c48a6f5e7f68-0.jpg" },
+    { id:9, name:"烤肠", price:2, category:"meat", img:"https://i.ibb.co/Mkrp23q1/496cc6b96d8a909f638b1eb4a2735190.jpg" },
+    { id:10, name:"牛心管", price:2, category:"meat", img:"https://i.ibb.co/B0MzstZ/9a9d35c463c18423a92c6fc8d819079d.jpg" },
+    { id:11, name:"烤鸡翅中", price:7, category:"meat", img:"https://i.ibb.co/qY30QHJY/ddf7431d857d3cefa08bbeffe90801e6.png" },
     { id:12, name:"多味鱼", price:4, category:"meat", img:"https://placehold.co/150x150/eee/999?text=多味鱼" },
-    { id:13, name:"碳烤猪皮", price:1, category:"meat", img:"https://placehold.co/150x150/eee/999?text=猪皮" },
-    { id:14, name:"烤面筋", price:2, category:"meat", img:"https://placehold.co/150x150/eee/999?text=面筋" },
-    { id:15, name:"烤鱿鱼", price:8, category:"meat", img:"https://placehold.co/150x150/eee/999?text=鱿鱼" },
-    { id:16, name:"烤韭菜", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=韭菜" },
-    { id:17, name:"烤豆干", price:1, category:"veg", img:"https://placehold.co/150x150/eee/999?text=豆干" },
-    { id:18, name:"烤辣椒", price:1, category:"veg", img:"https://placehold.co/150x150/eee/999?text=辣椒" },
-    { id:19, name:"烤包菜", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=包菜" },
-    { id:20, name:"烤金针菇", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=金针菇" },
-    { id:21, name:"烤馒头", price:1, category:"staple", img:"https://placehold.co/150x150/eee/999?text=馒头" },
-    { id:22, name:"卤花生", price:8, category:"other", img:"https://placehold.co/150x150/eee/999?text=花生" },
-    { id:23, name:"黄瓜拌面筋", price:16, category:"other", img:"https://placehold.co/150x150/eee/999?text=黄瓜拌面筋" },
+    { id:13, name:"碳烤猪皮", price:1, category:"meat", img:"https://i.ibb.co/wrpLtCgW/aae50afe705b02065d90870708c0d569.jpg" },
+    { id:14, name:"烤面筋", price:2, category:"meat", img:"https://i.ibb.co/670qqrbX/Screenshot-2026-0706-165326.png" },
+    { id:15, name:"烤鱿鱼", price:8, category:"meat", img:"https://i.ibb.co/FqyzqYnY/Screenshot-2026-0706-165510.png" },
+    { id:16, name:"烤韭菜", price:10, category:"veg", img:"https://i.ibb.co/Kp1dNdpP/Screenshot-2026-0706-165559.png" },
+    { id:17, name:"烤豆干", price:1, category:"veg", img:"https://i.ibb.co/ZR251DP7/3a782ca29e912bfafeb7b9e095a78f04.jpg" },
+    { id:18, name:"烤辣椒", price:1, category:"veg", img:"https://i.ibb.co/nNsDNDvm/5ff65d2f55f87ff5d8654091eec03885.jpg" },
+    { id:19, name:"烤包菜", price:10, category:"veg", img:"https://i.ibb.co/C5k4QNjL/Screenshot-2026-0706-170050.png" },
+    { id:20, name:"烤金针菇", price:10, category:"veg", img:"https://i.ibb.co/4RQJ2bsb/Screenshot-2026-0706-170208.png" },
+    { id:21, name:"烤馒头", price:1, category:"staple", img:"https://i.ibb.co/mrjTyQbX/232d201774932e935144c5a72f23b9ab.jpg" },
+    { id:22, name:"卤花生", price:8, category:"other", img:"https://i.ibb.co/Q3Z0fnm7/Screenshot-2026-0706-170416.png" },
+    { id:23, name:"黄瓜拌面筋", price:16, category:"other", img:"https://i.ibb.co/RT9qLQSD/Screenshot-2026-0706-170533.png" },
     { id:24, name:"青岛啤酒", price:8, category:"drink", img:"https://placehold.co/150x150/eee/999?text=啤酒" },
     { id:25, name:"大窑", price:5, category:"drink", img:"https://placehold.co/150x150/eee/999?text=大窑" },
     { id:26, name:"京8啤酒", price:8, category:"drink", img:"https://placehold.co/150x150/eee/999?text=京8" },
-    { id:27, name:"崂山啤酒", price:6, category:"drink", img:"https://placehold.co/150x150/eee/999?text=崂山" }
+    { id:27, name:"崂山啤酒", price:6, category:"drink", img:"https://placehold.co/150x150/eee/999?text=崂山" },
+    { id:28, name:"烤马步鱼", price:4, category:"meat", img:"https://i.ibb.co/r2hPt5rT/c1fe43858aa77f0ebd35fcb3f9cb3f60.jpg" }
   ];
 
   const spicyLevels = ['不辣', '微辣', '中辣', '特辣'];
   let cart = {};
   let adminCart = {};
+  let currentSpicy = '微辣';
+  let adminCurrentSpicy = '微辣';
   const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
   let currentFilter = 'all';
@@ -199,20 +213,22 @@
     return Object.values(cartObj[itemId] || {}).reduce((a, b) => a + b, 0);
   }
 
-  function renderMenu(filter = 'all', containerId = 'menuContainer', cartObj = cart, updateCartFn = updateCartBar) {
+  function renderMenu(filter = 'all', containerId = 'menuContainer', cartObj = cart, updateCartFn = updateCartBar, isAdminPanel = false) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const items = filter === 'all' ? menu : menu.filter(m => m.category === filter);
+    const curSpicy = isAdminPanel ? adminCurrentSpicy : currentSpicy;
     let htmlArr = [];
     items.forEach(item => {
       const itemCart = cartObj[item.id] || {};
       const total = getTotalQty(item.id, cartObj);
-      const type = cartObj === adminCart ? 'admin' : 'guest';
+      const type = isAdminPanel ? 'admin' : 'guest';
 
       let tagsHtml = '';
       spicyLevels.forEach(level => {
         const qty = itemCart[level] || 0;
-        tagsHtml += `<span class="spicy-tag ${qty > 0 ? 'active' : ''}" onclick="addSpicy(${item.id}, '${level}', '${type}')">${level} ${qty}</span>`;
+        const selectedClass = (level === curSpicy) ? ' selected' : '';
+        tagsHtml += `<span class="spicy-tag ${qty > 0 ? 'active' : ''}${selectedClass}" onclick="selectSpicy('${level}', '${type}')">${level} ${qty}</span>`;
       });
 
       let quickHtml = '';
@@ -220,8 +236,8 @@
         quickHtml = '<div class="quick-btns">' +
           [10,20,30,40,50].map(n => `<button class="quick-btn" onclick="quickAdd(${item.id}, ${n}, '${type}')">${n}串</button>`).join('') +
           '</div>';
-        // 新增 +5 -5 +10 -10 按钮
         quickHtml += '<div class="quick-adjust">' +
+          `<span class="spicy-indicator">当前辣度：${curSpicy}</span>` +
           `<button class="quick-btn" onclick="quickAdjust(${item.id}, -10, '${type}')">-10</button>` +
           `<button class="quick-btn" onclick="quickAdjust(${item.id}, -5, '${type}')">-5</button>` +
           `<button class="quick-btn" onclick="quickAdjust(${item.id}, 5, '${type}')">+5</button>` +
@@ -248,6 +264,16 @@
     updateCartFn(cartObj);
   }
 
+  function selectSpicy(level, type = 'guest') {
+    if (type === 'admin') {
+      adminCurrentSpicy = level;
+      renderAdminMenu();
+    } else {
+      currentSpicy = level;
+      renderMenu(currentFilter);
+    }
+  }
+
   function addSpicy(itemId, level, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     if (!cartObj[itemId]) cartObj[itemId] = {};
@@ -259,8 +285,13 @@
       cartObj[itemId][level] = 1;
     }
     if (Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
-    if (type === 'admin') renderAdminMenu();
-    else renderMenu(currentFilter);
+    if (type === 'admin') {
+      adminCurrentSpicy = level;
+      renderAdminMenu();
+    } else {
+      currentSpicy = level;
+      renderMenu(currentFilter);
+    }
   }
 
   function quickAdd(itemId, total, type = 'guest') {
@@ -325,17 +356,17 @@
     else renderMenu(currentFilter);
   }
 
-  // 新增的快捷调整数量函数
   function quickAdjust(itemId, delta, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
+    const curSpicy = type === 'admin' ? adminCurrentSpicy : currentSpicy;
     if (!cartObj[itemId]) cartObj[itemId] = {};
     if (delta > 0) {
-      cartObj[itemId]['微辣'] = (cartObj[itemId]['微辣'] || 0) + delta;
+      cartObj[itemId][curSpicy] = (cartObj[itemId][curSpicy] || 0) + delta;
     } else {
-      let mild = cartObj[itemId]['微辣'] || 0;
-      let remove = Math.min(mild, -delta);
-      cartObj[itemId]['微辣'] = mild - remove;
-      if (cartObj[itemId]['微辣'] === 0) delete cartObj[itemId]['微辣'];
+      let current = cartObj[itemId][curSpicy] || 0;
+      let remove = Math.min(current, -delta);
+      cartObj[itemId][curSpicy] = current - remove;
+      if (cartObj[itemId][curSpicy] === 0) delete cartObj[itemId][curSpicy];
     }
     if (Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
     if (type === 'admin') renderAdminMenu();
@@ -443,10 +474,10 @@
           <div class="modal-title">📋 确认订单</div>
           <div class="modal-items">${itemsHtml}</div>
           <div class="modal-total">合计：¥${total}</div>
-          <div class="modal-input-group"><label>🪑 桌号</label><input type="text" id="tableNumberInput" placeholder="请选择或输入桌号"></div>
+          <div class="modal-input-group"><label>🪑 桌号</label><input type="text" id="tableNumberInput" placeholder="请选择或输入桌号" style="font-size:18px; padding:12px;"></div>
           ${tableBtns}
           <div class="modal-input-group"><label>📝 备注</label><textarea id="remarkInput" rows="2" placeholder="如：少盐、多辣等" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px;"></textarea></div>
-          <div class="modal-checkbox"><input type="checkbox" id="packCheckbox"><label>🥡 打包</label></div>
+          <div class="modal-checkbox"><input type="checkbox" id="packCheckbox" style="transform:scale(1.8); margin-right:10px;"><label style="font-size:20px; font-weight:bold;">🥡 打包</label></div>
           <div class="modal-actions">
             <button class="btn-cancel" onclick="document.getElementById('confirmModal').remove()">取消</button>
             <button class="btn-confirm" onclick="${confirmFn}">确认下单</button>
@@ -500,7 +531,7 @@
     renderAdminMenu();
   }
   function renderAdminMenu() {
-    renderMenu(currentAdminFilter, 'adminMenuContainer', adminCart, updateAdminCartBar);
+    renderMenu(currentAdminFilter, 'adminMenuContainer', adminCart, updateAdminCartBar, true);
   }
   function updateAdminCartBar() {
     const countSpan = document.getElementById('adminCartCount');
@@ -758,7 +789,7 @@
     }
   }
 
-  // GBK 编码表
+  // GBK 编码表（含新增“马步鱼”）
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -773,7 +804,7 @@
     ['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],
     ['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],
     ['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],
-    ['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],['拌',[0xB0,0xE8]],['酱',[0xBD,0xB4]],['筋',[0xBD,0xEE]], // 筋已重复，保留
+    ['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],
     ['青',[0xC7,0xE0]],['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],
     ['窑',[0xDB,0xC9]],['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],
     ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
