@@ -13,6 +13,10 @@
     .header h1 { font-size: 26px; margin-bottom: 4px; }
     .header p { font-size: 14px; opacity: 0.9; }
     .hint-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; color: #856404; }
+    .table-select { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+    .table-select span { font-weight: bold; }
+    .table-select button { background: #f0f0f0; border: 1px solid #ddd; padding: 6px 12px; border-radius: 15px; font-size: 13px; cursor: pointer; }
+    .table-select button.active { background: #c0392b; color: white; border-color: #c0392b; }
     .category-nav { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin-bottom: 12px; }
     .category-nav button { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 14px; cursor: pointer; transition: 0.2s; }
     .category-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
@@ -27,6 +31,7 @@
     .spicy-tag.active { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
     .spicy-tag.selected { border: 2px solid #c0392b; box-shadow: 0 0 0 1px #c0392b; }
     .qty-num { font-size: 16px; min-width: 22px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 4px; display: inline-block; margin-left: 6px; }
+    .clear-item-btn { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; line-height: 20px; text-align: center; cursor: pointer; margin-left: 6px; }
     .quick-adjust { display: flex; gap: 4px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
     .quick-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; border-radius: 15px; font-size: 12px; cursor: pointer; }
     .spicy-indicator { font-size: 12px; color: #666; margin-right: 4px; }
@@ -40,6 +45,9 @@
     .table-nav { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
     .table-nav button { background: #f0f0f0; border: 1px solid #ddd; padding: 6px 12px; border-radius: 15px; font-size: 13px; cursor: pointer; }
     .table-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
+    .search-box { display: flex; gap: 5px; margin-bottom: 10px; }
+    .search-box input { flex: 1; padding: 6px 10px; border: 1px solid #ddd; border-radius: 15px; font-size: 14px; }
+    .search-box button { background: #c0392b; color: white; border: none; padding: 6px 15px; border-radius: 15px; cursor: pointer; }
     .order-card { border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-bottom: 12px; animation: fadeIn 0.3s; background: #fff; }
     .order-card.settled { opacity: 0.6; background: #f9f9f9; }
     .print-btn { background: #27ae60; color: white; border: none; padding: 6px 16px; border-radius: 15px; font-size: 13px; cursor: pointer; margin-right: 5px; }
@@ -63,10 +71,6 @@
     .btn-confirm { background: #c0392b; color: white; }
     .btn-cancel { background: #ddd; color: #333; }
 
-    .table-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
-    .table-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 6px 12px; border-radius: 12px; font-size: 14px; cursor: pointer; }
-    .table-btn.selected { background: #c0392b; color: white; border-color: #c0392b; }
-
     @media print {
       @page { size: 80mm auto; margin: 0; }
       body { width: 80mm; padding: 2mm; font-size: 12px; }
@@ -80,7 +84,17 @@
     <p>扫码点餐 · 干净卫生 · 现串现烤</p>
   </div>
   <div class="hint-bar">
-    💡 点餐提示：点击辣度标签选择当前辣度（高亮），再按 +/- 按钮快速调整数量。
+    💡 点餐提示：先选桌号，再点辣度标签设为当前辣度，按+/-按钮调整数量。
+  </div>
+  <!-- 桌号选择区域 -->
+  <div class="table-select">
+    <span>桌号：</span>
+    <button id="tableBtn_none" class="active" onclick="setCustomerTable('')">无桌号</button>
+    <script>
+      for (let i = 1; i <= 10; i++) {
+        document.write(`<button id="tableBtn_${i}" onclick="setCustomerTable(${i})">${i}号</button>`);
+      }
+    </script>
   </div>
   <div class="category-nav">
     <button class="active" onclick="filterCategory('all', event)">全部</button>
@@ -103,6 +117,10 @@
   <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
   <div id="printerStatus" class="status">打印机未连接</div>
   <button class="admin-order-btn" onclick="showAdminOrderPanel()">📝 代客点餐</button>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="输入单号搜索" oninput="searchOrders()">
+    <button onclick="searchOrders()">搜索</button>
+  </div>
   <div class="table-nav" id="tableNav">
     <button class="active" onclick="filterTable('all', event)">全部</button>
   </div>
@@ -181,13 +199,14 @@
   let adminCart = {};
   let currentSpicy = '微辣';
   let adminCurrentSpicy = '微辣';
-  let selectedTable = '';          // 客人端选中的桌号
-  let adminSelectedTable = '';     // 管理端选中的桌号
+  let customerTable = '';           // 客人端当前桌号，空字符串表示无桌号
+  let adminSelectedTable = '';      // 管理端代客点餐桌号
   const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
   let currentFilter = 'all';
   let currentAdminFilter = 'all';
   let currentTableFilter = 'all';
+  let currentSearch = '';            // 管理端搜索关键词
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
@@ -199,6 +218,15 @@
     document.getElementById('adminOrderPanel').style.display = 'none';
     document.body.insertAdjacentHTML('beforeend', '<div class="admin-link"><a href="?admin">🔐 店家管理</a></div>');
     renderMenu('all');
+  }
+
+  // 设置客人桌号
+  function setCustomerTable(num) {
+    customerTable = num;
+    // 更新按钮高亮
+    document.querySelectorAll('.table-select button').forEach(b => b.classList.remove('active'));
+    const targetBtn = num === '' ? document.getElementById('tableBtn_none') : document.getElementById(`tableBtn_${num}`);
+    if (targetBtn) targetBtn.classList.add('active');
   }
 
   function getTotalQty(itemId, cartObj = cart) {
@@ -251,6 +279,7 @@
             <div class="spicy-tags">${tagsHtml}</div>
             <div style="margin-top:4px; display:flex; align-items:center;">
               <span class="qty-num" onclick="editDetail(${item.id}, '${type}')">${total}</span> 串/份
+              <button class="clear-item-btn" onclick="clearItem(${item.id}, '${type}')" title="清除此菜品">✕</button>
             </div>
             ${quickHtml}
           </div>
@@ -259,6 +288,14 @@
     });
     container.innerHTML = htmlArr.join('');
     updateCartFn(cartObj);
+  }
+
+  // 清除某个菜品的所有计数
+  function clearItem(itemId, type = 'guest') {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    delete cartObj[itemId];
+    if (type === 'admin') renderAdminMenu();
+    else renderMenu(currentFilter);
   }
 
   function selectSpicy(level, type = 'guest') {
@@ -357,6 +394,19 @@
     return items;
   }
 
+  // 生成单号
+  function generateOrderNumber() {
+    const now = new Date();
+    const dateStr = now.getFullYear().toString().slice(-2) +
+      ('0' + (now.getMonth() + 1)).slice(-2) +
+      ('0' + now.getDate()).slice(-2);
+    const timeStr = now.getHours().toString().padStart(2, '0') +
+      now.getMinutes().toString().padStart(2, '0') +
+      now.getSeconds().toString().padStart(2, '0');
+    const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `Y${dateStr}-${timeStr}${rand}`;
+  }
+
   function filterCategory(cat, e) {
     document.querySelectorAll('#customerView .category-nav button').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
@@ -377,22 +427,12 @@
       itemsHtml += `<div class="modal-item"><div class="modal-item-name">${i.name} <span class="modal-item-detail">${i.spicy} ×${i.qty}</span></div><div class="modal-item-subtotal">¥${i.subtotal.toFixed(2)}</div></div>`;
     });
     const confirmFn = type === 'admin' ? 'confirmAdminOrder()' : 'confirmOrder()';
-    // 桌号按钮：点击时设置 selectedTable 并高亮
-    let tableBtns = '<div class="table-btns" id="tableBtnsContainer">';
-    for (let i = 1; i <= 10; i++) {
-      const sel = (type === 'admin' ? adminSelectedTable : selectedTable) == i ? ' selected' : '';
-      tableBtns += `<button class="table-btn${sel}" onclick="setTable(${i}, '${type}')">${i}号</button>`;
-    }
-    tableBtns += '</div>';
-
     const modalHtml = `
       <div class="modal-overlay" id="confirmModal">
         <div class="modal-content">
           <div class="modal-title">📋 确认订单</div>
           <div class="modal-items">${itemsHtml}</div>
           <div class="modal-total">合计：¥${total}</div>
-          <div class="modal-input-group"><label>🪑 桌号</label></div>
-          ${tableBtns}
           <div class="modal-input-group"><label>📝 备注</label><textarea id="remarkInput" rows="2" placeholder="如：少盐、多辣等" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px;"></textarea></div>
           <div class="modal-checkbox"><input type="checkbox" id="packCheckbox" style="transform:scale(1.8); margin-right:10px;"><label style="font-size:20px; font-weight:bold;">🥡 打包</label></div>
           <div class="modal-actions">
@@ -405,33 +445,17 @@
     document.body.insertAdjacentHTML('beforeend', modalHtml);
   }
 
-  // 设置桌号（全局变量 + 高亮按钮）
-  function setTable(num, type) {
-    if (type === 'admin') {
-      adminSelectedTable = num;
-    } else {
-      selectedTable = num;
-    }
-    // 更新按钮样式
-    const container = document.getElementById('tableBtnsContainer');
-    if (container) {
-      container.querySelectorAll('.table-btn').forEach(btn => {
-        btn.classList.remove('selected');
-      });
-      const targetBtn = container.querySelectorAll('.table-btn')[num - 1];
-      if (targetBtn) targetBtn.classList.add('selected');
-    }
-  }
-
   function confirmOrder() {
-    const tableNumber = selectedTable || '未选桌';
+    const tableNumber = customerTable || '未选桌';
     const isPack = document.getElementById('packCheckbox').checked;
     const remark = document.getElementById('remarkInput').value.trim();
     const items = getCartItems(cart);
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
+    const orderNumber = generateOrderNumber();
     const order = {
       time: new Date().toLocaleString(),
       table: tableNumber,
+      orderNumber: orderNumber,
       isPack: isPack ? '打包' : '堂食',
       remark: remark,
       items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })),
@@ -441,9 +465,8 @@
     };
     ordersRef.push(order).then(() => {
       document.getElementById('confirmModal').remove();
-      alert('下单成功！合计 ¥' + total);
+      alert(`下单成功！单号：${orderNumber}\n合计 ¥${total}`);
       cart = {};
-      selectedTable = '';
       renderMenu(currentFilter);
     });
   }
@@ -495,9 +518,11 @@
     const remark = document.getElementById('remarkInput').value.trim();
     const items = getCartItems(adminCart);
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
+    const orderNumber = generateOrderNumber();
     const order = {
       time: new Date().toLocaleString(),
       table: tableNumber,
+      orderNumber: orderNumber,
       isPack: isPack ? '打包' : '堂食',
       remark: remark,
       items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })),
@@ -507,7 +532,7 @@
     };
     ordersRef.push(order).then(() => {
       document.getElementById('confirmModal').remove();
-      alert('代客下单成功！合计 ¥' + total);
+      alert(`代客下单成功！单号：${orderNumber}\n合计 ¥${total}`);
       adminCart = {};
       adminSelectedTable = '';
       renderAdminMenu();
@@ -544,17 +569,29 @@
     renderOrders();
   }
 
+  function searchOrders() {
+    currentSearch = document.getElementById('searchInput').value.trim();
+    renderOrders();
+  }
+
   function renderOrders() {
     const list = document.getElementById('orderList');
     const settleBtn = document.getElementById('settleTableBtn');
     const tableTotalDiv = document.getElementById('tableTotal');
     let filtered = allOrders;
+
+    // 桌号筛选
     if (currentTableFilter !== 'all') {
-      filtered = allOrders.filter(o => o.table == currentTableFilter);
+      filtered = filtered.filter(o => o.table == currentTableFilter);
       settleBtn.style.display = 'inline-block';
     } else {
       settleBtn.style.display = 'none';
     }
+    // 单号搜索
+    if (currentSearch) {
+      filtered = filtered.filter(o => o.orderNumber && o.orderNumber.includes(currentSearch));
+    }
+
     let tableTotal = 0;
     filtered.forEach(o => { if (!o.settled) tableTotal += parseFloat(o.total); });
     tableTotalDiv.innerText = currentTableFilter === 'all' ? '' : '桌号 ' + currentTableFilter + ' 未结算总额：¥' + tableTotal.toFixed(2);
@@ -572,6 +609,7 @@
       ordersHtml += `
         <div class="order-card ${settledClass}" id="order-${order.key}">
           <strong>🕒 ${order.time}</strong> | 🪑 ${order.table || '无'} | ${order.isPack || '堂食'} ${order.settled ? ' (已结算)' : ''}
+          <br>单号：${order.orderNumber || '无'}
           ${order.remark ? '<br>备注：' + order.remark : ''}
           <br>合计 ¥${order.total}
           <ul style="margin:6px 0; padding-left:20px;">${itemsHtml}</ul>
@@ -630,7 +668,7 @@
   function fallbackPrint(order) {
     const w = window.open('', '_blank', 'width=320,height=400');
     if (!w) return;
-    let html = `<html><head><title>久久家一元烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家一元烧烤</h2><p style="text-align:center;">${order.time}</p><p>桌号：${order.table||'无'} | ${order.isPack||'堂食'}</p><div class="line"></div>`;
+    let html = `<html><head><title>久久家一元烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家一元烧烤</h2><p style="text-align:center;">${order.time}</p><p>单号：${order.orderNumber || '无'}</p><p>桌号：${order.table||'无'} | ${order.isPack||'堂食'}</p><div class="line"></div>`;
     order.items.forEach(item => {
       html += `<div>${item.name} 辣度:${item.spicy} ×${item.qty} <span style="float:right;">¥${item.subtotal}</span></div><div class="line"></div>`;
     });
@@ -750,7 +788,8 @@
     ['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],
     ['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],['理',[0xC0,0xED]],['：',[0xA3,0xBA]],
     ['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],['辣',[0xC0,0xB1]],['盐',[0xD1,0xCE]],
-    ['少',[0xC9,0xD9]],['注',[0xD7,0xA2]]
+    ['少',[0xC9,0xD9]],['注',[0xD7,0xA2]],['搜',[0xCB,0xD1]],['索',[0xCB,0xF7]],
+    ['Y',[0x59,0x00]],['-',[0x2D,0x00]],[':',[0x3A,0x00]] // 单号中的字符，直接ASCII
   ]);
 
   function encodeGBK(str) {
@@ -776,6 +815,7 @@
     str += '----------------------------\n';
     str += '\x1B\x61\x00';
     str += `时间：${order.time}\n`;
+    str += `单号：${order.orderNumber || '无'}\n`;
     str += '\x1B\x45\x01\x1B\x21\x30';
     str += `桌号：${order.table}  ${order.isPack}\n`;
     str += '\x1B\x21\x00\x1B\x45\x00';
