@@ -13,11 +13,6 @@
     .header h1 { font-size: 26px; margin-bottom: 4px; }
     .header p { font-size: 14px; opacity: 0.9; }
     .hint-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; color: #856404; }
-    .table-select { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
-    .table-select span { font-weight: bold; }
-    .table-select button { background: #f0f0f0; border: 1px solid #ddd; padding: 6px 12px; border-radius: 15px; font-size: 13px; cursor: pointer; }
-    .table-select button.active { background: #c0392b; color: white; border-color: #c0392b; }
-    .copy-link-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 15px; font-size: 12px; cursor: pointer; }
     .category-nav { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin-bottom: 12px; }
     .category-nav button { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 14px; cursor: pointer; transition: 0.2s; }
     .category-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
@@ -63,6 +58,20 @@
     .admin-order-btn { background: #8e44ad; color: white; border: none; padding: 8px 16px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
+    /* 新增：展开式桌号选择器 */
+    .table-picker { position: relative; margin-bottom: 10px; }
+    .table-trigger { width: 90px; height: 90px; background: white; border: 2px solid #c0392b; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; color: #c0392b; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .table-trigger.no-table { font-size: 14px; color: #999; }
+    .table-options { display: none; position: absolute; top: 95px; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 12px; padding: 10px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-wrap: wrap; gap: 6px; }
+    .table-picker.open .table-options { display: flex; }
+    .table-opt-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 8px 12px; border-radius: 12px; font-size: 14px; cursor: pointer; min-width: 45px; text-align: center; }
+    .table-opt-btn.active { background: #c0392b; color: white; border-color: #c0392b; }
+
+    /* 确认弹窗内的桌号按钮 */
+    .modal-table-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+    .modal-table-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 6px 12px; border-radius: 12px; font-size: 14px; cursor: pointer; }
+    .modal-table-btn.selected { background: #c0392b; color: white; border-color: #c0392b; }
+
     #loginBox { max-width: 300px; margin: 60px auto; background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     #loginBox input { width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
     #loginBox button { background: #c0392b; color: white; border: none; padding: 10px 30px; border-radius: 20px; font-size: 16px; cursor: pointer; }
@@ -75,9 +84,6 @@
     .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 20px; font-size: 16px; cursor: pointer; }
     .btn-confirm { background: #c0392b; color: white; }
     .btn-cancel { background: #ddd; color: #333; }
-    .table-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
-    .table-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 6px 12px; border-radius: 12px; font-size: 14px; cursor: pointer; }
-    .table-btn.selected { background: #c0392b; color: white; border-color: #c0392b; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -94,7 +100,21 @@
   <div class="hint-bar">
     💡 先选桌号，再点辣度标签设为当前辣度，使用步进器调整数量。
   </div>
-  <div class="table-select" id="tableSelectContainer"></div>
+  <!-- 展开式桌号选择器 -->
+  <div class="table-picker" id="tablePicker">
+    <div class="table-trigger" id="tableTrigger" onclick="toggleTablePicker()">
+      <span id="tableTriggerText">未选</span>
+    </div>
+    <div class="table-options" id="tableOptions">
+      <button class="table-opt-btn" onclick="setCustomerTable('', true)">无桌</button>
+      <script>
+        for (let i = 1; i <= 10; i++) {
+          document.write('<button class="table-opt-btn" onclick="setCustomerTable(' + i + ', true)">' + i + '号</button>');
+        }
+      </script>
+    </div>
+  </div>
+
   <div class="category-nav">
     <button class="active" onclick="filterCategory('all', event)">全部</button>
     <button onclick="filterCategory('meat', event)">🥩 肉类</button>
@@ -209,7 +229,6 @@
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
-  // 根据URL参数初始化桌号
   const urlParams = new URLSearchParams(window.location.search);
   if (!isAdmin && urlParams.has('table')) {
     const tableParam = urlParams.get('table');
@@ -221,41 +240,32 @@
     }
   }
 
-  function initTableSelect() {
-    const container = document.getElementById('tableSelectContainer');
-    if (!container) return;
-    let html = '<span>桌号：</span>';
-    html += '<button id="tableBtn_none" class="' + (customerTable === '' ? 'active' : '') + '" onclick="setCustomerTable(\'\')">无桌号</button>';
-    for (let i = 1; i <= 10; i++) {
-      html += '<button id="tableBtn_' + i + '" class="' + (customerTable === i ? 'active' : '') + '" onclick="setCustomerTable(' + i + ')">' + i + '号</button>';
-    }
-    html += '<button class="copy-link-btn" onclick="copyTableLink()">📋 复制点餐链接</button>';
-    container.innerHTML = html;
+  // ==================== 桌号选择器逻辑 ====================
+  function toggleTablePicker() {
+    document.getElementById('tablePicker').classList.toggle('open');
   }
 
-  function setCustomerTable(num) {
-    customerTable = num;
-    initTableSelect();
-  }
-
-  function copyTableLink() {
-    const baseUrl = window.location.origin + window.location.pathname;
-    let link = baseUrl;
-    if (customerTable !== '') link += '?table=' + customerTable;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(link).then(() => alert('链接已复制！\n' + link));
+  function updateTableTrigger() {
+    const trigger = document.getElementById('tableTriggerText');
+    if (customerTable === '') {
+      trigger.innerText = '未选';
+      trigger.parentElement.classList.add('no-table');
     } else {
-      const textarea = document.createElement('textarea');
-      textarea.value = link;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      alert('链接已复制！\n' + link);
+      trigger.innerText = customerTable;
+      trigger.parentElement.classList.remove('no-table');
     }
+    // 关闭下拉
+    document.getElementById('tablePicker').classList.remove('open');
   }
 
-  // 初始化界面
+  function setCustomerTable(num, close = true) {
+    customerTable = num;
+    updateTableTrigger();
+  }
+
+  // 初始化桌号触发器
+  updateTableTrigger();
+
   if (isAdmin) {
     showLoginForm();
   } else {
@@ -263,7 +273,6 @@
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('adminOrderPanel').style.display = 'none';
     document.body.insertAdjacentHTML('beforeend', '<div class="admin-link"><a href="?admin">🔐 店家管理</a></div>');
-    initTableSelect();
     renderMenu('all');
   }
 
@@ -438,6 +447,7 @@
     renderMenu(cat);
   }
 
+  // ==================== 确认订单弹窗（含桌号选择） ====================
   function showConfirmModal() {
     const items = getCartItems(cart);
     if (items.length === 0) { alert('请先选择菜品'); return; }
@@ -451,11 +461,24 @@
       itemsHtml += '<div class="modal-item"><div class="modal-item-name">' + i.name + ' <span class="modal-item-detail">' + i.spicy + ' ×' + i.qty + '</span></div><div class="modal-item-subtotal">¥' + i.subtotal.toFixed(2) + '</div></div>';
     });
     const confirmFn = type === 'admin' ? 'confirmAdminOrder()' : 'confirmOrder()';
+
+    // 桌号选择区域（如果未选，则提供按钮；已选则显示并可修改）
+    let tableSection = '<div class="modal-input-group"><label>🪑 桌号</label></div>';
+    const currentTable = type === 'admin' ? adminSelectedTable : customerTable;
+    tableSection += '<div class="modal-table-btns" id="modalTableBtns">';
+    for (let i = 1; i <= 10; i++) {
+      const sel = currentTable == i ? ' selected' : '';
+      tableSection += '<button class="modal-table-btn' + sel + '" onclick="setTableFromModal(' + i + ', \'' + type + '\')">' + i + '号</button>';
+    }
+    tableSection += '<button class="modal-table-btn" onclick="setTableFromModal(\'\', \'' + type + '\')">无桌号</button>';
+    tableSection += '</div>';
+
     const modalHtml = '<div class="modal-overlay" id="confirmModal">' +
       '<div class="modal-content">' +
         '<div class="modal-title">📋 确认订单</div>' +
         '<div class="modal-items">' + itemsHtml + '</div>' +
         '<div class="modal-total">合计：¥' + total + '</div>' +
+        tableSection +
         '<div class="modal-input-group"><label>📝 备注</label><textarea id="remarkInput" rows="2" placeholder="如：少盐、多辣等" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px;"></textarea></div>' +
         '<div class="modal-checkbox"><input type="checkbox" id="packCheckbox" style="transform:scale(1.8); margin-right:10px;"><label style="font-size:20px; font-weight:bold;">🥡 打包</label></div>' +
         '<div class="modal-actions">' +
@@ -465,6 +488,23 @@
       '</div>' +
     '</div>';
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  function setTableFromModal(num, type) {
+    if (type === 'admin') {
+      adminSelectedTable = num;
+    } else {
+      customerTable = num;
+      updateTableTrigger(); // 同步更新主页正方形显示
+    }
+    // 更新弹窗内按钮样式
+    const btns = document.querySelectorAll('#modalTableBtns .modal-table-btn');
+    btns.forEach(btn => btn.classList.remove('selected'));
+    if (num !== '') {
+      // 找到对应的按钮
+      const targetBtn = document.querySelector('#modalTableBtns .modal-table-btn[onclick*="' + num + '"]');
+      if (targetBtn) targetBtn.classList.add('selected');
+    }
   }
 
   function confirmOrder() {
