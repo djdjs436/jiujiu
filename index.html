@@ -95,7 +95,6 @@
   <div class="hint-bar">
     💡 点击上方正方形选择桌号，再选辣度与数量。
   </div>
-
   <div class="table-big-btn" id="tableBigBtn" onclick="toggleTableDropdown()">
     <span id="tableBigText">选桌</span>
   </div>
@@ -278,7 +277,6 @@
 
       let quickHtml = '';
       if (item.price < 6) {
-        // 单价<6元：显示全套步进器
         quickHtml = '<div class="quick-adjust">' +
           '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
@@ -292,7 +290,6 @@
           '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 50, \'' + type + '\')">+50串</button>' +
           '</div>';
       } else {
-        // 单价>=6元：仅显示 -1/+1 步进器
         quickHtml = '<div class="quick-adjust">' +
           '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
