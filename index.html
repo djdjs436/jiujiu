@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>久久家烧烤 · 扫码点餐</title>
+  <title>久久家一元烧烤 · 扫码点餐</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <style>
@@ -27,6 +27,7 @@
     .qty-num { font-size: 16px; min-width: 22px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 4px; display: inline-block; margin-left: 6px; }
     .quick-btns { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
     .quick-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; border-radius: 15px; font-size: 12px; cursor: pointer; }
+    .quick-adjust { display: flex; gap: 4px; margin-top: 4px; }
     .cart-bar { position: sticky; bottom: 0; background: white; box-shadow: 0 -3px 10px rgba(0,0,0,0.08); padding: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; margin-top: 15px; }
     .cart-info { font-size: 16px; }
     .cart-total { color: #c0392b; font-weight: bold; font-size: 18px; }
@@ -75,7 +76,7 @@
 <body>
 <div id="customerView">
   <div class="header">
-    <h1>🍖 久久家烧烤</h1>
+    <h1>🍖 久久家一元烧烤</h1>
     <p>扫码点餐 · 干净卫生 · 现串现烤</p>
   </div>
   <div class="category-nav">
@@ -166,7 +167,7 @@
     { id:20, name:"烤金针菇", price:10, category:"veg", img:"https://placehold.co/150x150/eee/999?text=金针菇" },
     { id:21, name:"烤馒头", price:1, category:"staple", img:"https://placehold.co/150x150/eee/999?text=馒头" },
     { id:22, name:"卤花生", price:8, category:"other", img:"https://placehold.co/150x150/eee/999?text=花生" },
-    { id:23, name:"黄瓜拌面酱", price:16, category:"other", img:"https://placehold.co/150x150/eee/999?text=黄瓜拌面酱" },
+    { id:23, name:"黄瓜拌面筋", price:16, category:"other", img:"https://placehold.co/150x150/eee/999?text=黄瓜拌面筋" },
     { id:24, name:"青岛啤酒", price:8, category:"drink", img:"https://placehold.co/150x150/eee/999?text=啤酒" },
     { id:25, name:"大窑", price:5, category:"drink", img:"https://placehold.co/150x150/eee/999?text=大窑" },
     { id:26, name:"京8啤酒", price:8, category:"drink", img:"https://placehold.co/150x150/eee/999?text=京8" },
@@ -194,19 +195,10 @@
     renderMenu('all');
   }
 
-  // ==================== 辅助函数 ====================
   function getTotalQty(itemId, cartObj = cart) {
     return Object.values(cartObj[itemId] || {}).reduce((a, b) => a + b, 0);
   }
 
-  function escapeHtml(str) {
-    return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-  }
-
-  // 创建带转义的单引号字符串
-  function q(str) { return "'" + str + "'"; }
-
-  // ==================== 渲染菜单 ====================
   function renderMenu(filter = 'all', containerId = 'menuContainer', cartObj = cart, updateCartFn = updateCartBar) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -217,18 +209,23 @@
       const total = getTotalQty(item.id, cartObj);
       const type = cartObj === adminCart ? 'admin' : 'guest';
 
-      // 辣度标签
       let tagsHtml = '';
       spicyLevels.forEach(level => {
         const qty = itemCart[level] || 0;
         tagsHtml += `<span class="spicy-tag ${qty > 0 ? 'active' : ''}" onclick="addSpicy(${item.id}, '${level}', '${type}')">${level} ${qty}</span>`;
       });
 
-      // 快捷数量按钮
       let quickHtml = '';
-      if (item.price < 5) {
+      if (item.price < 6) {
         quickHtml = '<div class="quick-btns">' +
           [10,20,30,40,50].map(n => `<button class="quick-btn" onclick="quickAdd(${item.id}, ${n}, '${type}')">${n}串</button>`).join('') +
+          '</div>';
+        // 新增 +5 -5 +10 -10 按钮
+        quickHtml += '<div class="quick-adjust">' +
+          `<button class="quick-btn" onclick="quickAdjust(${item.id}, -10, '${type}')">-10</button>` +
+          `<button class="quick-btn" onclick="quickAdjust(${item.id}, -5, '${type}')">-5</button>` +
+          `<button class="quick-btn" onclick="quickAdjust(${item.id}, 5, '${type}')">+5</button>` +
+          `<button class="quick-btn" onclick="quickAdjust(${item.id}, 10, '${type}')">+10</button>` +
           '</div>';
       }
 
@@ -251,7 +248,6 @@
     updateCartFn(cartObj);
   }
 
-  // ==================== 修改数量 ====================
   function addSpicy(itemId, level, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     if (!cartObj[itemId]) cartObj[itemId] = {};
@@ -267,7 +263,6 @@
     else renderMenu(currentFilter);
   }
 
-  // ==================== 快捷添加 ====================
   function quickAdd(itemId, total, type = 'guest') {
     const item = menu.find(m => m.id === itemId);
     let html = `
@@ -330,7 +325,23 @@
     else renderMenu(currentFilter);
   }
 
-  // ==================== 详细编辑 ====================
+  // 新增的快捷调整数量函数
+  function quickAdjust(itemId, delta, type = 'guest') {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    if (!cartObj[itemId]) cartObj[itemId] = {};
+    if (delta > 0) {
+      cartObj[itemId]['微辣'] = (cartObj[itemId]['微辣'] || 0) + delta;
+    } else {
+      let mild = cartObj[itemId]['微辣'] || 0;
+      let remove = Math.min(mild, -delta);
+      cartObj[itemId]['微辣'] = mild - remove;
+      if (cartObj[itemId]['微辣'] === 0) delete cartObj[itemId]['微辣'];
+    }
+    if (Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
+    if (type === 'admin') renderAdminMenu();
+    else renderMenu(currentFilter);
+  }
+
   function editDetail(itemId, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     const itemCart = cartObj[itemId] || {};
@@ -373,7 +384,6 @@
     else renderMenu(currentFilter);
   }
 
-  // ==================== 购物车显示 ====================
   function updateCartBar(cartObj = cart) {
     const countSpan = document.getElementById('cartCount');
     const totalSpan = document.getElementById('cartTotal');
@@ -401,7 +411,6 @@
     return items;
   }
 
-  // ==================== 客人点餐流程 ====================
   function filterCategory(cat, e) {
     document.querySelectorAll('#customerView .category-nav button').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
@@ -472,7 +481,7 @@
     });
   }
 
-  // ==================== 管理员代客点餐 ====================
+  // 管理员代客点餐
   function showAdminOrderPanel() {
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('adminOrderPanel').style.display = 'block';
@@ -537,7 +546,7 @@
     });
   }
 
-  // ==================== 管理员订单管理 ====================
+  // 管理员订单管理
   let allOrders = [];
   function startListening() {
     ordersRef.off();
@@ -545,15 +554,7 @@
       const order = snapshot.val();
       const newOrder = { key: snapshot.key, ...order };
       allOrders.unshift(newOrder);
-      // 自动打印
-      if (bluetoothCharacteristic) {
-        try {
-          const command = build72mmESC(order);
-          sendBluetoothData(command);
-        } catch (e) { fallbackPrint(order); }
-      } else {
-        fallbackPrint(order);
-      }
+      autoPrint(order);
       playNotification();
       renderOrders();
     });
@@ -661,7 +662,7 @@
   function fallbackPrint(order) {
     const w = window.open('', '_blank', 'width=320,height=400');
     if (!w) return;
-    let html = `<html><head><title>久久家烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家烧烤</h2><p style="text-align:center;">${order.time}</p><p>桌号：${order.table||'无'} | ${order.isPack||'堂食'}</p><div class="line"></div>`;
+    let html = `<html><head><title>久久家一元烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家一元烧烤</h2><p style="text-align:center;">${order.time}</p><p>桌号：${order.table||'无'} | ${order.isPack||'堂食'}</p><div class="line"></div>`;
     order.items.forEach(item => {
       html += `<div>${item.name} 辣度:${item.spicy} ×${item.qty} <span style="float:right;">¥${item.subtotal}</span></div><div class="line"></div>`;
     });
@@ -683,7 +684,7 @@
 
   function hideAdmin() { window.location.href = window.location.pathname; }
 
-  // ==================== 登录 ====================
+  // 登录
   function showLoginForm() {
     document.getElementById('customerView').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'none';
@@ -724,7 +725,7 @@
     }
   }
 
-  // ==================== 蓝牙打印 ====================
+  // 蓝牙打印
   function updatePrinterStatus(text) { document.getElementById('printerStatus').innerText = text; }
   async function connectBluetoothPrinter() {
     try {
@@ -757,9 +758,9 @@
     }
   }
 
-  // ==================== GBK 编码表（完整） ====================
+  // GBK 编码表
   const gbkMap = new Map([
-    ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
+    ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
     ['鲜',[0xCF,0xCA]],['切',[0xC7,0xD0]],['羊',[0xD1,0xF2]],['鸡',[0xBC,0xA6]],
     ['翅',[0xB3,0xE1]],['尖',[0xBC,0xE2]],['脆',[0xB4,0xE0]],['骨',[0xB9,0xC7]],
@@ -772,7 +773,7 @@
     ['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],
     ['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],
     ['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],
-    ['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],['拌',[0xB0,0xE8]],['酱',[0xBD,0xB4]],
+    ['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],['拌',[0xB0,0xE8]],['酱',[0xBD,0xB4]],['筋',[0xBD,0xEE]], // 筋已重复，保留
     ['青',[0xC7,0xE0]],['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],
     ['窑',[0xDB,0xC9]],['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],
     ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
@@ -805,7 +806,7 @@
     let str = '\x1B\x40';
     str += '\x1B\x61\x01';
     str += '\x1B\x21\x30';
-    str += '久久家烧烤\n';
+    str += '久久家一元烧烤\n';
     str += '\x1B\x21\x00';
     str += '----------------------------\n';
     str += '\x1B\x61\x00';
