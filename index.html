@@ -92,7 +92,7 @@
     <button id="tableBtn_none" class="active" onclick="setCustomerTable('')">无桌号</button>
     <script>
       for (let i = 1; i <= 10; i++) {
-        document.write(`<button id="tableBtn_${i}" onclick="setCustomerTable(${i})">${i}号</button>`);
+        document.write('<button id="tableBtn_' + i + '" onclick="setCustomerTable(' + i + ')">' + i + '号</button>');
       }
     </script>
   </div>
@@ -199,7 +199,7 @@
   let adminCart = {};
   let currentSpicy = '微辣';
   let adminCurrentSpicy = '微辣';
-  let customerTable = '';           // 客人端当前桌号，空字符串表示无桌号
+  let customerTable = '';           // 客人端当前桌号
   let adminSelectedTable = '';      // 管理端代客点餐桌号
   const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
@@ -220,12 +220,10 @@
     renderMenu('all');
   }
 
-  // 设置客人桌号
   function setCustomerTable(num) {
     customerTable = num;
-    // 更新按钮高亮
     document.querySelectorAll('.table-select button').forEach(b => b.classList.remove('active'));
-    const targetBtn = num === '' ? document.getElementById('tableBtn_none') : document.getElementById(`tableBtn_${num}`);
+    const targetBtn = num === '' ? document.getElementById('tableBtn_none') : document.getElementById('tableBtn_' + num);
     if (targetBtn) targetBtn.classList.add('active');
   }
 
@@ -248,49 +246,48 @@
       spicyLevels.forEach(level => {
         const qty = itemCart[level] || 0;
         const selectedClass = (level === curSpicy) ? ' selected' : '';
-        tagsHtml += `<span class="spicy-tag ${qty > 0 ? 'active' : ''}${selectedClass}" onclick="selectSpicy('${level}', '${type}')">${level} ${qty}</span>`;
+        tagsHtml += '<span class="spicy-tag ' + (qty > 0 ? 'active' : '') + selectedClass + '" onclick="selectSpicy(\'' + level + '\', \'' + type + '\')">' + level + ' ' + qty + '</span>';
       });
 
       let quickHtml = '';
       if (item.price < 6) {
         quickHtml = '<div class="quick-adjust">' +
-          `<span class="spicy-indicator">当前辣度：${curSpicy}</span>` +
-          `<button class="quick-btn" onclick="quickAdjust(${item.id}, 1, '${type}')">+1份</button>` +
-          `<button class="quick-btn" onclick="quickAdjust(${item.id}, -1, '${type}')">-1份</button>` +
-          `<button class="quick-btn" onclick="quickAdjust(${item.id}, 5, '${type}')">+5份</button>` +
-          `<button class="quick-btn" onclick="quickAdjust(${item.id}, -5, '${type}')">-5份</button>` +
-          `<button class="quick-btn" onclick="quickAdjust(${item.id}, 10, '${type}')">+10份</button>` +
-          `<button class="quick-btn" onclick="quickAdjust(${item.id}, -10, '${type}')">-10份</button>` +
+          '<span class="spicy-indicator">当前辣度：' + curSpicy + '</span>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1份</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1份</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5份</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5份</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10份</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10份</button>' +
           '</div>' +
           '<div class="quick-adjust">' +
-          `<button class="quick-btn" onclick="quickAdjust(${item.id}, 20, '${type}')">20串</button>` +
-          `<button class="quick-btn" onclick="quickAdjust(${item.id}, 30, '${type}')">30串</button>` +
-          `<button class="quick-btn" onclick="quickAdjust(${item.id}, 40, '${type}')">40串</button>` +
-          `<button class="quick-btn" onclick="quickAdjust(${item.id}, 50, '${type}')">50串</button>` +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 20, \'' + type + '\')">20串</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 30, \'' + type + '\')">30串</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 40, \'' + type + '\')">40串</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 50, \'' + type + '\')">50串</button>' +
           '</div>';
       }
 
-      htmlArr.push(`
-        <div class="menu-item">
-          <img src="${item.img}" alt="${item.name}" onerror="this.src='https://placehold.co/70x70/eee/999?text=🍖'">
-          <div class="item-info">
-            <div class="item-name">${item.name}</div>
-            <div class="item-price">¥${item.price}</div>
-            <div class="spicy-tags">${tagsHtml}</div>
-            <div style="margin-top:4px; display:flex; align-items:center;">
-              <span class="qty-num" onclick="editDetail(${item.id}, '${type}')">${total}</span> 串/份
-              <button class="clear-item-btn" onclick="clearItem(${item.id}, '${type}')" title="清除此菜品">✕</button>
-            </div>
-            ${quickHtml}
-          </div>
-        </div>
-      `);
+      htmlArr.push(
+        '<div class="menu-item">' +
+        '<img src="' + item.img + '" alt="' + item.name + '" onerror="this.src=\'https://placehold.co/70x70/eee/999?text=🍖\'">' +
+        '<div class="item-info">' +
+          '<div class="item-name">' + item.name + '</div>' +
+          '<div class="item-price">¥' + item.price + '</div>' +
+          '<div class="spicy-tags">' + tagsHtml + '</div>' +
+          '<div style="margin-top:4px; display:flex; align-items:center;">' +
+            '<span class="qty-num" onclick="editDetail(' + item.id + ', \'' + type + '\')">' + total + '</span> 串/份' +
+            '<button class="clear-item-btn" onclick="clearItem(' + item.id + ', \'' + type + '\')" title="清除此菜品">✕</button>' +
+          '</div>' +
+          quickHtml +
+        '</div>' +
+        '</div>'
+      );
     });
     container.innerHTML = htmlArr.join('');
     updateCartFn(cartObj);
   }
 
-  // 清除某个菜品的所有计数
   function clearItem(itemId, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     delete cartObj[itemId];
@@ -328,25 +325,16 @@
   function editDetail(itemId, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     const itemCart = cartObj[itemId] || {};
-    let html = `
-      <div class="modal-overlay" id="detailModal">
-        <div class="modal-content">
-          <div class="modal-title">调整【${menu.find(m => m.id == itemId).name}】各辣度数量</div>
-    `;
+    let html = '<div class="modal-overlay" id="detailModal"><div class="modal-content">' +
+      '<div class="modal-title">调整【' + menu.find(m => m.id == itemId).name + '】各辣度数量</div>';
     spicyLevels.forEach(level => {
       const qty = itemCart[level] || 0;
-      html += `
-        <div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0;">
-          <span>${level}</span>
-          <input type="number" id="detailQty_${itemId}_${level}" value="${qty}" min="0" style="width:60px; text-align:center;" inputmode="numeric">
-        </div>
-      `;
+      html += '<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0;">' +
+        '<span>' + level + '</span>' +
+        '<input type="number" id="detailQty_' + itemId + '_' + level + '" value="' + qty + '" min="0" style="width:60px; text-align:center;" inputmode="numeric">' +
+      '</div>';
     });
-    html += `
-          <div class="modal-actions"><button class="btn-cancel" onclick="closeDetailModal(${itemId}, '${type}')">完成</button></div>
-        </div>
-      </div>
-    `;
+    html += '<div class="modal-actions"><button class="btn-cancel" onclick="closeDetailModal(' + itemId + ', \'' + type + '\')">完成</button></div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
   }
 
@@ -394,17 +382,16 @@
     return items;
   }
 
-  // 生成单号
   function generateOrderNumber() {
     const now = new Date();
     const dateStr = now.getFullYear().toString().slice(-2) +
       ('0' + (now.getMonth() + 1)).slice(-2) +
       ('0' + now.getDate()).slice(-2);
-    const timeStr = now.getHours().toString().padStart(2, '0') +
-      now.getMinutes().toString().padStart(2, '0') +
-      now.getSeconds().toString().padStart(2, '0');
+    const timeStr = ('0' + now.getHours()).slice(-2) +
+      ('0' + now.getMinutes()).slice(-2) +
+      ('0' + now.getSeconds()).slice(-2);
     const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `Y${dateStr}-${timeStr}${rand}`;
+    return 'Y' + dateStr + '-' + timeStr + rand;
   }
 
   function filterCategory(cat, e) {
@@ -424,24 +411,22 @@
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
     let itemsHtml = '';
     items.forEach(i => {
-      itemsHtml += `<div class="modal-item"><div class="modal-item-name">${i.name} <span class="modal-item-detail">${i.spicy} ×${i.qty}</span></div><div class="modal-item-subtotal">¥${i.subtotal.toFixed(2)}</div></div>`;
+      itemsHtml += '<div class="modal-item"><div class="modal-item-name">' + i.name + ' <span class="modal-item-detail">' + i.spicy + ' ×' + i.qty + '</span></div><div class="modal-item-subtotal">¥' + i.subtotal.toFixed(2) + '</div></div>';
     });
     const confirmFn = type === 'admin' ? 'confirmAdminOrder()' : 'confirmOrder()';
-    const modalHtml = `
-      <div class="modal-overlay" id="confirmModal">
-        <div class="modal-content">
-          <div class="modal-title">📋 确认订单</div>
-          <div class="modal-items">${itemsHtml}</div>
-          <div class="modal-total">合计：¥${total}</div>
-          <div class="modal-input-group"><label>📝 备注</label><textarea id="remarkInput" rows="2" placeholder="如：少盐、多辣等" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px;"></textarea></div>
-          <div class="modal-checkbox"><input type="checkbox" id="packCheckbox" style="transform:scale(1.8); margin-right:10px;"><label style="font-size:20px; font-weight:bold;">🥡 打包</label></div>
-          <div class="modal-actions">
-            <button class="btn-cancel" onclick="document.getElementById('confirmModal').remove()">取消</button>
-            <button class="btn-confirm" onclick="${confirmFn}">确认下单</button>
-          </div>
-        </div>
-      </div>
-    `;
+    const modalHtml = '<div class="modal-overlay" id="confirmModal">' +
+      '<div class="modal-content">' +
+        '<div class="modal-title">📋 确认订单</div>' +
+        '<div class="modal-items">' + itemsHtml + '</div>' +
+        '<div class="modal-total">合计：¥' + total + '</div>' +
+        '<div class="modal-input-group"><label>📝 备注</label><textarea id="remarkInput" rows="2" placeholder="如：少盐、多辣等" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px;"></textarea></div>' +
+        '<div class="modal-checkbox"><input type="checkbox" id="packCheckbox" style="transform:scale(1.8); margin-right:10px;"><label style="font-size:20px; font-weight:bold;">🥡 打包</label></div>' +
+        '<div class="modal-actions">' +
+          '<button class="btn-cancel" onclick="document.getElementById(\'confirmModal\').remove()">取消</button>' +
+          '<button class="btn-confirm" onclick="' + confirmFn + '">确认下单</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
     document.body.insertAdjacentHTML('beforeend', modalHtml);
   }
 
@@ -465,7 +450,7 @@
     };
     ordersRef.push(order).then(() => {
       document.getElementById('confirmModal').remove();
-      alert(`下单成功！单号：${orderNumber}\n合计 ¥${total}`);
+      alert('下单成功！单号：' + orderNumber + '\n合计 ¥' + total);
       cart = {};
       renderMenu(currentFilter);
     });
@@ -532,7 +517,7 @@
     };
     ordersRef.push(order).then(() => {
       document.getElementById('confirmModal').remove();
-      alert(`代客下单成功！单号：${orderNumber}\n合计 ¥${total}`);
+      alert('代客下单成功！单号：' + orderNumber + '\n合计 ¥' + total);
       adminCart = {};
       adminSelectedTable = '';
       renderAdminMenu();
@@ -580,14 +565,12 @@
     const tableTotalDiv = document.getElementById('tableTotal');
     let filtered = allOrders;
 
-    // 桌号筛选
     if (currentTableFilter !== 'all') {
       filtered = filtered.filter(o => o.table == currentTableFilter);
       settleBtn.style.display = 'inline-block';
     } else {
       settleBtn.style.display = 'none';
     }
-    // 单号搜索
     if (currentSearch) {
       filtered = filtered.filter(o => o.orderNumber && o.orderNumber.includes(currentSearch));
     }
@@ -604,19 +587,17 @@
       const settledClass = order.settled ? 'settled' : '';
       let itemsHtml = '';
       order.items.forEach(i => {
-        itemsHtml += `<li>${i.name} ${i.spicy} ×${i.qty} - ¥${i.subtotal}</li>`;
+        itemsHtml += '<li>' + i.name + ' ' + i.spicy + ' ×' + i.qty + ' - ¥' + i.subtotal + '</li>';
       });
-      ordersHtml += `
-        <div class="order-card ${settledClass}" id="order-${order.key}">
-          <strong>🕒 ${order.time}</strong> | 🪑 ${order.table || '无'} | ${order.isPack || '堂食'} ${order.settled ? ' (已结算)' : ''}
-          <br>单号：${order.orderNumber || '无'}
-          ${order.remark ? '<br>备注：' + order.remark : ''}
-          <br>合计 ¥${order.total}
-          <ul style="margin:6px 0; padding-left:20px;">${itemsHtml}</ul>
-          <button class="print-btn" onclick="reprint('${order.key}')">🖨️ 补打小票</button>
-          <button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${order.key}')">删除</button>
-        </div>
-      `;
+      ordersHtml += '<div class="order-card ' + settledClass + '" id="order-' + order.key + '">' +
+        '<strong>🕒 ' + order.time + '</strong> | 🪑 ' + (order.table || '无') + ' | ' + (order.isPack || '堂食') + (order.settled ? ' (已结算)' : '') +
+        '<br>单号：' + (order.orderNumber || '无') +
+        (order.remark ? '<br>备注：' + order.remark : '') +
+        '<br>合计 ¥' + order.total +
+        '<ul style="margin:6px 0; padding-left:20px;">' + itemsHtml + '</ul>' +
+        '<button class="print-btn" onclick="reprint(\'' + order.key + '\')">🖨️ 补打小票</button>' +
+        '<button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder(\'' + order.key + '\')">删除</button>' +
+      '</div>';
     });
     list.innerHTML = ordersHtml;
   }
@@ -668,12 +649,12 @@
   function fallbackPrint(order) {
     const w = window.open('', '_blank', 'width=320,height=400');
     if (!w) return;
-    let html = `<html><head><title>久久家一元烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家一元烧烤</h2><p style="text-align:center;">${order.time}</p><p>单号：${order.orderNumber || '无'}</p><p>桌号：${order.table||'无'} | ${order.isPack||'堂食'}</p><div class="line"></div>`;
+    let html = '<html><head><title>久久家一元烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家一元烧烤</h2><p style="text-align:center;">' + order.time + '</p><p>单号：' + (order.orderNumber || '无') + '</p><p>桌号：' + (order.table||'无') + ' | ' + (order.isPack||'堂食') + '</p><div class="line"></div>';
     order.items.forEach(item => {
-      html += `<div>${item.name} 辣度:${item.spicy} ×${item.qty} <span style="float:right;">¥${item.subtotal}</span></div><div class="line"></div>`;
+      html += '<div>' + item.name + ' 辣度:' + item.spicy + ' ×' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span></div><div class="line"></div>';
     });
-    if (order.remark) html += `<div>备注：${order.remark}</div><div class="line"></div>`;
-    html += `<h3 class="right">合计: ¥${order.total}</h3><p style="text-align:center;">新订单 - 请及时处理</p></body></html>`;
+    if (order.remark) html += '<div>备注：' + order.remark + '</div><div class="line"></div>';
+    html += '<h3 class="right">合计: ¥' + order.total + '</h3><p style="text-align:center;">新订单 - 请及时处理</p></body></html>';
     w.document.write(html);
     w.document.close();
     w.focus();
@@ -694,15 +675,9 @@
     document.getElementById('customerView').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('adminOrderPanel').style.display = 'none';
-    document.body.insertAdjacentHTML('beforeend', `
-      <div id="loginBox">
-        <h3>🔐 店家登录</h3>
-        <input id="pwdInput" type="password" placeholder="请输入管理密码">
-        <button onclick="checkPassword()">进入管理</button>
-        <p id="loginError"></p>
-        <a href="${window.location.pathname}" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a>
-      </div>
-    `);
+    document.body.insertAdjacentHTML('beforeend',
+      '<div id="loginBox"><h3>🔐 店家登录</h3><input id="pwdInput" type="password" placeholder="请输入管理密码"><button onclick="checkPassword()">进入管理</button><p id="loginError"></p><a href="' + window.location.pathname + '" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a></div>'
+    );
   }
 
   function checkPassword() {
@@ -720,10 +695,10 @@
   function initTableNav() {
     const nav = document.getElementById('tableNav');
     for (let i = 1; i <= 10; i++) {
-      if (!nav.querySelector(`button[data-table="${i}"]`)) {
+      if (!nav.querySelector('button[data-table="' + i + '"]')) {
         const btn = document.createElement('button');
         btn.setAttribute('data-table', i);
-        btn.innerText = `🪑 ${i}号桌`;
+        btn.innerText = '🪑 ' + i + '号桌';
         btn.onclick = function(e) { filterTable(i, e); };
         nav.appendChild(btn);
       }
@@ -788,8 +763,7 @@
     ['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],
     ['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],['理',[0xC0,0xED]],['：',[0xA3,0xBA]],
     ['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],['辣',[0xC0,0xB1]],['盐',[0xD1,0xCE]],
-    ['少',[0xC9,0xD9]],['注',[0xD7,0xA2]],['搜',[0xCB,0xD1]],['索',[0xCB,0xF7]],
-    ['Y',[0x59,0x00]],['-',[0x2D,0x00]],[':',[0x3A,0x00]] // 单号中的字符，直接ASCII
+    ['少',[0xC9,0xD9]],['注',[0xD7,0xA2]]
   ]);
 
   function encodeGBK(str) {
@@ -814,10 +788,10 @@
     str += '\x1B\x21\x00';
     str += '----------------------------\n';
     str += '\x1B\x61\x00';
-    str += `时间：${order.time}\n`;
-    str += `单号：${order.orderNumber || '无'}\n`;
+    str += '时间：' + order.time + '\n';
+    str += '单号：' + (order.orderNumber || '无') + '\n';
     str += '\x1B\x45\x01\x1B\x21\x30';
-    str += `桌号：${order.table}  ${order.isPack}\n`;
+    str += '桌号：' + order.table + '  ' + order.isPack + '\n';
     str += '\x1B\x21\x00\x1B\x45\x00';
     str += '----------------------------\n';
     str += '品名       数量  小计\n';
@@ -825,16 +799,16 @@
       const name = item.name.padEnd(7, ' ');
       const qty = item.qty.toString().padStart(2, ' ');
       const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
-      str += `${name} ${qty} ${subtotal}\n`;
-      str += `  辣度:${item.spicy}\n`;
+      str += name + ' ' + qty + ' ' + subtotal + '\n';
+      str += '  辣度:' + item.spicy + '\n';
     });
     if (order.remark) {
       str += '----------------------------\n';
-      str += `备注：${order.remark}\n`;
+      str += '备注：' + order.remark + '\n';
     }
     str += '----------------------------\n';
     str += '\x1B\x61\x02';
-    str += `合计：¥ ${order.total}\n`;
+    str += '合计：¥ ' + order.total + '\n';
     str += '\x1B\x61\x01';
     str += '谢谢惠顾，欢迎再次光临\n';
     str += '\n\n\n';
