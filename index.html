@@ -13,49 +13,12 @@
     .header h1 { font-size: 26px; margin-bottom: 4px; }
     .header p { font-size: 14px; opacity: 0.9; }
     .hint-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; color: #856404; }
-
-    /* 正方形桌号选择器 */
-    .table-big-btn {
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      background: white;
-      border: 2px solid #c0392b;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 80px;
-      font-weight: bold;
-      color: #c0392b;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 10px;
-      user-select: none;
-    }
+    .table-big-btn { width: 100%; aspect-ratio: 1 / 1; background: white; border: 2px solid #c0392b; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 80px; font-weight: bold; color: #c0392b; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 10px; user-select: none; }
     .table-big-btn.no-table { font-size: 28px; color: #999; }
-    .table-dropdown {
-      display: none;
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      padding: 10px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
+    .table-dropdown { display: none; background: white; border: 1px solid #ddd; border-radius: 12px; padding: 10px; margin-bottom: 10px; flex-wrap: wrap; gap: 6px; }
     .table-dropdown.open { display: flex; }
-    .table-opt-btn {
-      background: #f0f0f0;
-      border: 1px solid #ddd;
-      padding: 8px 12px;
-      border-radius: 12px;
-      font-size: 16px;
-      cursor: pointer;
-      min-width: 45px;
-      text-align: center;
-    }
+    .table-opt-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 8px 12px; border-radius: 12px; font-size: 16px; cursor: pointer; min-width: 45px; text-align: center; }
     .table-opt-btn.active { background: #c0392b; color: white; border-color: #c0392b; }
-
     .category-nav { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin-bottom: 12px; }
     .category-nav button { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 14px; cursor: pointer; transition: 0.2s; }
     .category-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
@@ -133,7 +96,6 @@
     💡 点击上方正方形选择桌号，再选辣度与数量。
   </div>
 
-  <!-- 大正方形桌号选择器 -->
   <div class="table-big-btn" id="tableBigBtn" onclick="toggleTableDropdown()">
     <span id="tableBigText">选桌</span>
   </div>
@@ -150,7 +112,8 @@
     <button class="active" onclick="filterCategory('all', event)">全部</button>
     <button onclick="filterCategory('meat', event)">🥩 肉类</button>
     <button onclick="filterCategory('veg', event)">🥬 蔬菜</button>
-    <button onclick="filterCategory('staple', event)">🍚 主食</button>
+    <button onclick="filterCategory('seafood', event)">🦐 海鲜</button>
+    <button onclick="filterCategory('noodle', event)">🍜 面食</button>
     <button onclick="filterCategory('drink', event)">🥤 饮品</button>
     <button onclick="filterCategory('other', event)">🥜 其他</button>
   </div>
@@ -186,7 +149,8 @@
     <button class="active" onclick="filterAdminCategory('all', event)">全部</button>
     <button onclick="filterAdminCategory('meat', event)">🥩 肉类</button>
     <button onclick="filterAdminCategory('veg', event)">🥬 蔬菜</button>
-    <button onclick="filterAdminCategory('staple', event)">🍚 主食</button>
+    <button onclick="filterAdminCategory('seafood', event)">🦐 海鲜</button>
+    <button onclick="filterAdminCategory('noodle', event)">🍜 面食</button>
     <button onclick="filterAdminCategory('drink', event)">🥤 饮品</button>
     <button onclick="filterAdminCategory('other', event)">🥜 其他</button>
   </div>
@@ -224,24 +188,25 @@
     { id:7, name:"鱼豆腐", price:2, category:"meat", img:"https://i.ibb.co/dwzbwCh4/26dde9e342b203bfa8c54f3950b3a926.jpg" },
     { id:8, name:"掌中宝", price:3, category:"meat", img:"https://i.ibb.co/Kzh6Rdpb/61dfd3be18c6fe664881f2a98b7c4a5090b099cadec32d0afb64c48a6f5e7f68-0.jpg" },
     { id:9, name:"烤肠", price:2, category:"meat", img:"https://i.ibb.co/Mkrp23q1/496cc6b96d8a909f638b1eb4a2735190.jpg" },
-    { id:10, name:"牛心管", price:2, category:"meat", img:"https://i.ibb.co/B0MzstZ/9a9d35c463c18423a92c6fc8d819079d.jpg" },
+    { id:10, name:"牛心管", price:3, category:"meat", img:"https://i.ibb.co/B0MzstZ/9a9d35c463c18423a92c6fc8d819079d.jpg" },
     { id:11, name:"烤鸡翅中", price:7, category:"meat", img:"https://i.ibb.co/qY30QHJY/ddf7431d857d3cefa08bbeffe90801e6.png" },
     { id:13, name:"碳烤猪皮", price:1, category:"meat", img:"https://i.ibb.co/wrpLtCgW/aae50afe705b02065d90870708c0d569.jpg" },
-    { id:14, name:"烤面筋", price:2, category:"meat", img:"https://i.ibb.co/670qqrbX/Screenshot-2026-0706-165326.png" },
-    { id:15, name:"烤鱿鱼", price:8, category:"meat", img:"https://i.ibb.co/FqyzqYnY/Screenshot-2026-0706-165510.png" },
+    { id:14, name:"烤面筋", price:2, category:"noodle", img:"https://i.ibb.co/670qqrbX/Screenshot-2026-0706-165326.png" },
+    { id:15, name:"烤鱿鱼", price:8, category:"seafood", img:"https://i.ibb.co/FqyzqYnY/Screenshot-2026-0706-165510.png" },
     { id:16, name:"烤韭菜", price:10, category:"veg", img:"https://i.ibb.co/Kp1dNdpP/Screenshot-2026-0706-165559.png" },
     { id:17, name:"烤豆干", price:1, category:"veg", img:"https://i.ibb.co/ZR251DP7/3a782ca29e912bfafeb7b9e095a78f04.jpg" },
     { id:18, name:"烤辣椒", price:1, category:"veg", img:"https://i.ibb.co/nNsDNDvm/5ff65d2f55f87ff5d8654091eec03885.jpg" },
     { id:19, name:"烤包菜", price:10, category:"veg", img:"https://i.ibb.co/C5k4QNjL/Screenshot-2026-0706-170050.png" },
     { id:20, name:"烤金针菇", price:10, category:"veg", img:"https://i.ibb.co/4RQJ2bsb/Screenshot-2026-0706-170208.png" },
-    { id:21, name:"烤馒头", price:1, category:"staple", img:"https://i.ibb.co/mrjTyQbX/232d201774932e935144c5a72f23b9ab.jpg" },
+    { id:21, name:"烤馒头", price:1, category:"noodle", img:"https://i.ibb.co/mrjTyQbX/232d201774932e935144c5a72f23b9ab.jpg" },
     { id:22, name:"卤花生", price:8, category:"other", img:"https://i.ibb.co/Q3Z0fnm7/Screenshot-2026-0706-170416.png" },
     { id:23, name:"黄瓜拌面筋", price:16, category:"other", img:"https://i.ibb.co/RT9qLQSD/Screenshot-2026-0706-170533.png" },
     { id:24, name:"青岛啤酒", price:8, category:"drink", img:"https://placehold.co/150x150/eee/999?text=啤酒" },
     { id:25, name:"大窑", price:5, category:"drink", img:"https://placehold.co/150x150/eee/999?text=大窑" },
     { id:26, name:"京8啤酒", price:8, category:"drink", img:"https://placehold.co/150x150/eee/999?text=京8" },
     { id:27, name:"崂山啤酒", price:6, category:"drink", img:"https://placehold.co/150x150/eee/999?text=崂山" },
-    { id:28, name:"烤马步鱼", price:4, category:"meat", img:"https://i.ibb.co/r2hPt5rT/c1fe43858aa77f0ebd35fcb3f9cb3f60.jpg" }
+    { id:28, name:"烤马步鱼", price:4, category:"seafood", img:"https://i.ibb.co/r2hPt5rT/c1fe43858aa77f0ebd35fcb3f9cb3f60.jpg" },
+    { id:29, name:"雪碧", price:3, category:"drink", img:"https://placehold.co/150x150/eee/999?text=雪碧" }
   ];
 
   const spicyLevels = ['不辣', '微辣', '中辣', '特辣'];
@@ -270,24 +235,15 @@
     }
   }
 
-  // 桌号选择器
   function toggleTableDropdown() { document.getElementById('tableDropdown').classList.toggle('open'); }
   function updateTableDisplay() {
     const bigText = document.getElementById('tableBigText');
     const bigBtn = document.getElementById('tableBigBtn');
-    if (customerTable === '') {
-      bigText.innerText = '选桌';
-      bigBtn.classList.add('no-table');
-    } else {
-      bigText.innerText = customerTable;
-      bigBtn.classList.remove('no-table');
-    }
+    if (customerTable === '') { bigText.innerText = '选桌'; bigBtn.classList.add('no-table'); }
+    else { bigText.innerText = customerTable; bigBtn.classList.remove('no-table'); }
     document.getElementById('tableDropdown').classList.remove('open');
   }
-  function setCustomerTable(num, closeDropdown = true) {
-    customerTable = num;
-    updateTableDisplay();
-  }
+  function setCustomerTable(num, closeDropdown = true) { customerTable = num; updateTableDisplay(); }
   updateTableDisplay();
 
   if (isAdmin) {
@@ -300,9 +256,7 @@
     renderMenu('all');
   }
 
-  function getTotalQty(itemId, cartObj = cart) {
-    return Object.values(cartObj[itemId] || {}).reduce((a, b) => a + b, 0);
-  }
+  function getTotalQty(itemId, cartObj = cart) { return Object.values(cartObj[itemId] || {}).reduce((a, b) => a + b, 0); }
 
   function renderMenu(filter = 'all', containerId = 'menuContainer', cartObj = cart, updateCartFn = updateCartBar, isAdminPanel = false) {
     const container = document.getElementById(containerId);
@@ -691,17 +645,17 @@
     ['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],
     ['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],['青',[0xC7,0xE0]],
     ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xDB,0xC9]],
-    ['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],
-    ['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],
-    ['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],
-    ['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],['量',[0xC1,0xBF]],['度',[0xB6,0xC8]],
-    ['不',[0xB2,0xBB]],['微',[0xCE,0xA2]],['特',[0xCC,0xD8]],['谢',[0xD0,0xBB]],
-    ['惠',[0xBB,0xDD]],['顾',[0xB9,0xCB]],['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],
-    ['再',[0xD4,0xD9]],['次',[0xB4,0xCE]],['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],
-    ['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],
-    ['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],['理',[0xC0,0xED]],['：',[0xA3,0xBA]],
-    ['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],['辣',[0xC0,0xB1]],['盐',[0xD1,0xCE]],
-    ['少',[0xC9,0xD9]],['注',[0xD7,0xA2]]
+    ['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
+    ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
+    ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
+    ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
+    ['量',[0xC1,0xBF]],['度',[0xB6,0xC8]],['不',[0xB2,0xBB]],['微',[0xCE,0xA2]],
+    ['特',[0xCC,0xD8]],['谢',[0xD0,0xBB]],['惠',[0xBB,0xDD]],['顾',[0xB9,0xCB]],
+    ['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],['再',[0xD4,0xD9]],['次',[0xB4,0xCE]],
+    ['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],
+    ['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],
+    ['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],
+    ['辣',[0xC0,0xB1]],['盐',[0xD1,0xCE]],['少',[0xC9,0xD9]],['注',[0xD7,0xA2]]
   ]);
 
   function encodeGBK(str) {
