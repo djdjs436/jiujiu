@@ -8,60 +8,65 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f8f8f8; max-width: 500px; margin: 0 auto; padding: 10px; }
-    .header { background: #c0392b; color: white; padding: 18px; text-align: center; border-radius: 12px; margin-bottom: 10px; }
-    .header h1 { font-size: 26px; margin-bottom: 4px; }
+    body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f8f8f8; max-width: 500px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; }
+    .header { background: #c0392b; color: white; padding: 12px 18px; text-align: center; border-radius: 0 0 12px 12px; flex-shrink: 0; }
+    .header h1 { font-size: 24px; margin-bottom: 4px; }
     .header p { font-size: 14px; opacity: 0.9; }
-    .hint-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; color: #856404; }
-    .table-big-btn { width: 100%; aspect-ratio: 1 / 1; background: white; border: 2px solid #c0392b; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 80px; font-weight: bold; color: #c0392b; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 10px; user-select: none; }
-    .table-big-btn.no-table { font-size: 28px; color: #999; }
-    .table-dropdown { display: none; background: white; border: 1px solid #ddd; border-radius: 12px; padding: 10px; margin-bottom: 10px; flex-wrap: wrap; gap: 6px; }
+    .hint-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 6px 12px; font-size: 12px; color: #856404; flex-shrink: 0; }
+    .table-row { display: flex; align-items: center; padding: 8px 12px; background: white; flex-shrink: 0; position: relative; }
+    .table-big-btn { width: 60px; height: 60px; background: white; border: 2px solid #c0392b; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #c0392b; cursor: pointer; margin-right: 10px; }
+    .table-big-btn.no-table { font-size: 14px; color: #999; }
+    .table-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 12px; padding: 10px; flex-wrap: wrap; gap: 6px; z-index: 100; }
     .table-dropdown.open { display: flex; }
     .table-opt-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 8px 12px; border-radius: 12px; font-size: 16px; cursor: pointer; min-width: 45px; text-align: center; }
     .table-opt-btn.active { background: #c0392b; color: white; border-color: #c0392b; }
-    .category-nav { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin-bottom: 12px; }
-    .category-nav button { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 14px; cursor: pointer; transition: 0.2s; }
-    .category-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
+    .main-container { display: flex; flex: 1; overflow: hidden; }
+    .left-categories { width: 80px; background: white; border-right: 1px solid #eee; overflow-y: auto; flex-shrink: 0; padding-top: 5px; }
+    .left-categories button { display: block; width: 100%; background: white; border: none; padding: 12px 6px; font-size: 13px; cursor: pointer; text-align: center; }
+    .left-categories button.active { background: #c0392b; color: white; font-weight: bold; }
+    .right-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .menu-scroll { flex: 1; overflow-y: auto; padding: 10px; }
     .menu-list { display: flex; flex-direction: column; gap: 10px; }
-    .menu-item { display: flex; background: white; border-radius: 12px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); align-items: center; }
-    .menu-item img { width: 70px; height: 70px; border-radius: 10px; object-fit: cover; margin-right: 12px; background: #eee; }
+    .menu-item { display: flex; background: white; border-radius: 12px; padding: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); align-items: flex-start; }
+    .menu-item img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; margin-right: 10px; background: #eee; flex-shrink: 0; }
     .item-info { flex: 1; }
-    .item-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
-    .item-price { color: #c0392b; font-weight: bold; font-size: 16px; }
-    .spicy-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
-    .spicy-tag { background: #f0f0f0; border: 1px solid #ddd; padding: 4px 10px; border-radius: 15px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
+    .item-name { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
+    .item-price { color: #c0392b; font-weight: bold; font-size: 15px; }
+    .spicy-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+    .spicy-tag { background: #f0f0f0; border: 1px solid #ddd; padding: 2px 8px; border-radius: 12px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 2px; }
     .spicy-tag.active { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
     .spicy-tag.selected { border: 2px solid #c0392b; box-shadow: 0 0 0 1px #c0392b; }
-    .qty-num { font-size: 16px; min-width: 22px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 4px; display: inline-block; margin-left: 6px; }
-    .clear-item-btn { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; line-height: 20px; text-align: center; cursor: pointer; margin-left: 6px; }
-    .quick-adjust { display: flex; gap: 8px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
+    .qty-row { display: flex; align-items: center; margin-top: 4px; }
+    .qty-num { font-size: 14px; min-width: 18px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 3px; display: inline-block; margin-left: 4px; }
+    .clear-item-btn { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center; cursor: pointer; margin-left: 4px; }
+    .quick-adjust { display: flex; gap: 4px; margin-top: 4px; align-items: center; flex-wrap: wrap; }
     .stepper { display: flex; align-items: center; gap: 0; }
-    .stepper-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 8px 14px; font-size: 16px; cursor: pointer; min-width: 40px; }
-    .stepper-btn.left { border-radius: 20px 0 0 20px; }
-    .stepper-btn.right { border-radius: 0 20px 20px 0; }
-    .stepper-val { background: #fff; border-top: 1px solid #e0a0a0; border-bottom: 1px solid #e0a0a0; padding: 8px 10px; font-size: 16px; font-weight: bold; color: #c0392b; min-width: 40px; text-align: center; }
-    .spicy-indicator { font-size: 14px; color: #666; margin-right: 8px; }
-    .cart-bar { position: sticky; bottom: 0; background: white; box-shadow: 0 -3px 10px rgba(0,0,0,0.08); padding: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; margin-top: 15px; }
-    .cart-info { font-size: 16px; }
-    .cart-total { color: #c0392b; font-weight: bold; font-size: 18px; }
-    .submit-btn { background: #c0392b; color: white; border: none; padding: 10px 24px; border-radius: 25px; font-size: 16px; cursor: pointer; }
-    .admin-link { text-align: center; margin-top: 5px; font-size: 12px; color: #999; }
+    .stepper-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; font-size: 13px; cursor: pointer; min-width: 32px; }
+    .stepper-btn.left { border-radius: 12px 0 0 12px; }
+    .stepper-btn.right { border-radius: 0 12px 12px 0; }
+    .stepper-val { background: #fff; border-top: 1px solid #e0a0a0; border-bottom: 1px solid #e0a0a0; padding: 4px 6px; font-size: 13px; font-weight: bold; color: #c0392b; min-width: 28px; text-align: center; }
+    .spicy-indicator { font-size: 11px; color: #666; margin-right: 4px; }
+    .cart-bar { background: white; box-shadow: 0 -2px 6px rgba(0,0,0,0.08); padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .cart-info { font-size: 15px; }
+    .cart-total { color: #c0392b; font-weight: bold; font-size: 17px; }
+    .submit-btn { background: #c0392b; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 15px; cursor: pointer; }
+    .admin-link { text-align: center; font-size: 11px; color: #999; background: white; padding: 5px; flex-shrink: 0; }
     .admin-link a { color: #999; text-decoration: none; }
-    #adminPanel { display: none; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; }
-    .table-nav { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
-    .table-nav button { background: #f0f0f0; border: 1px solid #ddd; padding: 6px 12px; border-radius: 15px; font-size: 13px; cursor: pointer; }
+    #adminPanel, #adminOrderPanel { display: none; background: white; padding: 15px; border-radius: 12px; margin: 10px; flex:1; overflow-y: auto; }
+    .table-nav { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+    .table-nav button { background: #f0f0f0; border: 1px solid #ddd; padding: 5px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
     .table-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
     .search-box { display: flex; gap: 5px; margin-bottom: 10px; }
-    .search-box input { flex: 1; padding: 6px 10px; border: 1px solid #ddd; border-radius: 15px; font-size: 14px; }
-    .search-box button { background: #c0392b; color: white; border: none; padding: 6px 15px; border-radius: 15px; cursor: pointer; }
-    .order-card { border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-bottom: 12px; animation: fadeIn 0.3s; background: #fff; }
+    .search-box input { flex: 1; padding: 6px 10px; border: 1px solid #ddd; border-radius: 12px; font-size: 13px; }
+    .search-box button { background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 12px; cursor: pointer; }
+    .order-card { border: 1px solid #eee; padding: 10px; border-radius: 10px; margin-bottom: 10px; animation: fadeIn 0.3s; background: #fff; }
     .order-card.settled { opacity: 0.6; background: #f9f9f9; }
-    .print-btn { background: #27ae60; color: white; border: none; padding: 6px 16px; border-radius: 15px; font-size: 13px; cursor: pointer; margin-right: 5px; }
-    .clear-btn { background: #e67e22; color: white; border: none; padding: 8px 20px; border-radius: 15px; margin-bottom: 15px; cursor: pointer; }
-    .bluetooth-btn { background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; display: none; }
-    .settle-btn { background: #9b59b6; color: white; border: none; padding: 6px 14px; border-radius: 15px; font-size: 13px; cursor: pointer; margin-left: 5px; }
-    .status { margin: 8px 0; font-size: 14px; color: #555; }
-    .admin-order-btn { background: #8e44ad; color: white; border: none; padding: 8px 16px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; }
+    .print-btn { background: #27ae60; color: white; border: none; padding: 4px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; margin-right: 4px; }
+    .clear-btn { background: #e67e22; color: white; border: none; padding: 6px 16px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
+    .bluetooth-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; display: none; }
+    .settle-btn { background: #9b59b6; color: white; border: none; padding: 5px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; margin-left: 4px; }
+    .status { margin: 6px 0; font-size: 12px; color: #555; }
+    .admin-order-btn { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
     #loginBox { max-width: 300px; margin: 60px auto; background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
@@ -87,44 +92,54 @@
   </style>
 </head>
 <body>
-<div id="customerView">
+<div id="customerView" style="display:flex; flex-direction:column; height:100vh;">
   <div class="header">
     <h1>久久家一元烧烤</h1>
     <p>扫码点餐 · 干净卫生 · 现串现烤</p>
   </div>
-  <div class="hint-bar">
-    💡 点击上方正方形选择桌号，再选辣度与数量。
-  </div>
-  <div class="table-big-btn" id="tableBigBtn" onclick="toggleTableDropdown()">
-    <span id="tableBigText">选桌</span>
-  </div>
-  <div class="table-dropdown" id="tableDropdown">
-    <button class="table-opt-btn" onclick="setCustomerTable('', true)">无桌</button>
-    <script>
-      for (let i = 1; i <= 10; i++) {
-        document.write('<button class="table-opt-btn" onclick="setCustomerTable(' + i + ', true)">' + i + '号</button>');
-      }
-    </script>
+  <div class="hint-bar">💡 点击正方形选桌，选辣度后用步进器调数量</div>
+  <div class="table-row">
+    <div class="table-big-btn" id="tableBigBtn" onclick="toggleTableDropdown()">
+      <span id="tableBigText">选桌</span>
+    </div>
+    <div class="table-dropdown" id="tableDropdown">
+      <button class="table-opt-btn" onclick="setCustomerTable('', true)">无桌</button>
+      <script>
+        for (let i = 1; i <= 10; i++) {
+          document.write('<button class="table-opt-btn" onclick="setCustomerTable(' + i + ', true)">' + i + '号</button>');
+        }
+      </script>
+    </div>
+    <div style="flex:1; text-align:right;">
+      <button class="submit-btn" onclick="showConfirmModal()" style="font-size:16px;">下单</button>
+    </div>
   </div>
 
-  <div class="category-nav">
-    <button class="active" onclick="filterCategory('all', event)">全部</button>
-    <button onclick="filterCategory('meat', event)">🥩 肉类</button>
-    <button onclick="filterCategory('veg', event)">🥬 蔬菜</button>
-    <button onclick="filterCategory('seafood', event)">🦐 海鲜</button>
-    <button onclick="filterCategory('noodle', event)">🍜 面食</button>
-    <button onclick="filterCategory('drink', event)">🥤 饮品</button>
-    <button onclick="filterCategory('other', event)">🥜 其他</button>
-  </div>
-  <div class="menu-list" id="menuContainer"></div>
-  <div class="cart-bar">
-    <div class="cart-info">
-      已选 <span id="cartCount">0</span> 件 | 合计 <span class="cart-total" id="cartTotal">0.00</span> 元
+  <div class="main-container">
+    <div class="left-categories" id="leftCategories">
+      <button class="active" onclick="filterCategory('all', event)">全部</button>
+      <button onclick="filterCategory('meat', event)">🥩肉类</button>
+      <button onclick="filterCategory('veg', event)">🥬蔬菜</button>
+      <button onclick="filterCategory('seafood', event)">🦐海鲜</button>
+      <button onclick="filterCategory('noodle', event)">🍜面食</button>
+      <button onclick="filterCategory('drink', event)">🥤饮品</button>
+      <button onclick="filterCategory('other', event)">🥜其他</button>
     </div>
-    <button class="submit-btn" onclick="showConfirmModal()">下单</button>
+    <div class="right-content">
+      <div class="menu-scroll" id="menuScroll">
+        <div class="menu-list" id="menuContainer"></div>
+      </div>
+      <div class="cart-bar">
+        <div class="cart-info">
+          已选 <span id="cartCount">0</span> 件 | 合计 <span class="cart-total" id="cartTotal">0.00</span> 元
+        </div>
+      </div>
+    </div>
   </div>
+  <div class="admin-link" id="adminLink"><a href="?admin">🔐 店家管理</a></div>
 </div>
-<div id="adminPanel">
+
+<div id="adminPanel" style="display:none;">
   <h3 style="margin-bottom:15px;">📋 实时订单（自动接收）</h3>
   <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
   <div id="printerStatus" class="status">打印机未连接</div>
@@ -142,23 +157,29 @@
   <div id="orderList"></div>
   <button onclick="hideAdmin()" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回点餐页</button>
 </div>
-<div id="adminOrderPanel" style="display:none; background:white; padding:15px; border-radius:12px; margin-top:15px;">
+<div id="adminOrderPanel" style="display:none;">
   <h3>📝 代客点餐</h3>
-  <div class="category-nav" id="adminCategoryNav">
-    <button class="active" onclick="filterAdminCategory('all', event)">全部</button>
-    <button onclick="filterAdminCategory('meat', event)">🥩 肉类</button>
-    <button onclick="filterAdminCategory('veg', event)">🥬 蔬菜</button>
-    <button onclick="filterAdminCategory('seafood', event)">🦐 海鲜</button>
-    <button onclick="filterAdminCategory('noodle', event)">🍜 面食</button>
-    <button onclick="filterAdminCategory('drink', event)">🥤 饮品</button>
-    <button onclick="filterAdminCategory('other', event)">🥜 其他</button>
-  </div>
-  <div class="menu-list" id="adminMenuContainer"></div>
-  <div class="cart-bar">
-    <div class="cart-info">
-      已选 <span id="adminCartCount">0</span> 件 | 合计 <span class="cart-total" id="adminCartTotal">0.00</span> 元
+  <div class="main-container">
+    <div class="left-categories" id="adminLeftCategories">
+      <button class="active" onclick="filterAdminCategory('all', event)">全部</button>
+      <button onclick="filterAdminCategory('meat', event)">🥩肉类</button>
+      <button onclick="filterAdminCategory('veg', event)">🥬蔬菜</button>
+      <button onclick="filterAdminCategory('seafood', event)">🦐海鲜</button>
+      <button onclick="filterAdminCategory('noodle', event)">🍜面食</button>
+      <button onclick="filterAdminCategory('drink', event)">🥤饮品</button>
+      <button onclick="filterAdminCategory('other', event)">🥜其他</button>
     </div>
-    <button class="submit-btn" onclick="showAdminConfirmModal()">下单</button>
+    <div class="right-content">
+      <div class="menu-scroll">
+        <div class="menu-list" id="adminMenuContainer"></div>
+      </div>
+      <div class="cart-bar">
+        <div class="cart-info">
+          已选 <span id="adminCartCount">0</span> 件 | 合计 <span class="cart-total" id="adminCartTotal">0.00</span> 元
+        </div>
+        <button class="submit-btn" onclick="showAdminConfirmModal()">下单</button>
+      </div>
+    </div>
   </div>
   <button onclick="hideAdminOrderPanel()" style="margin-top:10px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回订单管理</button>
 </div>
@@ -178,34 +199,34 @@
   const ordersRef = database.ref('orders');
 
   const menu = [
-    { id:1, name:"大串猪肉", price:1, category:"meat", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
-    { id:2, name:"鲜切羊肉", price:3, category:"meat", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
-    { id:3, name:"鸡翅尖", price:2, category:"meat", img:"https://i.ibb.co/Q7V9nRMn/13fc9967947185e58b1cf4417b25f489.jpg" },
-    { id:4, name:"猪脆骨", price:2.5, category:"meat", img:"https://i.ibb.co/5hBXNf0y/46cf9a75aee33c3f873e43f6c6d9594cd6ac19c89e28be02a502cc061c2a6523-0.png" },
-    { id:5, name:"蒜瓣肉", price:2, category:"meat", img:"https://i.ibb.co/LD9JphHr/6942b374c94750f5c0328524b98c62b3c83f3ff1809f2ded53acf24592b5f090-0.jpg" },
-    { id:6, name:"望京小腰", price:3, category:"meat", img:"https://i.ibb.co/d4nn96DF/7d8d592666932d658f373957b87a315777c3fcd4902c7af7e449cf4ee9b6a19a-0.webp" },
-    { id:7, name:"鱼豆腐", price:2, category:"meat", img:"https://i.ibb.co/dwzbwCh4/26dde9e342b203bfa8c54f3950b3a926.jpg" },
-    { id:8, name:"掌中宝", price:3, category:"meat", img:"https://i.ibb.co/Kzh6Rdpb/61dfd3be18c6fe664881f2a98b7c4a5090b099cadec32d0afb64c48a6f5e7f68-0.jpg" },
-    { id:9, name:"烤肠", price:2, category:"meat", img:"https://i.ibb.co/Mkrp23q1/496cc6b96d8a909f638b1eb4a2735190.jpg" },
-    { id:10, name:"牛心管", price:3, category:"meat", img:"https://i.ibb.co/B0MzstZ/9a9d35c463c18423a92c6fc8d819079d.jpg" },
-    { id:11, name:"烤鸡翅中", price:7, category:"meat", img:"https://i.ibb.co/qY30QHJY/ddf7431d857d3cefa08bbeffe90801e6.png" },
-    { id:13, name:"碳烤猪皮", price:1, category:"meat", img:"https://i.ibb.co/wrpLtCgW/aae50afe705b02065d90870708c0d569.jpg" },
-    { id:14, name:"烤面筋", price:2, category:"noodle", img:"https://i.ibb.co/670qqrbX/Screenshot-2026-0706-165326.png" },
-    { id:15, name:"烤鱿鱼", price:8, category:"seafood", img:"https://i.ibb.co/FqyzqYnY/Screenshot-2026-0706-165510.png" },
-    { id:16, name:"烤韭菜", price:10, category:"veg", img:"https://i.ibb.co/Kp1dNdpP/Screenshot-2026-0706-165559.png" },
-    { id:17, name:"烤豆干", price:1, category:"veg", img:"https://i.ibb.co/ZR251DP7/3a782ca29e912bfafeb7b9e095a78f04.jpg" },
-    { id:18, name:"烤辣椒", price:1, category:"veg", img:"https://i.ibb.co/nNsDNDvm/5ff65d2f55f87ff5d8654091eec03885.jpg" },
-    { id:19, name:"烤包菜", price:10, category:"veg", img:"https://i.ibb.co/C5k4QNjL/Screenshot-2026-0706-170050.png" },
-    { id:20, name:"烤金针菇", price:10, category:"veg", img:"https://i.ibb.co/4RQJ2bsb/Screenshot-2026-0706-170208.png" },
-    { id:21, name:"烤馒头", price:1, category:"noodle", img:"https://i.ibb.co/mrjTyQbX/232d201774932e935144c5a72f23b9ab.jpg" },
-    { id:22, name:"卤花生", price:8, category:"other", img:"https://i.ibb.co/Q3Z0fnm7/Screenshot-2026-0706-170416.png" },
-    { id:23, name:"黄瓜拌面筋", price:16, category:"other", img:"https://i.ibb.co/RT9qLQSD/Screenshot-2026-0706-170533.png" },
-    { id:24, name:"青岛啤酒", price:8, category:"drink", img:"https://placehold.co/150x150/eee/999?text=啤酒" },
-    { id:25, name:"大窑", price:5, category:"drink", img:"https://placehold.co/150x150/eee/999?text=大窑" },
-    { id:26, name:"京8啤酒", price:8, category:"drink", img:"https://placehold.co/150x150/eee/999?text=京8" },
-    { id:27, name:"崂山啤酒", price:6, category:"drink", img:"https://placehold.co/150x150/eee/999?text=崂山" },
-    { id:28, name:"烤马步鱼", price:4, category:"seafood", img:"https://i.ibb.co/r2hPt5rT/c1fe43858aa77f0ebd35fcb3f9cb3f60.jpg" },
-    { id:29, name:"雪碧", price:3, category:"drink", img:"https://placehold.co/150x150/eee/999?text=雪碧" }
+    { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
+    { id:2, name:"鲜切羊肉", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
+    { id:3, name:"鸡翅尖", price:2, category:"meat", unit:"串", img:"https://i.ibb.co/Q7V9nRMn/13fc9967947185e58b1cf4417b25f489.jpg" },
+    { id:4, name:"猪脆骨", price:2.5, category:"meat", unit:"串", img:"https://i.ibb.co/5hBXNf0y/46cf9a75aee33c3f873e43f6c6d9594cd6ac19c89e28be02a502cc061c2a6523-0.png" },
+    { id:5, name:"蒜瓣肉", price:2, category:"meat", unit:"串", img:"https://i.ibb.co/LD9JphHr/6942b374c94750f5c0328524b98c62b3c83f3ff1809f2ded53acf24592b5f090-0.jpg" },
+    { id:6, name:"望京小腰", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/d4nn96DF/7d8d592666932d658f373957b87a315777c3fcd4902c7af7e449cf4ee9b6a19a-0.webp" },
+    { id:7, name:"鱼豆腐", price:2, category:"meat", unit:"串", img:"https://i.ibb.co/dwzbwCh4/26dde9e342b203bfa8c54f3950b3a926.jpg" },
+    { id:8, name:"掌中宝", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/Kzh6Rdpb/61dfd3be18c6fe664881f2a98b7c4a5090b099cadec32d0afb64c48a6f5e7f68-0.jpg" },
+    { id:9, name:"烤肠", price:2, category:"meat", unit:"串", img:"https://i.ibb.co/Mkrp23q1/496cc6b96d8a909f638b1eb4a2735190.jpg" },
+    { id:10, name:"牛心管", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/B0MzstZ/9a9d35c463c18423a92c6fc8d819079d.jpg" },
+    { id:11, name:"烤鸡翅中", price:7, category:"meat", unit:"串", img:"https://i.ibb.co/qY30QHJY/ddf7431d857d3cefa08bbeffe90801e6.png" },
+    { id:13, name:"碳烤猪皮", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/wrpLtCgW/aae50afe705b02065d90870708c0d569.jpg" },
+    { id:14, name:"烤面筋", price:2, category:"noodle", unit:"串", img:"https://i.ibb.co/670qqrbX/Screenshot-2026-0706-165326.png" },
+    { id:15, name:"烤鱿鱼", price:8, category:"seafood", unit:"串", img:"https://i.ibb.co/FqyzqYnY/Screenshot-2026-0706-165510.png" },
+    { id:16, name:"烤韭菜", price:10, category:"veg", unit:"份", img:"https://i.ibb.co/Kp1dNdpP/Screenshot-2026-0706-165559.png" },
+    { id:17, name:"烤豆干", price:1, category:"veg", unit:"串", img:"https://i.ibb.co/ZR251DP7/3a782ca29e912bfafeb7b9e095a78f04.jpg" },
+    { id:18, name:"烤辣椒", price:1, category:"veg", unit:"串", img:"https://i.ibb.co/nNsDNDvm/5ff65d2f55f87ff5d8654091eec03885.jpg" },
+    { id:19, name:"烤包菜", price:10, category:"veg", unit:"份", img:"https://i.ibb.co/C5k4QNjL/Screenshot-2026-0706-170050.png" },
+    { id:20, name:"烤金针菇", price:10, category:"veg", unit:"份", img:"https://i.ibb.co/4RQJ2bsb/Screenshot-2026-0706-170208.png" },
+    { id:21, name:"烤馒头", price:1, category:"noodle", unit:"串", img:"https://i.ibb.co/mrjTyQbX/232d201774932e935144c5a72f23b9ab.jpg" },
+    { id:22, name:"卤花生", price:8, category:"other", unit:"份", img:"https://i.ibb.co/Q3Z0fnm7/Screenshot-2026-0706-170416.png" },
+    { id:23, name:"黄瓜拌面筋", price:16, category:"other", unit:"份", img:"https://i.ibb.co/RT9qLQSD/Screenshot-2026-0706-170533.png" },
+    { id:24, name:"青岛啤酒", price:8, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=啤酒" },
+    { id:25, name:"大窑", price:5, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=大窑" },
+    { id:26, name:"京8啤酒", price:8, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=京8" },
+    { id:27, name:"崂山啤酒", price:6, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=崂山" },
+    { id:28, name:"烤马步鱼", price:4, category:"seafood", unit:"串", img:"https://i.ibb.co/r2hPt5rT/c1fe43858aa77f0ebd35fcb3f9cb3f60.jpg" },
+    { id:29, name:"雪碧", price:3, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=雪碧" }
   ];
 
   const spicyLevels = ['不辣', '微辣', '中辣', '特辣'];
@@ -234,6 +255,7 @@
     }
   }
 
+  // 桌号选择器
   function toggleTableDropdown() { document.getElementById('tableDropdown').classList.toggle('open'); }
   function updateTableDisplay() {
     const bigText = document.getElementById('tableBigText');
@@ -242,16 +264,19 @@
     else { bigText.innerText = customerTable; bigBtn.classList.remove('no-table'); }
     document.getElementById('tableDropdown').classList.remove('open');
   }
-  function setCustomerTable(num, closeDropdown = true) { customerTable = num; updateTableDisplay(); }
+  function setCustomerTable(num) { customerTable = num; updateTableDisplay(); }
   updateTableDisplay();
 
   if (isAdmin) {
+    document.getElementById('customerView').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+    document.getElementById('adminOrderPanel').style.display = 'none';
     showLoginForm();
   } else {
-    document.getElementById('customerView').style.display = 'block';
+    document.getElementById('customerView').style.display = 'flex';
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('adminOrderPanel').style.display = 'none';
-    document.body.insertAdjacentHTML('beforeend', '<div class="admin-link"><a href="?admin">🔐 店家管理</a></div>');
+    document.getElementById('adminLink').style.display = 'block';
     renderMenu('all');
   }
 
@@ -267,32 +292,33 @@
       const itemCart = cartObj[item.id] || {};
       const total = getTotalQty(item.id, cartObj);
       const type = isAdminPanel ? 'admin' : 'guest';
+      const unit = item.unit || '串';
 
       let tagsHtml = '';
       spicyLevels.forEach(level => {
         const qty = itemCart[level] || 0;
         const selectedClass = (level === curSpicy) ? ' selected' : '';
-        tagsHtml += '<span class="spicy-tag ' + (qty > 0 ? 'active' : '') + selectedClass + '" onclick="selectSpicy(\'' + level + '\', \'' + type + '\')">' + level + ' ' + qty + '</span>';
+        tagsHtml += `<span class="spicy-tag ${qty > 0 ? 'active' : ''}${selectedClass}" onclick="selectSpicy('${level}', '${type}')">${level} ${qty}</span>`;
       });
 
       let quickHtml = '';
       if (item.price < 6) {
         quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5</button><span class="stepper-val">5</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5</button></div>' +
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10</button><span class="stepper-val">10</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10</button></div>' +
+          '<span class="spicy-indicator">' + curSpicy + '</span>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5</button><span class="stepper-val">5' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5</button></div>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10</button><span class="stepper-val">10' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10</button></div>' +
           '</div>' +
           '<div class="quick-adjust">' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 20, \'' + type + '\')">+20串</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 30, \'' + type + '\')">+30串</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 40, \'' + type + '\')">+40串</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 50, \'' + type + '\')">+50串</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 20, \'' + type + '\')">+20' + unit + '</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 30, \'' + type + '\')">+30' + unit + '</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 40, \'' + type + '\')">+40' + unit + '</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 50, \'' + type + '\')">+50' + unit + '</button>' +
           '</div>';
       } else {
         quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
+          '<span class="spicy-indicator">' + curSpicy + '</span>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
           '</div>';
       }
 
@@ -303,8 +329,8 @@
           '<div class="item-name">' + item.name + '</div>' +
           '<div class="item-price">¥' + item.price + '</div>' +
           '<div class="spicy-tags">' + tagsHtml + '</div>' +
-          '<div style="margin-top:4px; display:flex; align-items:center;">' +
-            '<span class="qty-num" onclick="editDetail(' + item.id + ', \'' + type + '\')">' + total + '</span> 串/份' +
+          '<div class="qty-row">' +
+            '<span class="qty-num" onclick="editDetail(' + item.id + ', \'' + type + '\')">' + total + '</span> ' + unit +
             '<button class="clear-item-btn" onclick="clearItem(' + item.id + ', \'' + type + '\')" title="清除此菜品">✕</button>' +
           '</div>' +
           quickHtml +
@@ -406,7 +432,7 @@
   }
 
   function filterCategory(cat, e) {
-    document.querySelectorAll('#customerView .category-nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#leftCategories button').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
     currentFilter = cat;
     renderMenu(cat);
@@ -476,7 +502,7 @@
 
   function showAdminOrderPanel() { document.getElementById('adminPanel').style.display = 'none'; document.getElementById('adminOrderPanel').style.display = 'block'; currentAdminFilter = 'all'; renderAdminMenu(); }
   function hideAdminOrderPanel() { document.getElementById('adminOrderPanel').style.display = 'none'; document.getElementById('adminPanel').style.display = 'block'; renderOrders(); }
-  function filterAdminCategory(cat, e) { document.querySelectorAll('#adminCategoryNav button').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); currentAdminFilter = cat; renderAdminMenu(); }
+  function filterAdminCategory(cat, e) { document.querySelectorAll('#adminLeftCategories button').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); currentAdminFilter = cat; renderAdminMenu(); }
   function renderAdminMenu() { renderMenu(currentAdminFilter, 'adminMenuContainer', adminCart, updateAdminCartBar, true); }
   function updateAdminCartBar() {
     const countSpan = document.getElementById('adminCartCount'); const totalSpan = document.getElementById('adminCartTotal');
@@ -592,13 +618,16 @@
   function hideAdmin() { window.location.href = window.location.pathname; }
 
   function showLoginForm() {
-    document.getElementById('customerView').style.display = 'none'; document.getElementById('adminPanel').style.display = 'none'; document.getElementById('adminOrderPanel').style.display = 'none';
+    document.getElementById('customerView').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('adminOrderPanel').style.display = 'none';
     document.body.insertAdjacentHTML('beforeend', '<div id="loginBox"><h3>🔐 店家登录</h3><input id="pwdInput" type="password" placeholder="请输入管理密码"><button onclick="checkPassword()">进入管理</button><p id="loginError"></p><a href="' + window.location.pathname + '" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a></div>');
   }
 
   function checkPassword() {
     if (document.getElementById('pwdInput').value === ADMIN_PASSWORD) {
-      document.getElementById('loginBox').remove(); document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('loginBox').remove();
+      document.getElementById('adminPanel').style.display = 'block';
       if (navigator.bluetooth) document.getElementById('connectPrinterBtn').style.display = 'inline-block';
       initTableNav(); startListening();
     } else document.getElementById('loginError').innerText = '密码错误，请重试';
