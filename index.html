@@ -21,9 +21,10 @@
     .table-opt-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 8px 12px; border-radius: 12px; font-size: 16px; cursor: pointer; min-width: 45px; text-align: center; }
     .table-opt-btn.active { background: #c0392b; color: white; border-color: #c0392b; }
     .main-container { display: flex; flex: 1; overflow: hidden; }
-    .left-categories { width: 80px; background: white; border-right: 1px solid #eee; overflow-y: auto; flex-shrink: 0; padding-top: 5px; }
+    .left-categories { width: 80px; background: white; border-right: 1px solid #eee; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; padding-top: 5px; }
     .left-categories button { display: block; width: 100%; background: white; border: none; padding: 12px 6px; font-size: 13px; cursor: pointer; text-align: center; }
     .left-categories button.active { background: #c0392b; color: white; font-weight: bold; }
+    .back-btn { margin-top: auto; background: #7f8c8d; color: white; border: none; padding: 12px 6px; font-size: 13px; cursor: pointer; text-align: center; }
     .right-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .menu-scroll { flex: 1; overflow-y: auto; padding: 10px; }
     .menu-list { display: flex; flex-direction: column; gap: 10px; }
@@ -52,7 +53,7 @@
     .submit-btn { background: #c0392b; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 15px; cursor: pointer; }
     .admin-link { text-align: center; font-size: 11px; color: #999; background: white; padding: 5px; flex-shrink: 0; }
     .admin-link a { color: #999; text-decoration: none; }
-    #adminPanel, #adminOrderPanel { display: none; background: white; padding: 15px; border-radius: 12px; margin: 10px; flex:1; overflow-y: auto; }
+    #adminPanel { display: none; background: white; padding: 15px; border-radius: 12px; margin: 10px; flex: 1; overflow-y: auto; }
     .table-nav { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
     .table-nav button { background: #f0f0f0; border: 1px solid #ddd; padding: 5px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
     .table-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
@@ -159,10 +160,9 @@
   <button class="clear-btn" onclick="clearOrders()">清空已完成订单</button>
   <button class="settle-btn" id="settleTableBtn" onclick="settleCurrentTable()">结算当前桌</button>
   <div id="orderList"></div>
-  <button onclick="hideAdmin()" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回点餐页</button>
 </div>
+
 <div id="adminOrderPanel" style="display:none;">
-  <h3>📝 代客点餐</h3>
   <div class="main-container">
     <div class="left-categories" id="adminLeftCategories">
       <button class="active" onclick="filterAdminCategory('all', event)">全部</button>
@@ -172,6 +172,7 @@
       <button onclick="filterAdminCategory('noodle', event)">🍜面食</button>
       <button onclick="filterAdminCategory('drink', event)">🥤饮品</button>
       <button onclick="filterAdminCategory('other', event)">🥜其他</button>
+      <button class="back-btn" onclick="hideAdminOrderPanel()">返回</button>
     </div>
     <div class="right-content">
       <div class="menu-scroll">
@@ -185,7 +186,6 @@
       </div>
     </div>
   </div>
-  <button onclick="hideAdminOrderPanel()" style="margin-top:10px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:15px;">返回订单管理</button>
 </div>
 
 <script>
@@ -203,7 +203,6 @@
   const ordersRef = database.ref('orders');
   const pricesRef = database.ref('menuPrices');
 
-  // 默认菜单（鸡翅尖价格已改为1.5）
   const defaultMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
@@ -235,7 +234,6 @@
     { id:29, name:"雪碧", price:3, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=雪碧" }
   ];
 
-  // 实际使用的菜单（初始使用默认价格，会被数据库覆盖）
   let menu = JSON.parse(JSON.stringify(defaultMenu));
 
   const spicyLevels = ['不辣', '微辣', '中辣', '特辣'];
@@ -254,23 +252,19 @@
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
-  // 监听价格变化，实时更新菜单
   pricesRef.on('value', (snapshot) => {
     const prices = snapshot.val() || {};
     menu.forEach(item => {
       if (prices[item.id] !== undefined) {
         item.price = parseFloat(prices[item.id]);
       } else {
-        // 恢复默认价格
         const defaultItem = defaultMenu.find(d => d.id === item.id);
         if (defaultItem) item.price = defaultItem.price;
       }
     });
-    // 重新渲染当前页面
     if (!isAdmin) {
       renderMenu(currentFilter);
     } else {
-      // 管理员在管理面板时可能需要刷新菜单显示（若已打开代客点餐）
       if (document.getElementById('adminOrderPanel').style.display === 'block') {
         renderAdminMenu();
       }
@@ -566,7 +560,7 @@
     });
   }
 
-  // ================== 价格管理功能 ==================
+  // 价格管理
   function showPriceManager() {
     let html = '<div class="modal-overlay" id="priceModal"><div class="modal-content" style="max-width:450px;">' +
       '<div class="modal-title">💲 菜品价格管理</div>';
@@ -589,17 +583,13 @@
       const input = document.getElementById('priceInput_' + item.id);
       if (input) {
         const newPrice = parseFloat(input.value);
-        if (!isNaN(newPrice) && newPrice >= 0) {
-          updates[item.id] = newPrice;
-        }
+        if (!isNaN(newPrice) && newPrice >= 0) updates[item.id] = newPrice;
       }
     });
     pricesRef.update(updates).then(() => {
       document.getElementById('priceModal').remove();
       alert('价格已更新！');
-    }).catch(err => {
-      alert('保存失败：' + err.message);
-    });
+    }).catch(err => alert('保存失败：' + err.message));
   }
 
   let allOrders = [];
