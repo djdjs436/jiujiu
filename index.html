@@ -403,7 +403,7 @@
   async function connectBluetoothPrinter() { try { updatePrinterStatus('正在搜索...'); bluetoothDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'] }); updatePrinterStatus('正在连接...'); const server = await bluetoothDevice.gatt.connect(); const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb'); bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb'); updatePrinterStatus('✅ 已连接'); alert('蓝牙打印机已连接！'); bluetoothDevice.addEventListener('gattserverdisconnected', () => { updatePrinterStatus('⚠️ 已断开'); bluetoothDevice = null; bluetoothCharacteristic = null; }); } catch (error) { updatePrinterStatus('❌ 连接失败'); alert('连接失败，请确保打印机已开启并处于可发现状态。'); } }
   async function sendBluetoothData(data) { if (!bluetoothCharacteristic) throw new Error('未连接打印机'); const chunkSize = 20; for (let i = 0; i < data.length; i += chunkSize) { await bluetoothCharacteristic.writeValue(data.slice(i, i + chunkSize)); } }
 
-  // ✅ 修正后的 GBK 编码表（鱿鱼 0xF6 0xF9，孜 0xD7 0xCE）
+  // 🧪 测试：鱿鱼编码改为 0xF6 0xFA（尝试1）
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -414,7 +414,7 @@
     ['腐',[0xB8,0xAF]],['掌',[0xD5,0xC6]],['中',[0xD6,0xD0]],['宝',[0xB1,0xA6]],
     ['肠',[0xB3,0xA6]],['牛',[0xC5,0xA3]],['心',[0xD0,0xC4]],['管',[0xB9,0xDC]],
     ['碳',[0xCC,0xBC]],['皮',[0xC6,0xA4]],['面',[0xC3,0xE6]],['筋',[0xBD,0xEE]],
-    ['鱿',[0xF6,0xF9]],['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]], // ✅ 鱿 F6F9
+    ['鱿',[0xF6,0xFA]],['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]], // 🧪 尝试1
     ['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],
     ['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],
     ['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],
