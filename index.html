@@ -33,10 +33,13 @@
     .item-info { flex: 1; }
     .item-name { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
     .item-price { color: #c0392b; font-weight: bold; font-size: 15px; }
-    .spicy-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-    .spicy-tag { background: #f0f0f0; border: 1px solid #ddd; padding: 2px 8px; border-radius: 12px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 2px; }
-    .spicy-tag.active { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
-    .spicy-tag.selected { border: 2px solid #c0392b; box-shadow: 0 0 0 1px #c0392b; }
+    .spicy-picker { position: relative; margin-top: 4px; display: inline-block; }
+    .spicy-current-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
+    .spicy-dropdown { display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #ddd; border-radius: 10px; padding: 5px; z-index: 50; min-width: 100px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .spicy-dropdown.show { display: block; }
+    .spicy-option { padding: 4px 8px; cursor: pointer; font-size: 12px; border-radius: 8px; }
+    .spicy-option:hover { background: #f0f0f0; }
+    .spicy-option.selected { background: #ffe5e5; color: #c0392b; font-weight: bold; }
     .qty-row { display: flex; align-items: center; margin-top: 4px; }
     .qty-num { font-size: 14px; min-width: 18px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 3px; display: inline-block; margin-left: 4px; }
     .clear-item-btn { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center; cursor: pointer; margin-left: 4px; }
@@ -173,7 +176,7 @@
       <button onclick="filterAdminCategory('noodle', event)">🍜面食</button>
       <button onclick="filterAdminCategory('drink', event)">🥤饮品</button>
       <button onclick="filterAdminCategory('other', event)">🥜其他</button>
-      <button class="back-btn" onclick="hideAdminOrderPanel()">返回</button>
+      <button class="back-btn" onclick="hideAdminOrderPanel()">🔙 返回管理</button>
     </div>
     <div class="right-content">
       <div class="menu-scroll">
@@ -236,7 +239,6 @@
   ];
 
   let menu = JSON.parse(JSON.stringify(defaultMenu));
-
   const spicyLevels = ['不辣', '微辣', '中辣', '特辣'];
   let cart = {};
   let adminCart = {};
@@ -256,20 +258,14 @@
   pricesRef.on('value', (snapshot) => {
     const prices = snapshot.val() || {};
     menu.forEach(item => {
-      if (prices[item.id] !== undefined) {
-        item.price = parseFloat(prices[item.id]);
-      } else {
-        const defaultItem = defaultMenu.find(d => d.id === item.id);
-        if (defaultItem) item.price = defaultItem.price;
+      if (prices[item.id] !== undefined) item.price = parseFloat(prices[item.id]);
+      else {
+        const def = defaultMenu.find(d => d.id === item.id);
+        if (def) item.price = def.price;
       }
     });
-    if (!isAdmin) {
-      renderMenu(currentFilter);
-    } else {
-      if (document.getElementById('adminOrderPanel').style.display === 'flex') {
-        renderAdminMenu();
-      }
-    }
+    if (!isAdmin) renderMenu(currentFilter);
+    else if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
   });
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -284,8 +280,7 @@
 
   function toggleTableDropdown() { document.getElementById('tableDropdown').classList.toggle('open'); }
   function updateTableDisplay() {
-    const bigText = document.getElementById('tableBigText');
-    const bigBtn = document.getElementById('tableBigBtn');
+    const bigText = document.getElementById('tableBigText'), bigBtn = document.getElementById('tableBigBtn');
     if (customerTable === '') { bigText.innerText = '选桌'; bigBtn.classList.add('no-table'); }
     else { bigText.innerText = customerTable; bigBtn.classList.remove('no-table'); }
     document.getElementById('tableDropdown').classList.remove('open');
@@ -308,6 +303,17 @@
 
   function getTotalQty(itemId, cartObj = cart) { return Object.values(cartObj[itemId] || {}).reduce((a, b) => a + b, 0); }
 
+  // 切换辣度下拉菜单
+  function toggleSpicyPicker(itemId, type) {
+    const dropdown = document.getElementById('spicyDropdown_' + itemId + '_' + type);
+    if (dropdown) {
+      const isOpen = dropdown.classList.contains('show');
+      // 关闭所有辣度下拉
+      document.querySelectorAll('.spicy-dropdown.show').forEach(d => d.classList.remove('show'));
+      if (!isOpen) dropdown.classList.add('show');
+    }
+  }
+
   function renderMenu(filter = 'all', containerId = 'menuContainer', cartObj = cart, updateCartFn = updateCartBar, isAdminPanel = false) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -320,17 +326,24 @@
       const type = isAdminPanel ? 'admin' : 'guest';
       const unit = item.unit || '串';
 
-      let tagsHtml = '';
-      spicyLevels.forEach(level => {
-        const qty = itemCart[level] || 0;
-        const selectedClass = (level === curSpicy) ? ' selected' : '';
-        tagsHtml += `<span class="spicy-tag ${qty > 0 ? 'active' : ''}${selectedClass}" onclick="selectSpicy('${level}', '${type}')">${level} ${qty}</span>`;
-      });
+      // 构建辣度选择器
+      let spicyPickerHtml = `<div class="spicy-picker" id="spicyPicker_${item.id}_${type}">
+        <button class="spicy-current-btn" onclick="toggleSpicyPicker(${item.id}, '${type}')">
+          ${curSpicy} <span style="font-size:10px;">(${itemCart[curSpicy] || 0})</span>
+        </button>
+        <div class="spicy-dropdown" id="spicyDropdown_${item.id}_${type}">
+          ${spicyLevels.map(level => `
+            <div class="spicy-option ${level === curSpicy ? 'selected' : ''}" onclick="selectSpicy('${level}', '${type}')">
+              ${level} (${itemCart[level] || 0})
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
 
       let quickHtml = '';
       if (item.price < 6) {
         quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">' + curSpicy + '</span>' +
+          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5</button><span class="stepper-val">5' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5</button></div>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10</button><span class="stepper-val">10' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10</button></div>' +
@@ -343,7 +356,7 @@
           '</div>';
       } else {
         quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">' + curSpicy + '</span>' +
+          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
           '</div>';
       }
@@ -354,7 +367,7 @@
         '<div class="item-info">' +
           '<div class="item-name">' + item.name + '</div>' +
           '<div class="item-price">¥' + item.price + '</div>' +
-          '<div class="spicy-tags">' + tagsHtml + '</div>' +
+          spicyPickerHtml +
           '<div class="qty-row">' +
             '<span class="qty-num" onclick="editDetail(' + item.id + ', \'' + type + '\')">' + total + '</span> ' + unit +
             '<button class="clear-item-btn" onclick="clearItem(' + item.id + ', \'' + type + '\')" title="清除此菜品">✕</button>' +
@@ -378,6 +391,8 @@
   function selectSpicy(level, type = 'guest') {
     if (type === 'admin') { adminCurrentSpicy = level; renderAdminMenu(); }
     else { currentSpicy = level; renderMenu(currentFilter); }
+    // 关闭所有辣度下拉
+    document.querySelectorAll('.spicy-dropdown.show').forEach(d => d.classList.remove('show'));
   }
 
   function quickAdjust(itemId, delta, type = 'guest') {
@@ -426,8 +441,7 @@
   }
 
   function updateCartBar(cartObj = cart) {
-    const countSpan = document.getElementById('cartCount');
-    const totalSpan = document.getElementById('cartTotal');
+    const countSpan = document.getElementById('cartCount'), totalSpan = document.getElementById('cartTotal');
     if (!countSpan || !totalSpan) return;
     let totalCount = 0, totalPrice = 0;
     Object.entries(cartObj).forEach(([itemId, levels]) => {
@@ -545,7 +559,7 @@
   }
   function renderAdminMenu() { renderMenu(currentAdminFilter, 'adminMenuContainer', adminCart, updateAdminCartBar, true); }
   function updateAdminCartBar() {
-    const countSpan = document.getElementById('adminCartCount'); const totalSpan = document.getElementById('adminCartTotal');
+    const countSpan = document.getElementById('adminCartCount'), totalSpan = document.getElementById('adminCartTotal');
     if (!countSpan || !totalSpan) return;
     let totalCount = 0, totalPrice = 0;
     Object.entries(adminCart).forEach(([itemId, levels]) => {
@@ -579,15 +593,9 @@
     let html = '<div class="modal-overlay" id="priceModal"><div class="modal-content" style="max-width:450px;">' +
       '<div class="modal-title">💲 菜品价格管理</div>';
     menu.forEach(item => {
-      html += '<div class="price-edit-row">' +
-        '<span>' + item.name + '</span>' +
-        '<input type="number" step="0.1" id="priceInput_' + item.id + '" value="' + item.price + '">' +
-        '</div>';
+      html += '<div class="price-edit-row"><span>' + item.name + '</span><input type="number" step="0.1" id="priceInput_' + item.id + '" value="' + item.price + '"></div>';
     });
-    html += '<div class="modal-actions">' +
-      '<button class="btn-cancel" onclick="document.getElementById(\'priceModal\').remove()">取消</button>' +
-      '<button class="btn-confirm" onclick="savePrices()">保存价格</button>' +
-      '</div></div></div>';
+    html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'priceModal\').remove()">取消</button><button class="btn-confirm" onclick="savePrices()">保存价格</button></div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
   }
 
@@ -625,7 +633,7 @@
   function searchOrders() { currentSearch = document.getElementById('searchInput').value.trim(); renderOrders(); }
 
   function renderOrders() {
-    const list = document.getElementById('orderList'); const settleBtn = document.getElementById('settleTableBtn'); const tableTotalDiv = document.getElementById('tableTotal');
+    const list = document.getElementById('orderList'), settleBtn = document.getElementById('settleTableBtn'), tableTotalDiv = document.getElementById('tableTotal');
     let filtered = allOrders;
     if (currentTableFilter !== 'all') { filtered = filtered.filter(o => o.table == currentTableFilter); settleBtn.style.display = 'inline-block'; }
     else settleBtn.style.display = 'none';
