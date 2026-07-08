@@ -257,10 +257,7 @@
     const prices = snapshot.val() || {};
     menu.forEach(item => {
       if (prices[item.id] !== undefined) item.price = parseFloat(prices[item.id]);
-      else {
-        const def = defaultMenu.find(d => d.id === item.id);
-        if (def) item.price = def.price;
-      }
+      else { const def = defaultMenu.find(d => d.id === item.id); if (def) item.price = def.price; }
     });
     if (!isAdmin) renderMenu(currentFilter);
     else if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
@@ -270,10 +267,7 @@
   if (!isAdmin && urlParams.has('table')) {
     const tableParam = urlParams.get('table');
     if (tableParam === '' || tableParam === '0' || tableParam === 'none') customerTable = '';
-    else {
-      const num = parseInt(tableParam);
-      if (!isNaN(num) && num >= 1 && num <= 10) customerTable = num;
-    }
+    else { const num = parseInt(tableParam); if (!isNaN(num) && num >= 1 && num <= 10) customerTable = num; }
   }
 
   function toggleTableDropdown() { document.getElementById('tableDropdown').classList.toggle('open'); }
@@ -367,7 +361,6 @@
   function quickAdjust(itemId, delta, type = 'guest') { const cartObj = type === 'admin' ? adminCart : cart; const curSpicy = type === 'admin' ? adminCurrentSpicy : currentSpicy; if (!cartObj[itemId]) cartObj[itemId] = {}; if (delta > 0) cartObj[itemId][curSpicy] = (cartObj[itemId][curSpicy] || 0) + delta; else { let current = cartObj[itemId][curSpicy] || 0; let remove = Math.min(current, -delta); cartObj[itemId][curSpicy] = current - remove; if (cartObj[itemId][curSpicy] === 0) delete cartObj[itemId][curSpicy]; } if (Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId]; if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter); }
   function editDetail(itemId, type = 'guest') { const cartObj = type === 'admin' ? adminCart : cart; const itemCart = cartObj[itemId] || {}; let html = '<div class="modal-overlay" id="detailModal"><div class="modal-content"><div class="modal-title">调整【' + menu.find(m => m.id == itemId).name + '】口味及数量</div>'; tasteOptions.forEach(option => { const qty = itemCart[option] || 0; html += '<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0;"><span>' + option + '</span><input type="number" id="detailQty_' + itemId + '_' + option + '" value="' + qty + '" min="0" style="width:60px; text-align:center;" inputmode="numeric"></div>'; }); html += '<div class="modal-actions"><button class="btn-cancel" onclick="closeDetailModal(' + itemId + ', \'' + type + '\')">完成</button></div></div></div>'; document.body.insertAdjacentHTML('beforeend', html); }
   function closeDetailModal(itemId, type) { const cartObj = type === 'admin' ? adminCart : cart; tasteOptions.forEach(option => { const val = parseInt(document.getElementById('detailQty_' + itemId + '_' + option).value) || 0; if (val === 0) { if (cartObj[itemId]) delete cartObj[itemId][option]; } else { if (!cartObj[itemId]) cartObj[itemId] = {}; cartObj[itemId][option] = val; } }); if (cartObj[itemId] && Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId]; document.getElementById('detailModal').remove(); if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter); }
-
   function updateCartBar(cartObj = cart) { const countSpan = document.getElementById('cartCount'), totalSpan = document.getElementById('cartTotal'); if (!countSpan || !totalSpan) return; let totalCount = 0, totalPrice = 0; Object.entries(cartObj).forEach(([itemId, levels]) => { const item = menu.find(m => m.id == itemId); Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; }); }); countSpan.innerText = totalCount; totalSpan.innerText = totalPrice.toFixed(2); }
   function getCartItems(cartObj = cart) { let items = []; Object.entries(cartObj).forEach(([itemId, levels]) => { const item = menu.find(m => m.id == itemId); Object.entries(levels).forEach(([level, qty]) => { if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty }); }); }); return items; }
   function generateOrderNumber() { const now = new Date(); const dateStr = now.getFullYear().toString().slice(-2) + ('0' + (now.getMonth() + 1)).slice(-2) + ('0' + now.getDate()).slice(-2); const timeStr = ('0' + now.getHours()).slice(-2) + ('0' + now.getMinutes()).slice(-2) + ('0' + now.getSeconds()).slice(-2); const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0'); return 'Y' + dateStr + '-' + timeStr + rand; }
@@ -385,6 +378,7 @@
   function updateAdminCartBar() { const countSpan = document.getElementById('adminCartCount'), totalSpan = document.getElementById('adminCartTotal'); if (!countSpan || !totalSpan) return; let totalCount = 0, totalPrice = 0; Object.entries(adminCart).forEach(([itemId, levels]) => { const item = menu.find(m => m.id == itemId); Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; }); }); countSpan.innerText = totalCount; totalSpan.innerText = totalPrice.toFixed(2); }
   function showAdminConfirmModal() { const items = getCartItems(adminCart); if (items.length === 0) { alert('请先选择菜品'); return; } showCommonConfirm(items, 'admin'); }
   function confirmAdminOrder() { const tableNumber = adminSelectedTable || '未选桌'; const isPack = document.getElementById('packCheckbox').checked; const remark = document.getElementById('remarkInput').value.trim(); const items = getCartItems(adminCart); const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2); const orderNumber = generateOrderNumber(); const order = { time: new Date().toLocaleString(), table: tableNumber, orderNumber: orderNumber, isPack: isPack ? '打包' : '堂食', remark: remark, items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })), total: total, settled: false, timestamp: firebase.database.ServerValue.TIMESTAMP }; ordersRef.push(order).then(() => { document.getElementById('confirmModal').remove(); alert('代客下单成功！单号：' + orderNumber + '\n合计 ¥' + total); adminCart = {}; adminSelectedTable = ''; renderAdminMenu(); }); }
+
   function showPriceManager() { let html = '<div class="modal-overlay" id="priceModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">💲 菜品价格管理</div>'; menu.forEach(item => { html += '<div class="price-edit-row"><span>' + item.name + '</span><input type="number" step="0.1" id="priceInput_' + item.id + '" value="' + item.price + '"></div>'; }); html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'priceModal\').remove()">取消</button><button class="btn-confirm" onclick="savePrices()">保存价格</button></div></div></div>'; document.body.insertAdjacentHTML('beforeend', html); }
   function savePrices() { const updates = {}; menu.forEach(item => { const input = document.getElementById('priceInput_' + item.id); if (input) { const newPrice = parseFloat(input.value); if (!isNaN(newPrice) && newPrice >= 0) updates[item.id] = newPrice; } }); pricesRef.update(updates).then(() => { document.getElementById('priceModal').remove(); alert('价格已更新！'); }).catch(err => alert('保存失败：' + err.message)); }
 
@@ -409,7 +403,7 @@
   async function connectBluetoothPrinter() { try { updatePrinterStatus('正在搜索...'); bluetoothDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'] }); updatePrinterStatus('正在连接...'); const server = await bluetoothDevice.gatt.connect(); const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb'); bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb'); updatePrinterStatus('✅ 已连接'); alert('蓝牙打印机已连接！'); bluetoothDevice.addEventListener('gattserverdisconnected', () => { updatePrinterStatus('⚠️ 已断开'); bluetoothDevice = null; bluetoothCharacteristic = null; }); } catch (error) { updatePrinterStatus('❌ 连接失败'); alert('连接失败，请确保打印机已开启并处于可发现状态。'); } }
   async function sendBluetoothData(data) { if (!bluetoothCharacteristic) throw new Error('未连接打印机'); const chunkSize = 20; for (let i = 0; i < data.length; i += chunkSize) { await bluetoothCharacteristic.writeValue(data.slice(i, i + chunkSize)); } }
 
-  // ✅ 最终正确的 GBK 编码表（基于 GB2312 标准）
+  // ✅ 最终正确的 GBK 编码表（孜 D7D0，然 C8BB，辣 C0B1）
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -427,7 +421,7 @@
     ['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],['青',[0xC7,0xE0]],
     ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xDB,0xC9]],
     ['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
-    ['孜',[0xD7,0xD1]],['然',[0xC8,0xBB]],['辣',[0xC0,0xB1]], // ✅ 孜 D7D1，然 C8BB，辣 C0B1
+    ['孜',[0xD7,0xD0]],['然',[0xC8,0xBB]],['辣',[0xC0,0xB1]], // ✅ 孜 D7D0
     ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
     ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
     ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
