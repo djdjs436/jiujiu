@@ -34,8 +34,8 @@
     .item-info { flex: 1; }
     .item-name { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
     .item-price { color: #c0392b; font-weight: bold; font-size: 15px; }
-    .taste-row { display: flex; gap: 6px; margin-top: 4px; align-items: center; }
-    .taste-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
+    .taste-row { display: flex; gap: 6px; margin-top: 4px; align-items: center; flex-wrap: wrap; }
+    .taste-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
     .taste-btn.selected { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
     .spicy-picker { position: relative; display: inline-block; }
     .spicy-current-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
@@ -244,10 +244,11 @@
   ];
 
   let menu = JSON.parse(JSON.stringify(defaultMenu));
-  const spicyLevels = ['微辣', '中辣', '特辣']; // 辣度下拉选项，不包含孜然
+  const spicyLevels = ['微辣', '中辣', '特辣']; // 辣度下拉选项
   let cart = {};
   let adminCart = {};
-  let currentSpicy = '微辣'; // 当前选中的口味/辣度，可以是 '孜然' 或辣度之一
+  // 当前选中调整的口味，可以是 '孜然' 或辣度之一
+  let currentSpicy = '微辣';
   let adminCurrentSpicy = '微辣';
   let customerTable = '';
   let adminSelectedTable = '';
@@ -329,29 +330,34 @@
       const type = isAdminPanel ? 'admin' : 'guest';
       const unit = item.unit || '串';
 
-      // 构建口味选择行：孜然按钮 + 辣度下拉按钮
+      // 孜然数量
       const cuminQty = itemCart['孜然'] || 0;
       const cuminSelected = (curSpicy === '孜然') ? ' selected' : '';
+      
+      // 构建口味选择行
       let tasteRow = `<div class="taste-row">
         <button class="taste-btn${cuminSelected}" onclick="selectSpicy('孜然', '${type}')">孜然 ${cuminQty}</button>
         <div class="spicy-picker" id="spicyPicker_${item.id}_${type}">
-          <button class="spicy-current-btn ${spicyLevels.includes(curSpicy) ? 'selected' : ''}" onclick="toggleSpicyPicker(${item.id}, '${type}')">
-            ${curSpicy === '孜然' ? '辣度' : curSpicy} <span style="font-size:10px;">(${itemCart[curSpicy] || 0})</span>
+          <button class="spicy-current-btn" onclick="toggleSpicyPicker(${item.id}, '${type}')">
+            辣度 ▼
           </button>
           <div class="spicy-dropdown" id="spicyDropdown_${item.id}_${type}">
-            ${spicyLevels.map(level => `
-              <div class="spicy-option ${level === curSpicy ? 'selected' : ''}" onclick="selectSpicy('${level}', '${type}')">
-                ${level} (${itemCart[level] || 0})
-              </div>
-            `).join('')}
+            ${spicyLevels.map(level => {
+              const qty = itemCart[level] || 0;
+              const selClass = (level === curSpicy && curSpicy !== '孜然') ? ' selected' : '';
+              return `<div class="spicy-option${selClass}" onclick="selectSpicy('${level}', '${type}')">
+                ${level} (${qty})
+              </div>`;
+            }).join('')}
           </div>
         </div>
       </div>`;
 
+      // 步进器
       let quickHtml = '';
       if (item.price < 6) {
         quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">当前：' + (curSpicy === '孜然' ? '孜然' : curSpicy) + '</span>' +
+          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5</button><span class="stepper-val">5' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5</button></div>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10</button><span class="stepper-val">10' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10</button></div>' +
@@ -364,7 +370,7 @@
           '</div>';
       } else {
         quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">当前：' + (curSpicy === '孜然' ? '孜然' : curSpicy) + '</span>' +
+          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
           '</div>';
       }
