@@ -102,7 +102,7 @@
     <h1>久久家一元烧烤</h1>
     <p>扫码点餐 · 干净卫生 · 现串现烤</p>
   </div>
-  <div class="hint-bar">💡 点击正方形选桌，选择孜然或辣度后用步进器调数量</div>
+  <div class="hint-bar">💡 点击正方形选桌，选择孜然或辣后用步进器调数量</div>
   <div class="table-row">
     <div class="table-big-btn" id="tableBigBtn" onclick="toggleTableDropdown()">
       <span id="tableBigText">选桌</span>
@@ -237,11 +237,11 @@
   ];
 
   let menu = JSON.parse(JSON.stringify(defaultMenu));
-  const spicyLevels = ['微辣', '中辣', '特辣']; // 辣度选项
+  const tasteOptions = ['孜然', '辣']; // 仅两种口味
   let cart = {};
   let adminCart = {};
-  let currentSpicy = '微辣'; // 当前选中的口味
-  let adminCurrentSpicy = '微辣';
+  let currentSpicy = '辣'; // 默认选中辣
+  let adminCurrentSpicy = '辣';
   let customerTable = '';
   let adminSelectedTable = '';
   const ADMIN_PASSWORD = '888';
@@ -313,23 +313,14 @@
       const type = isAdminPanel ? 'admin' : 'guest';
       const unit = item.unit || '串';
 
-      // 孜然标签
-      const cuminQty = itemCart['孜然'] || 0;
-      const cuminSelected = (curSpicy === '孜然') ? ' selected' : '';
-
-      // 辣度标签们
-      let spicyTagsHtml = spicyLevels.map(level => {
-        const qty = itemCart[level] || 0;
-        const sel = (level === curSpicy && curSpicy !== '孜然') ? ' selected' : '';
-        return `<span class="taste-tag${sel}" onclick="selectSpicy('${level}', '${type}')">${level} ${qty}</span>`;
+      let tasteTags = tasteOptions.map(option => {
+        const qty = itemCart[option] || 0;
+        const sel = (option === curSpicy) ? ' selected' : '';
+        return `<span class="taste-tag${sel}" onclick="selectSpicy('${option}', '${type}')">${option} ${qty}</span>`;
       }).join('');
 
-      let tasteRow = `<div class="taste-row">
-        <span class="taste-tag${cuminSelected}" onclick="selectSpicy('孜然', '${type}')">孜然 ${cuminQty}</span>
-        ${spicyTagsHtml}
-      </div>`;
+      let tasteRow = `<div class="taste-row">${tasteTags}</div>`;
 
-      // 步进器
       let quickHtml = '';
       if (item.price < 6) {
         quickHtml = '<div class="quick-adjust">' +
@@ -402,14 +393,13 @@
   function editDetail(itemId, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     const itemCart = cartObj[itemId] || {};
-    const allOptions = ['孜然', '微辣', '中辣', '特辣'];
     let html = '<div class="modal-overlay" id="detailModal"><div class="modal-content">' +
       '<div class="modal-title">调整【' + menu.find(m => m.id == itemId).name + '】口味及数量</div>';
-    allOptions.forEach(level => {
-      const qty = itemCart[level] || 0;
+    tasteOptions.forEach(option => {
+      const qty = itemCart[option] || 0;
       html += '<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0;">' +
-        '<span>' + level + '</span>' +
-        '<input type="number" id="detailQty_' + itemId + '_' + level + '" value="' + qty + '" min="0" style="width:60px; text-align:center;" inputmode="numeric">' +
+        '<span>' + option + '</span>' +
+        '<input type="number" id="detailQty_' + itemId + '_' + option + '" value="' + qty + '" min="0" style="width:60px; text-align:center;" inputmode="numeric">' +
       '</div>';
     });
     html += '<div class="modal-actions"><button class="btn-cancel" onclick="closeDetailModal(' + itemId + ', \'' + type + '\')">完成</button></div></div></div>';
@@ -418,11 +408,10 @@
 
   function closeDetailModal(itemId, type) {
     const cartObj = type === 'admin' ? adminCart : cart;
-    const allOptions = ['孜然', '微辣', '中辣', '特辣'];
-    allOptions.forEach(level => {
-      const val = parseInt(document.getElementById('detailQty_' + itemId + '_' + level).value) || 0;
-      if (val === 0) { if (cartObj[itemId]) delete cartObj[itemId][level]; }
-      else { if (!cartObj[itemId]) cartObj[itemId] = {}; cartObj[itemId][level] = val; }
+    tasteOptions.forEach(option => {
+      const val = parseInt(document.getElementById('detailQty_' + itemId + '_' + option).value) || 0;
+      if (val === 0) { if (cartObj[itemId]) delete cartObj[itemId][option]; }
+      else { if (!cartObj[itemId]) cartObj[itemId] = {}; cartObj[itemId][option] = val; }
     });
     if (cartObj[itemId] && Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
     document.getElementById('detailModal').remove();
@@ -673,7 +662,7 @@
     const w = window.open('', '_blank', 'width=320,height=400');
     if (!w) return;
     let html = '<html><head><title>久久家一元烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家一元烧烤</h2><p style="text-align:center;">' + order.time + '</p><p>单号：' + (order.orderNumber || '无') + '</p><p>桌号：' + (order.table||'无') + ' | ' + (order.isPack||'堂食') + '</p><div class="line"></div>';
-    order.items.forEach(item => html += '<div>' + item.name + ' 辣度:' + item.spicy + ' ×' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span></div><div class="line"></div>');
+    order.items.forEach(item => html += '<div>' + item.name + ' ' + item.spicy + ' ×' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span></div><div class="line"></div>');
     if (order.remark) html += '<div>备注：' + order.remark + '</div><div class="line"></div>';
     html += '<h3 class="right">合计: ¥' + order.total + '</h3><p style="text-align:center;">新订单 - 请及时处理</p></body></html>';
     w.document.write(html); w.document.close(); w.focus(); w.print(); setTimeout(() => w.close(), 2000);
@@ -746,7 +735,7 @@
     ['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],['青',[0xC7,0xE0]],
     ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xDB,0xC9]],
     ['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
-    ['孜',[0xD7,0xAC]],['然',[0xC8,0xBB]],
+    ['孜',[0xD7,0xAC]],['然',[0xC8,0xBB]],['辣',[0xC0,0xB1]],
     ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
     ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
     ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
@@ -779,7 +768,7 @@
     order.items.forEach(item => {
       const name = item.name.padEnd(7, ' '); const qty = item.qty.toString().padStart(2, ' '); const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
       str += name + ' ' + qty + ' ' + subtotal + '\n';
-      str += '  辣度:' + item.spicy + '\n';
+      str += '  ' + item.spicy + '\n';
     });
     if (order.remark) { str += '----------------------------\n'; str += '备注：' + order.remark + '\n'; }
     str += '----------------------------\n'; str += '\x1B\x61\x02'; str += '合计：¥ ' + order.total + '\n';
