@@ -35,15 +35,8 @@
     .item-name { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
     .item-price { color: #c0392b; font-weight: bold; font-size: 15px; }
     .taste-row { display: flex; gap: 6px; margin-top: 4px; align-items: center; flex-wrap: wrap; }
-    .taste-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
-    .taste-btn.selected { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
-    .spicy-picker { position: relative; display: inline-block; }
-    .spicy-current-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
-    .spicy-dropdown { display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #ddd; border-radius: 10px; padding: 5px; z-index: 50; min-width: 100px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    .spicy-dropdown.show { display: block; }
-    .spicy-option { padding: 4px 8px; cursor: pointer; font-size: 12px; border-radius: 8px; }
-    .spicy-option:hover { background: #f0f0f0; }
-    .spicy-option.selected { background: #ffe5e5; color: #c0392b; font-weight: bold; }
+    .taste-tag { background: #f0f0f0; border: 1px solid #ddd; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
+    .taste-tag.selected { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
     .qty-row { display: flex; align-items: center; margin-top: 4px; }
     .qty-num { font-size: 14px; min-width: 18px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 3px; display: inline-block; margin-left: 4px; }
     .clear-item-btn { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center; cursor: pointer; margin-left: 4px; }
@@ -244,11 +237,10 @@
   ];
 
   let menu = JSON.parse(JSON.stringify(defaultMenu));
-  const spicyLevels = ['微辣', '中辣', '特辣']; // 辣度下拉选项
+  const spicyLevels = ['微辣', '中辣', '特辣']; // 辣度选项
   let cart = {};
   let adminCart = {};
-  // 当前选中调整的口味，可以是 '孜然' 或辣度之一
-  let currentSpicy = '微辣';
+  let currentSpicy = '微辣'; // 当前选中的口味
   let adminCurrentSpicy = '微辣';
   let customerTable = '';
   let adminSelectedTable = '';
@@ -309,15 +301,6 @@
 
   function getTotalQty(itemId, cartObj = cart) { return Object.values(cartObj[itemId] || {}).reduce((a, b) => a + b, 0); }
 
-  function toggleSpicyPicker(itemId, type) {
-    const dropdown = document.getElementById('spicyDropdown_' + itemId + '_' + type);
-    if (dropdown) {
-      const isOpen = dropdown.classList.contains('show');
-      document.querySelectorAll('.spicy-dropdown.show').forEach(d => d.classList.remove('show'));
-      if (!isOpen) dropdown.classList.add('show');
-    }
-  }
-
   function renderMenu(filter = 'all', containerId = 'menuContainer', cartObj = cart, updateCartFn = updateCartBar, isAdminPanel = false) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -330,27 +313,20 @@
       const type = isAdminPanel ? 'admin' : 'guest';
       const unit = item.unit || '串';
 
-      // 孜然数量
+      // 孜然标签
       const cuminQty = itemCart['孜然'] || 0;
       const cuminSelected = (curSpicy === '孜然') ? ' selected' : '';
-      
-      // 构建口味选择行
+
+      // 辣度标签们
+      let spicyTagsHtml = spicyLevels.map(level => {
+        const qty = itemCart[level] || 0;
+        const sel = (level === curSpicy && curSpicy !== '孜然') ? ' selected' : '';
+        return `<span class="taste-tag${sel}" onclick="selectSpicy('${level}', '${type}')">${level} ${qty}</span>`;
+      }).join('');
+
       let tasteRow = `<div class="taste-row">
-        <button class="taste-btn${cuminSelected}" onclick="selectSpicy('孜然', '${type}')">孜然 ${cuminQty}</button>
-        <div class="spicy-picker" id="spicyPicker_${item.id}_${type}">
-          <button class="spicy-current-btn" onclick="toggleSpicyPicker(${item.id}, '${type}')">
-            辣度 ▼
-          </button>
-          <div class="spicy-dropdown" id="spicyDropdown_${item.id}_${type}">
-            ${spicyLevels.map(level => {
-              const qty = itemCart[level] || 0;
-              const selClass = (level === curSpicy && curSpicy !== '孜然') ? ' selected' : '';
-              return `<div class="spicy-option${selClass}" onclick="selectSpicy('${level}', '${type}')">
-                ${level} (${qty})
-              </div>`;
-            }).join('')}
-          </div>
-        </div>
+        <span class="taste-tag${cuminSelected}" onclick="selectSpicy('孜然', '${type}')">孜然 ${cuminQty}</span>
+        ${spicyTagsHtml}
       </div>`;
 
       // 步进器
@@ -405,7 +381,6 @@
   function selectSpicy(level, type = 'guest') {
     if (type === 'admin') { adminCurrentSpicy = level; renderAdminMenu(); }
     else { currentSpicy = level; renderMenu(currentFilter); }
-    document.querySelectorAll('.spicy-dropdown.show').forEach(d => d.classList.remove('show'));
   }
 
   function quickAdjust(itemId, delta, type = 'guest') {
