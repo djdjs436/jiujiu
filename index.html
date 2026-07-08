@@ -54,6 +54,7 @@
     .admin-link { text-align: center; font-size: 11px; color: #999; background: white; padding: 5px; flex-shrink: 0; }
     .admin-link a { color: #999; text-decoration: none; }
     #adminPanel { display: none; background: white; padding: 15px; border-radius: 12px; margin: 10px; flex: 1; overflow-y: auto; }
+    #adminOrderPanel { display: none; flex-direction: column; height: 100vh; background: #f8f8f8; }
     .table-nav { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
     .table-nav button { background: #f0f0f0; border: 1px solid #ddd; padding: 5px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
     .table-nav button.active { background: #c0392b; color: white; border-color: #c0392b; }
@@ -162,7 +163,7 @@
   <div id="orderList"></div>
 </div>
 
-<div id="adminOrderPanel" style="display:none;">
+<div id="adminOrderPanel">
   <div class="main-container">
     <div class="left-categories" id="adminLeftCategories">
       <button class="active" onclick="filterAdminCategory('all', event)">全部</button>
@@ -265,7 +266,7 @@
     if (!isAdmin) {
       renderMenu(currentFilter);
     } else {
-      if (document.getElementById('adminOrderPanel').style.display === 'block') {
+      if (document.getElementById('adminOrderPanel').style.display === 'flex') {
         renderAdminMenu();
       }
     }
@@ -525,9 +526,23 @@
     });
   }
 
-  function showAdminOrderPanel() { document.getElementById('adminPanel').style.display = 'none'; document.getElementById('adminOrderPanel').style.display = 'block'; currentAdminFilter = 'all'; renderAdminMenu(); }
-  function hideAdminOrderPanel() { document.getElementById('adminOrderPanel').style.display = 'none'; document.getElementById('adminPanel').style.display = 'block'; renderOrders(); }
-  function filterAdminCategory(cat, e) { document.querySelectorAll('#adminLeftCategories button').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); currentAdminFilter = cat; renderAdminMenu(); }
+  function showAdminOrderPanel() { 
+    document.getElementById('adminPanel').style.display = 'none'; 
+    document.getElementById('adminOrderPanel').style.display = 'flex'; 
+    currentAdminFilter = 'all'; 
+    renderAdminMenu(); 
+  }
+  function hideAdminOrderPanel() { 
+    document.getElementById('adminOrderPanel').style.display = 'none'; 
+    document.getElementById('adminPanel').style.display = 'block'; 
+    renderOrders(); 
+  }
+  function filterAdminCategory(cat, e) { 
+    document.querySelectorAll('#adminLeftCategories button').forEach(b => b.classList.remove('active')); 
+    e.target.classList.add('active'); 
+    currentAdminFilter = cat; 
+    renderAdminMenu(); 
+  }
   function renderAdminMenu() { renderMenu(currentAdminFilter, 'adminMenuContainer', adminCart, updateAdminCartBar, true); }
   function updateAdminCartBar() {
     const countSpan = document.getElementById('adminCartCount'); const totalSpan = document.getElementById('adminCartTotal');
@@ -560,7 +575,6 @@
     });
   }
 
-  // 价格管理
   function showPriceManager() {
     let html = '<div class="modal-overlay" id="priceModal"><div class="modal-content" style="max-width:450px;">' +
       '<div class="modal-title">💲 菜品价格管理</div>';
