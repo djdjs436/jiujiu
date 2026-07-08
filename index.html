@@ -34,7 +34,10 @@
     .item-info { flex: 1; }
     .item-name { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
     .item-price { color: #c0392b; font-weight: bold; font-size: 15px; }
-    .spicy-picker { position: relative; margin-top: 4px; display: inline-block; }
+    .taste-row { display: flex; gap: 6px; margin-top: 4px; align-items: center; }
+    .taste-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
+    .taste-btn.selected { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
+    .spicy-picker { position: relative; display: inline-block; }
     .spicy-current-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
     .spicy-dropdown { display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #ddd; border-radius: 10px; padding: 5px; z-index: 50; min-width: 100px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
     .spicy-dropdown.show { display: block; }
@@ -106,7 +109,7 @@
     <h1>久久家一元烧烤</h1>
     <p>扫码点餐 · 干净卫生 · 现串现烤</p>
   </div>
-  <div class="hint-bar">💡 点击正方形选桌，选辣度后用步进器调数量</div>
+  <div class="hint-bar">💡 点击正方形选桌，选择孜然或辣度后用步进器调数量</div>
   <div class="table-row">
     <div class="table-big-btn" id="tableBigBtn" onclick="toggleTableDropdown()">
       <span id="tableBigText">选桌</span>
@@ -241,11 +244,10 @@
   ];
 
   let menu = JSON.parse(JSON.stringify(defaultMenu));
-  // 辣度选项：孜然代替不辣
-  const spicyLevels = ['孜然', '微辣', '中辣', '特辣'];
+  const spicyLevels = ['微辣', '中辣', '特辣']; // 辣度下拉选项，不包含孜然
   let cart = {};
   let adminCart = {};
-  let currentSpicy = '微辣';
+  let currentSpicy = '微辣'; // 当前选中的口味/辣度，可以是 '孜然' 或辣度之一
   let adminCurrentSpicy = '微辣';
   let customerTable = '';
   let adminSelectedTable = '';
@@ -327,23 +329,29 @@
       const type = isAdminPanel ? 'admin' : 'guest';
       const unit = item.unit || '串';
 
-      let spicyPickerHtml = `<div class="spicy-picker" id="spicyPicker_${item.id}_${type}">
-        <button class="spicy-current-btn" onclick="toggleSpicyPicker(${item.id}, '${type}')">
-          ${curSpicy} <span style="font-size:10px;">(${itemCart[curSpicy] || 0})</span>
-        </button>
-        <div class="spicy-dropdown" id="spicyDropdown_${item.id}_${type}">
-          ${spicyLevels.map(level => `
-            <div class="spicy-option ${level === curSpicy ? 'selected' : ''}" onclick="selectSpicy('${level}', '${type}')">
-              ${level} (${itemCart[level] || 0})
-            </div>
-          `).join('')}
+      // 构建口味选择行：孜然按钮 + 辣度下拉按钮
+      const cuminQty = itemCart['孜然'] || 0;
+      const cuminSelected = (curSpicy === '孜然') ? ' selected' : '';
+      let tasteRow = `<div class="taste-row">
+        <button class="taste-btn${cuminSelected}" onclick="selectSpicy('孜然', '${type}')">孜然 ${cuminQty}</button>
+        <div class="spicy-picker" id="spicyPicker_${item.id}_${type}">
+          <button class="spicy-current-btn ${spicyLevels.includes(curSpicy) ? 'selected' : ''}" onclick="toggleSpicyPicker(${item.id}, '${type}')">
+            ${curSpicy === '孜然' ? '辣度' : curSpicy} <span style="font-size:10px;">(${itemCart[curSpicy] || 0})</span>
+          </button>
+          <div class="spicy-dropdown" id="spicyDropdown_${item.id}_${type}">
+            ${spicyLevels.map(level => `
+              <div class="spicy-option ${level === curSpicy ? 'selected' : ''}" onclick="selectSpicy('${level}', '${type}')">
+                ${level} (${itemCart[level] || 0})
+              </div>
+            `).join('')}
+          </div>
         </div>
       </div>`;
 
       let quickHtml = '';
       if (item.price < 6) {
         quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
+          '<span class="spicy-indicator">当前：' + (curSpicy === '孜然' ? '孜然' : curSpicy) + '</span>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5</button><span class="stepper-val">5' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5</button></div>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10</button><span class="stepper-val">10' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10</button></div>' +
@@ -356,7 +364,7 @@
           '</div>';
       } else {
         quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
+          '<span class="spicy-indicator">当前：' + (curSpicy === '孜然' ? '孜然' : curSpicy) + '</span>' +
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
           '</div>';
       }
@@ -367,7 +375,7 @@
         '<div class="item-info">' +
           '<div class="item-name">' + item.name + '</div>' +
           '<div class="item-price">¥' + item.price + '</div>' +
-          spicyPickerHtml +
+          tasteRow +
           '<div class="qty-row">' +
             '<span class="qty-num" onclick="editDetail(' + item.id + ', \'' + type + '\')">' + total + '</span> ' + unit +
             '<button class="clear-item-btn" onclick="clearItem(' + item.id + ', \'' + type + '\')" title="清除此菜品">✕</button>' +
@@ -413,9 +421,10 @@
   function editDetail(itemId, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     const itemCart = cartObj[itemId] || {};
+    const allOptions = ['孜然', '微辣', '中辣', '特辣'];
     let html = '<div class="modal-overlay" id="detailModal"><div class="modal-content">' +
-      '<div class="modal-title">调整【' + menu.find(m => m.id == itemId).name + '】各辣度数量</div>';
-    spicyLevels.forEach(level => {
+      '<div class="modal-title">调整【' + menu.find(m => m.id == itemId).name + '】口味及数量</div>';
+    allOptions.forEach(level => {
       const qty = itemCart[level] || 0;
       html += '<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0;">' +
         '<span>' + level + '</span>' +
@@ -428,7 +437,8 @@
 
   function closeDetailModal(itemId, type) {
     const cartObj = type === 'admin' ? adminCart : cart;
-    spicyLevels.forEach(level => {
+    const allOptions = ['孜然', '微辣', '中辣', '特辣'];
+    allOptions.forEach(level => {
       const val = parseInt(document.getElementById('detailQty_' + itemId + '_' + level).value) || 0;
       if (val === 0) { if (cartObj[itemId]) delete cartObj[itemId][level]; }
       else { if (!cartObj[itemId]) cartObj[itemId] = {}; cartObj[itemId][level] = val; }
