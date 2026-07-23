@@ -21,11 +21,10 @@
     .table-opt-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 8px 12px; border-radius: 12px; font-size: 16px; cursor: pointer; min-width: 45px; text-align: center; }
     .table-opt-btn.active { background: #c0392b; color: white; border-color: #c0392b; }
     .main-container { display: flex; flex: 1; overflow: hidden; }
-    .left-categories { width: 90px; background: white; border-right: 1px solid #eee; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; padding-top: 5px; }
-    .left-categories button { display: block; width: 100%; background: white; border: none; padding: 10px 4px; font-size: 13px; cursor: pointer; text-align: center; }
+    .left-categories { width: 80px; background: white; border-right: 1px solid #eee; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; padding-top: 5px; }
+    .left-categories button { display: block; width: 100%; background: white; border: none; padding: 12px 6px; font-size: 13px; cursor: pointer; text-align: center; }
     .left-categories button.active { background: #c0392b; color: white; font-weight: bold; }
-    .back-btn { background: #7f8c8d; color: white; border: none; padding: 14px 4px; font-size: 15px; cursor: pointer; text-align: center; margin-bottom: 8px; }
-    .back-label { font-size: 10px; color: #ddd; text-align: center; padding: 2px 0; }
+    .back-btn { margin-top: auto; background: #7f8c8d; color: white; border: none; padding: 12px 6px; font-size: 13px; cursor: pointer; text-align: center; }
     .right-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .menu-scroll { flex: 1; overflow-y: auto; padding: 10px; }
     .menu-list { display: flex; flex-direction: column; gap: 10px; }
@@ -34,9 +33,13 @@
     .item-info { flex: 1; }
     .item-name { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
     .item-price { color: #c0392b; font-weight: bold; font-size: 15px; }
-    .taste-row { display: flex; gap: 6px; margin-top: 4px; align-items: center; flex-wrap: wrap; }
-    .taste-tag { background: #f0f0f0; border: 1px solid #ddd; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
-    .taste-tag.selected { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
+    .spicy-picker { position: relative; margin-top: 4px; display: inline-block; }
+    .spicy-current-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
+    .spicy-dropdown { display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #ddd; border-radius: 10px; padding: 5px; z-index: 50; min-width: 100px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .spicy-dropdown.show { display: block; }
+    .spicy-option { padding: 4px 8px; cursor: pointer; font-size: 12px; border-radius: 8px; }
+    .spicy-option:hover { background: #f0f0f0; }
+    .spicy-option.selected { background: #ffe5e5; color: #c0392b; font-weight: bold; }
     .qty-row { display: flex; align-items: center; margin-top: 4px; }
     .qty-num { font-size: 14px; min-width: 18px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 3px; display: inline-block; margin-left: 4px; }
     .clear-item-btn { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center; cursor: pointer; margin-left: 4px; }
@@ -67,7 +70,7 @@
     .clear-btn { background: #e67e22; color: white; border: none; padding: 6px 16px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     .bluetooth-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; display: none; }
     .settle-btn { background: #9b59b6; color: white; border: none; padding: 5px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; margin-left: 4px; }
-    .price-mgr-btn, .menu-mgr-btn, .stat-btn, .gbk-btn { background: #e67e22; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
+    .price-mgr-btn { background: #e67e22; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     .status { margin: 6px 0; font-size: 12px; color: #555; }
     .admin-order-btn { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -87,8 +90,8 @@
     .modal-table-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
     .modal-table-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 6px 12px; border-radius: 12px; font-size: 14px; cursor: pointer; }
     .modal-table-btn.selected { background: #c0392b; color: white; border-color: #c0392b; }
-    .price-edit-row, .stat-row, .gbk-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
-    .price-edit-row input, .stat-row input, .gbk-row input { width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 8px; }
+    .price-edit-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
+    .price-edit-row input { width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 8px; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -98,16 +101,28 @@
 </head>
 <body>
 <div id="customerView" style="display:flex; flex-direction:column; height:100vh;">
-  <div class="header"><h1>久久家一元烧烤</h1><p>扫码点餐 · 干净卫生 · 现串现烤</p></div>
-  <div class="hint-bar">💡 点击正方形选桌，选择孜然或辣后用步进器调数量</div>
+  <div class="header">
+    <h1>久久家一元烧烤</h1>
+    <p>扫码点餐 · 干净卫生 · 现串现烤</p>
+  </div>
+  <div class="hint-bar">💡 点击正方形选桌，选辣度后用步进器调数量</div>
   <div class="table-row">
-    <div class="table-big-btn" id="tableBigBtn" onclick="toggleTableDropdown()"><span id="tableBigText">选桌</span></div>
+    <div class="table-big-btn" id="tableBigBtn" onclick="toggleTableDropdown()">
+      <span id="tableBigText">选桌</span>
+    </div>
     <div class="table-dropdown" id="tableDropdown">
       <button class="table-opt-btn" onclick="setCustomerTable('', true)">无桌</button>
-      <script>for(let i=1;i<=10;i++) document.write('<button class="table-opt-btn" onclick="setCustomerTable('+i+', true)">'+i+'号</button>');</script>
+      <script>
+        for (let i = 1; i <= 10; i++) {
+          document.write('<button class="table-opt-btn" onclick="setCustomerTable(' + i + ', true)">' + i + '号</button>');
+        }
+      </script>
     </div>
-    <div style="flex:1; text-align:right;"><button class="submit-btn" onclick="showConfirmModal()">下单</button></div>
+    <div style="flex:1; text-align:right;">
+      <button class="submit-btn" onclick="showConfirmModal()" style="font-size:16px;">下单</button>
+    </div>
   </div>
+
   <div class="main-container">
     <div class="left-categories" id="leftCategories">
       <button class="active" onclick="filterCategory('all', event)">全部</button>
@@ -118,11 +133,18 @@
       <button onclick="filterCategory('drink', event)">🥤饮品</button>
       <button onclick="filterCategory('other', event)">🥜其他</button>
     </div>
-    <div class="right-content"><div class="menu-scroll"><div class="menu-list" id="menuContainer"></div></div>
-      <div class="cart-bar"><div class="cart-info">已选 <span id="cartCount">0</span> 件 | 合计 <span class="cart-total" id="cartTotal">0.00</span> 元</div></div>
+    <div class="right-content">
+      <div class="menu-scroll" id="menuScroll">
+        <div class="menu-list" id="menuContainer"></div>
+      </div>
+      <div class="cart-bar">
+        <div class="cart-info">
+          已选 <span id="cartCount">0</span> 件 | 合计 <span class="cart-total" id="cartTotal">0.00</span> 元
+        </div>
+      </div>
     </div>
   </div>
-  <div class="admin-link"><a href="?admin">🔐 店家管理</a></div>
+  <div class="admin-link" id="adminLink"><a href="?admin">🔐 店家管理</a></div>
 </div>
 
 <div id="adminPanel" style="display:none;">
@@ -131,25 +153,22 @@
   <div id="printerStatus" class="status">打印机未连接</div>
   <button class="admin-order-btn" onclick="showAdminOrderPanel()">📝 代客点餐</button>
   <button class="price-mgr-btn" onclick="showPriceManager()">💲 菜品价格管理</button>
-  <button class="menu-mgr-btn" onclick="showMenuManager()">📋 菜品名称管理</button>
-  <button class="stat-btn" onclick="showStatistics()">📊 统计与预备</button>
-  <button class="gbk-btn" onclick="showGBKManager()">🔤 补充GBK编码</button>
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="输入单号搜索" oninput="searchOrders()">
     <button onclick="searchOrders()">搜索</button>
   </div>
-  <div class="table-nav" id="tableNav"><button class="active" onclick="filterTable('all', event)">全部</button></div>
+  <div class="table-nav" id="tableNav">
+    <button class="active" onclick="filterTable('all', event)">全部</button>
+  </div>
   <div id="tableTotal" style="margin-bottom:10px; font-weight:bold; color:#c0392b;"></div>
   <button class="clear-btn" onclick="clearOrders()">清空已完成订单</button>
   <button class="settle-btn" id="settleTableBtn" onclick="settleCurrentTable()">结算当前桌</button>
   <div id="orderList"></div>
 </div>
 
-<div id="adminOrderPanel" style="display:none;">
+<div id="adminOrderPanel">
   <div class="main-container">
     <div class="left-categories" id="adminLeftCategories">
-      <button class="back-btn" onclick="hideAdminOrderPanel()">🔙 返回管理</button>
-      <div class="back-label">返回订单管理</div>
       <button class="active" onclick="filterAdminCategory('all', event)">全部</button>
       <button onclick="filterAdminCategory('meat', event)">🥩肉类</button>
       <button onclick="filterAdminCategory('veg', event)">🥬蔬菜</button>
@@ -157,9 +176,16 @@
       <button onclick="filterAdminCategory('noodle', event)">🍜面食</button>
       <button onclick="filterAdminCategory('drink', event)">🥤饮品</button>
       <button onclick="filterAdminCategory('other', event)">🥜其他</button>
+      <button class="back-btn" onclick="hideAdminOrderPanel()">🔙 返回管理</button>
     </div>
-    <div class="right-content"><div class="menu-scroll"><div class="menu-list" id="adminMenuContainer"></div></div>
-      <div class="cart-bar"><div class="cart-info">已选 <span id="adminCartCount">0</span> 件 | 合计 <span class="cart-total" id="adminCartTotal">0.00</span> 元</div>
+    <div class="right-content">
+      <div class="menu-scroll">
+        <div class="menu-list" id="adminMenuContainer"></div>
+      </div>
+      <div class="cart-bar">
+        <div class="cart-info">
+          已选 <span id="adminCartCount">0</span> 件 | 合计 <span class="cart-total" id="adminCartTotal">0.00</span> 元
+        </div>
         <button class="submit-btn" onclick="showAdminConfirmModal()">下单</button>
       </div>
     </div>
@@ -180,64 +206,6 @@
   const database = firebase.database();
   const ordersRef = database.ref('orders');
   const pricesRef = database.ref('menuPrices');
-  const menuItemsRef = database.ref('menuItems');
-  const dailyPrepRef = database.ref('dailyPrep');
-  const customGBKRef = database.ref('customGBK');
-
-  const gbkMap = new Map([
-    ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
-    ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
-    ['鲜',[0xCF,0xCA]],['切',[0xC7,0xD0]],['羊',[0xD1,0xF2]],['鸡',[0xBC,0xA6]],
-    ['翅',[0xB3,0xE1]],['尖',[0xBC,0xE2]],['脆',[0xB4,0xE0]],['骨',[0xB9,0xC7]],
-    ['蒜',[0xCB,0xE2]],['瓣',[0xB0,0xEA]],['望',[0xCD,0xFB]],['京',[0xBE,0xA9]],
-    ['小',[0xD0,0xA1]],['腰',[0xD1,0xFC]],['鱼',[0xD3,0xE3]],['豆',[0xB6,0xB9]],
-    ['腐',[0xB8,0xAF]],['掌',[0xD5,0xC6]],['中',[0xD6,0xD0]],['宝',[0xB1,0xA6]],
-    ['肠',[0xB3,0xA6]],['牛',[0xC5,0xA3]],['心',[0xD0,0xC4]],['管',[0xB9,0xDC]],
-    ['碳',[0xCC,0xBC]],['皮',[0xC6,0xA4]],['面',[0xC3,0xE6]],['筋',[0xBD,0xEE]],
-    ['鱿',[0xF6,0xD9]],['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],
-    ['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],
-    ['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],
-    ['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],
-    ['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],['青',[0xC7,0xE0]],
-    ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xDB,0xC9]],
-    ['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
-    ['孜',[0xD7,0xAC]],['然',[0xC8,0xBB]],['辣',[0xC0,0xB1]],
-    ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
-    ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
-    ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
-    ['量',[0xC1,0xBF]],['度',[0xB6,0xC8]],['不',[0xB2,0xBB]],['微',[0xCE,0xA2]],
-    ['特',[0xCC,0xD8]],['谢',[0xD0,0xBB]],['惠',[0xBB,0xDD]],['顾',[0xB9,0xCB]],
-    ['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],['再',[0xD4,0xD9]],['次',[0xB4,0xCE]],
-    ['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],
-    ['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],
-    ['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],
-    ['盐',[0xD1,0xCE]],['少',[0xC9,0xD9]],['注',[0xD7,0xA2]]
-  ]);
-
-  let customGBKMap = new Map();
-  customGBKRef.on('value', (snap) => {
-    customGBKMap.clear();
-    const data = snap.val();
-    if (data) {
-      Object.entries(data).forEach(([char, bytes]) => {
-        customGBKMap.set(char, bytes);
-      });
-    }
-  });
-
-  function encodeGBK(str) {
-    const bytes = [];
-    for (let c of str) {
-      const code = c.charCodeAt(0);
-      if (code <= 0x7F) { bytes.push(code); continue; }
-      const custom = customGBKMap.get(c);
-      if (custom) { bytes.push(custom[0], custom[1]); continue; }
-      const gbk = gbkMap.get(c);
-      if (gbk) bytes.push(gbk[0], gbk[1]);
-      else bytes.push(0x20);
-    }
-    return new Uint8Array(bytes);
-  }
 
   const defaultMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
@@ -271,31 +239,31 @@
   ];
 
   let menu = JSON.parse(JSON.stringify(defaultMenu));
-  const tasteOptions = ['孜然', '辣'];
-  let cart = {}, adminCart = {};
-  let currentSpicy = '辣', adminCurrentSpicy = '辣';
-  let customerTable = '', adminSelectedTable = '';
+  const spicyLevels = ['不辣', '微辣', '中辣', '特辣'];
+  let cart = {};
+  let adminCart = {};
+  let currentSpicy = '微辣';
+  let adminCurrentSpicy = '微辣';
+  let customerTable = '';
+  let adminSelectedTable = '';
   const ADMIN_PASSWORD = '888';
   let isAdmin = window.location.search.includes('admin');
-  let currentFilter = 'all', currentAdminFilter = 'all';
-  let currentTableFilter = 'all', currentSearch = '';
-  let bluetoothDevice = null, bluetoothCharacteristic = null;
-
-  menuItemsRef.on('value', (snap) => {
-    if (snap.exists()) {
-      menu = Object.values(snap.val());
-    } else {
-      const menuObj = {};
-      defaultMenu.forEach(item => menuObj[item.id] = item);
-      menuItemsRef.set(menuObj);
-    }
-    if (!isAdmin) renderMenu(currentFilter);
-    else if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
-  });
+  let currentFilter = 'all';
+  let currentAdminFilter = 'all';
+  let currentTableFilter = 'all';
+  let currentSearch = '';
+  let bluetoothDevice = null;
+  let bluetoothCharacteristic = null;
 
   pricesRef.on('value', (snapshot) => {
     const prices = snapshot.val() || {};
-    menu.forEach(item => { if (prices[item.id] !== undefined) item.price = parseFloat(prices[item.id]); });
+    menu.forEach(item => {
+      if (prices[item.id] !== undefined) item.price = parseFloat(prices[item.id]);
+      else {
+        const def = defaultMenu.find(d => d.id === item.id);
+        if (def) item.price = def.price;
+      }
+    });
     if (!isAdmin) renderMenu(currentFilter);
     else if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
   });
@@ -304,7 +272,10 @@
   if (!isAdmin && urlParams.has('table')) {
     const tableParam = urlParams.get('table');
     if (tableParam === '' || tableParam === '0' || tableParam === 'none') customerTable = '';
-    else { const num = parseInt(tableParam); if (!isNaN(num) && num >= 1 && num <= 10) customerTable = num; }
+    else {
+      const num = parseInt(tableParam);
+      if (!isNaN(num) && num >= 1 && num <= 10) customerTable = num;
+    }
   }
 
   function toggleTableDropdown() { document.getElementById('tableDropdown').classList.toggle('open'); }
@@ -326,10 +297,22 @@
     document.getElementById('customerView').style.display = 'flex';
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('adminOrderPanel').style.display = 'none';
+    document.getElementById('adminLink').style.display = 'block';
     renderMenu('all');
   }
 
-  function getTotalQty(itemId, cartObj = cart) { return Object.values(cartObj[itemId] || {}).reduce((a,b)=>a+b,0); }
+  function getTotalQty(itemId, cartObj = cart) { return Object.values(cartObj[itemId] || {}).reduce((a, b) => a + b, 0); }
+
+  // 切换辣度下拉菜单
+  function toggleSpicyPicker(itemId, type) {
+    const dropdown = document.getElementById('spicyDropdown_' + itemId + '_' + type);
+    if (dropdown) {
+      const isOpen = dropdown.classList.contains('show');
+      // 关闭所有辣度下拉
+      document.querySelectorAll('.spicy-dropdown.show').forEach(d => d.classList.remove('show'));
+      if (!isOpen) dropdown.classList.add('show');
+    }
+  }
 
   function renderMenu(filter = 'all', containerId = 'menuContainer', cartObj = cart, updateCartFn = updateCartBar, isAdminPanel = false) {
     const container = document.getElementById(containerId);
@@ -338,47 +321,124 @@
     const curSpicy = isAdminPanel ? adminCurrentSpicy : currentSpicy;
     let htmlArr = [];
     items.forEach(item => {
-      const itemCart = cartObj[item.id] || {}, total = getTotalQty(item.id, cartObj);
-      const type = isAdminPanel ? 'admin' : 'guest', unit = item.unit || '串';
-      let tasteTags = tasteOptions.map(opt => {
-        const qty = itemCart[opt] || 0, sel = (opt === curSpicy) ? ' selected' : '';
-        return `<span class="taste-tag${sel}" onclick="selectSpicy('${opt}', '${type}')">${opt} ${qty}</span>`;
-      }).join('');
+      const itemCart = cartObj[item.id] || {};
+      const total = getTotalQty(item.id, cartObj);
+      const type = isAdminPanel ? 'admin' : 'guest';
+      const unit = item.unit || '串';
+
+      // 构建辣度选择器
+      let spicyPickerHtml = `<div class="spicy-picker" id="spicyPicker_${item.id}_${type}">
+        <button class="spicy-current-btn" onclick="toggleSpicyPicker(${item.id}, '${type}')">
+          ${curSpicy} <span style="font-size:10px;">(${itemCart[curSpicy] || 0})</span>
+        </button>
+        <div class="spicy-dropdown" id="spicyDropdown_${item.id}_${type}">
+          ${spicyLevels.map(level => `
+            <div class="spicy-option ${level === curSpicy ? 'selected' : ''}" onclick="selectSpicy('${level}', '${type}')">
+              ${level} (${itemCart[level] || 0})
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+
       let quickHtml = '';
       if (item.price < 6) {
-        quickHtml = '<div class="quick-adjust"><span class="spicy-indicator">当前：'+curSpicy+'</span>'+
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust('+item.id+', -1, \''+type+'\')">-1</button><span class="stepper-val">1'+unit+'</span><button class="stepper-btn right" onclick="quickAdjust('+item.id+', 1, \''+type+'\')">+1</button></div>'+
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust('+item.id+', -5, \''+type+'\')">-5</button><span class="stepper-val">5'+unit+'</span><button class="stepper-btn right" onclick="quickAdjust('+item.id+', 5, \''+type+'\')">+5</button></div>'+
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust('+item.id+', -10, \''+type+'\')">-10</button><span class="stepper-val">10'+unit+'</span><button class="stepper-btn right" onclick="quickAdjust('+item.id+', 10, \''+type+'\')">+10</button></div>'+
-          '</div><div class="quick-adjust">'+
-          '<button class="quick-btn" onclick="quickAdjust('+item.id+', 20, \''+type+'\')">+20'+unit+'</button>'+
-          '<button class="quick-btn" onclick="quickAdjust('+item.id+', 30, \''+type+'\')">+30'+unit+'</button>'+
-          '<button class="quick-btn" onclick="quickAdjust('+item.id+', 40, \''+type+'\')">+40'+unit+'</button>'+
-          '<button class="quick-btn" onclick="quickAdjust('+item.id+', 50, \''+type+'\')">+50'+unit+'</button></div>';
+        quickHtml = '<div class="quick-adjust">' +
+          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5</button><span class="stepper-val">5' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5</button></div>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10</button><span class="stepper-val">10' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10</button></div>' +
+          '</div>' +
+          '<div class="quick-adjust">' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 20, \'' + type + '\')">+20' + unit + '</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 30, \'' + type + '\')">+30' + unit + '</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 40, \'' + type + '\')">+40' + unit + '</button>' +
+          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 50, \'' + type + '\')">+50' + unit + '</button>' +
+          '</div>';
       } else {
-        quickHtml = '<div class="quick-adjust"><span class="spicy-indicator">当前：'+curSpicy+'</span>'+
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust('+item.id+', -1, \''+type+'\')">-1</button><span class="stepper-val">1'+unit+'</span><button class="stepper-btn right" onclick="quickAdjust('+item.id+', 1, \''+type+'\')">+1</button></div></div>';
+        quickHtml = '<div class="quick-adjust">' +
+          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
+          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
+          '</div>';
       }
-      htmlArr.push('<div class="menu-item"><img src="'+item.img+'" alt="'+item.name+'" onerror="this.src=\'https://placehold.co/70x70/eee/999?text=🍖\'"><div class="item-info"><div class="item-name">'+item.name+'</div><div class="item-price">¥'+item.price+'</div><div class="taste-row">'+tasteTags+'</div><div class="qty-row"><span class="qty-num" onclick="editDetail('+item.id+', \''+type+'\')">'+total+'</span> '+unit+'<button class="clear-item-btn" onclick="clearItem('+item.id+', \''+type+'\')" title="清除此菜品">✕</button></div>'+quickHtml+'</div></div>');
+
+      htmlArr.push(
+        '<div class="menu-item">' +
+        '<img src="' + item.img + '" alt="' + item.name + '" onerror="this.src=\'https://placehold.co/70x70/eee/999?text=🍖\'">' +
+        '<div class="item-info">' +
+          '<div class="item-name">' + item.name + '</div>' +
+          '<div class="item-price">¥' + item.price + '</div>' +
+          spicyPickerHtml +
+          '<div class="qty-row">' +
+            '<span class="qty-num" onclick="editDetail(' + item.id + ', \'' + type + '\')">' + total + '</span> ' + unit +
+            '<button class="clear-item-btn" onclick="clearItem(' + item.id + ', \'' + type + '\')" title="清除此菜品">✕</button>' +
+          '</div>' +
+          quickHtml +
+        '</div>' +
+        '</div>'
+      );
     });
     container.innerHTML = htmlArr.join('');
     updateCartFn(cartObj);
   }
 
-  function clearItem(itemId, type = 'guest') { const cartObj = type === 'admin' ? adminCart : cart; delete cartObj[itemId]; if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter); }
-  function selectSpicy(level, type = 'guest') { if (type === 'admin') { adminCurrentSpicy = level; renderAdminMenu(); } else { currentSpicy = level; renderMenu(currentFilter); } }
+  function clearItem(itemId, type = 'guest') {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    delete cartObj[itemId];
+    if (type === 'admin') renderAdminMenu();
+    else renderMenu(currentFilter);
+  }
+
+  function selectSpicy(level, type = 'guest') {
+    if (type === 'admin') { adminCurrentSpicy = level; renderAdminMenu(); }
+    else { currentSpicy = level; renderMenu(currentFilter); }
+    // 关闭所有辣度下拉
+    document.querySelectorAll('.spicy-dropdown.show').forEach(d => d.classList.remove('show'));
+  }
+
   function quickAdjust(itemId, delta, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     const curSpicy = type === 'admin' ? adminCurrentSpicy : currentSpicy;
     if (!cartObj[itemId]) cartObj[itemId] = {};
     if (delta > 0) cartObj[itemId][curSpicy] = (cartObj[itemId][curSpicy] || 0) + delta;
-    else { let current = cartObj[itemId][curSpicy] || 0; let remove = Math.min(current, -delta); cartObj[itemId][curSpicy] = current - remove; if (cartObj[itemId][curSpicy] === 0) delete cartObj[itemId][curSpicy]; }
+    else {
+      let current = cartObj[itemId][curSpicy] || 0;
+      let remove = Math.min(current, -delta);
+      cartObj[itemId][curSpicy] = current - remove;
+      if (cartObj[itemId][curSpicy] === 0) delete cartObj[itemId][curSpicy];
+    }
     if (Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
-    if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter);
+    if (type === 'admin') renderAdminMenu();
+    else renderMenu(currentFilter);
   }
 
-  function editDetail(itemId, type = 'guest') { /* 简化处理，可忽略 */ }
-  function closeDetailModal(itemId, type) { /* 同上 */ }
+  function editDetail(itemId, type = 'guest') {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    const itemCart = cartObj[itemId] || {};
+    let html = '<div class="modal-overlay" id="detailModal"><div class="modal-content">' +
+      '<div class="modal-title">调整【' + menu.find(m => m.id == itemId).name + '】各辣度数量</div>';
+    spicyLevels.forEach(level => {
+      const qty = itemCart[level] || 0;
+      html += '<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0;">' +
+        '<span>' + level + '</span>' +
+        '<input type="number" id="detailQty_' + itemId + '_' + level + '" value="' + qty + '" min="0" style="width:60px; text-align:center;" inputmode="numeric">' +
+      '</div>';
+    });
+    html += '<div class="modal-actions"><button class="btn-cancel" onclick="closeDetailModal(' + itemId + ', \'' + type + '\')">完成</button></div></div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  function closeDetailModal(itemId, type) {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    spicyLevels.forEach(level => {
+      const val = parseInt(document.getElementById('detailQty_' + itemId + '_' + level).value) || 0;
+      if (val === 0) { if (cartObj[itemId]) delete cartObj[itemId][level]; }
+      else { if (!cartObj[itemId]) cartObj[itemId] = {}; cartObj[itemId][level] = val; }
+    });
+    if (cartObj[itemId] && Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
+    document.getElementById('detailModal').remove();
+    if (type === 'admin') renderAdminMenu();
+    else renderMenu(currentFilter);
+  }
 
   function updateCartBar(cartObj = cart) {
     const countSpan = document.getElementById('cartCount'), totalSpan = document.getElementById('cartTotal');
@@ -388,14 +448,17 @@
       const item = menu.find(m => m.id == itemId);
       Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; });
     });
-    countSpan.innerText = totalCount; totalSpan.innerText = totalPrice.toFixed(2);
+    countSpan.innerText = totalCount;
+    totalSpan.innerText = totalPrice.toFixed(2);
   }
 
   function getCartItems(cartObj = cart) {
     let items = [];
     Object.entries(cartObj).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
-      Object.entries(levels).forEach(([level, qty]) => { if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty }); });
+      Object.entries(levels).forEach(([level, qty]) => {
+        if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty });
+      });
     });
     return items;
   }
@@ -408,189 +471,187 @@
     return 'Y' + dateStr + '-' + timeStr + rand;
   }
 
-  function filterCategory(cat, e) { document.querySelectorAll('#leftCategories button').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); currentFilter = cat; renderMenu(cat); }
+  function filterCategory(cat, e) {
+    document.querySelectorAll('#leftCategories button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentFilter = cat;
+    renderMenu(cat);
+  }
 
-  function showConfirmModal() { const items = getCartItems(cart); if (items.length === 0) { alert('请先选择菜品'); return; } showCommonConfirm(items, 'guest'); }
+  function showConfirmModal() {
+    const items = getCartItems(cart);
+    if (items.length === 0) { alert('请先选择菜品'); return; }
+    showCommonConfirm(items, 'guest');
+  }
+
   function showCommonConfirm(items, type) {
-    const total = items.reduce((sum,i)=>sum+i.subtotal,0).toFixed(2);
-    let itemsHtml = items.map(i => `<div class="modal-item"><div class="modal-item-name">${i.name} <span class="modal-item-detail">${i.spicy} ×${i.qty}</span></div><div class="modal-item-subtotal">¥${i.subtotal.toFixed(2)}</div></div>`).join('');
+    const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
+    let itemsHtml = '';
+    items.forEach(i => {
+      itemsHtml += '<div class="modal-item"><div class="modal-item-name">' + i.name + ' <span class="modal-item-detail">' + i.spicy + ' ×' + i.qty + '</span></div><div class="modal-item-subtotal">¥' + i.subtotal.toFixed(2) + '</div></div>';
+    });
     const confirmFn = type === 'admin' ? 'confirmAdminOrder()' : 'confirmOrder()';
     const currentTable = type === 'admin' ? adminSelectedTable : customerTable;
     let tableSection = '<div class="modal-input-group"><label>🪑 桌号</label></div><div class="modal-table-btns" id="modalTableBtns">';
-    for (let i = 1; i <= 10; i++) { const sel = currentTable == i ? ' selected' : ''; tableSection += `<button class="modal-table-btn${sel}" onclick="setTableFromModal(${i}, '${type}')">${i}号</button>`; }
-    tableSection += '<button class="modal-table-btn" onclick="setTableFromModal(\'\', \''+type+'\')">无桌</button></div>';
-    const modalHtml = `<div class="modal-overlay" id="confirmModal"><div class="modal-content"><div class="modal-title">📋 确认订单</div><div class="modal-items">${itemsHtml}</div><div class="modal-total">合计：¥${total}</div>${tableSection}<div class="modal-input-group"><label>📝 备注</label><textarea id="remarkInput" rows="2" placeholder="如：少盐、多辣等" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px;"></textarea></div><div class="modal-checkbox"><input type="checkbox" id="packCheckbox" style="transform:scale(1.8); margin-right:10px;"><label style="font-size:20px; font-weight:bold;">🥡 打包</label></div><div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('confirmModal').remove()">取消</button><button class="btn-confirm" onclick="${confirmFn}">确认下单</button></div></div></div>`;
+    for (let i = 1; i <= 10; i++) {
+      const sel = currentTable == i ? ' selected' : '';
+      tableSection += '<button class="modal-table-btn' + sel + '" onclick="setTableFromModal(' + i + ', \'' + type + '\')">' + i + '号</button>';
+    }
+    tableSection += '<button class="modal-table-btn" onclick="setTableFromModal(\'\', \'' + type + '\')">无桌</button></div>';
+
+    const modalHtml = '<div class="modal-overlay" id="confirmModal"><div class="modal-content">' +
+      '<div class="modal-title">📋 确认订单</div><div class="modal-items">' + itemsHtml + '</div>' +
+      '<div class="modal-total">合计：¥' + total + '</div>' + tableSection +
+      '<div class="modal-input-group"><label>📝 备注</label><textarea id="remarkInput" rows="2" placeholder="如：少盐、多辣等" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px;"></textarea></div>' +
+      '<div class="modal-checkbox"><input type="checkbox" id="packCheckbox" style="transform:scale(1.8); margin-right:10px;"><label style="font-size:20px; font-weight:bold;">🥡 打包</label></div>' +
+      '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'confirmModal\').remove()">取消</button><button class="btn-confirm" onclick="' + confirmFn + '">确认下单</button></div>' +
+      '</div></div>';
     document.body.insertAdjacentHTML('beforeend', modalHtml);
   }
+
   function setTableFromModal(num, type) {
-    if (type === 'admin') adminSelectedTable = num; else { customerTable = num; updateTableDisplay(); }
-    const btns = document.querySelectorAll('#modalTableBtns .modal-table-btn'); btns.forEach(btn => btn.classList.remove('selected'));
-    if (num !== '') { const targetBtn = document.querySelector('#modalTableBtns .modal-table-btn[onclick*="'+num+'"]'); if (targetBtn) targetBtn.classList.add('selected'); }
-  }
-  function confirmOrder() {
-    const tableNumber = customerTable || '未选桌'; const isPack = document.getElementById('packCheckbox').checked; const remark = document.getElementById('remarkInput').value.trim();
-    const items = getCartItems(cart); const total = items.reduce((sum,i)=>sum+i.subtotal,0).toFixed(2); const orderNumber = generateOrderNumber();
-    const order = { time: new Date().toLocaleString(), table: tableNumber, orderNumber: orderNumber, isPack: isPack ? '打包' : '堂食', remark: remark, items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })), total: total, settled: false, timestamp: firebase.database.ServerValue.TIMESTAMP };
-    ordersRef.push(order).then(() => { document.getElementById('confirmModal').remove(); alert('下单成功！单号：'+orderNumber+'\n合计 ¥'+total); cart = {}; renderMenu(currentFilter); });
+    if (type === 'admin') adminSelectedTable = num;
+    else { customerTable = num; updateTableDisplay(); }
+    const btns = document.querySelectorAll('#modalTableBtns .modal-table-btn');
+    btns.forEach(btn => btn.classList.remove('selected'));
+    if (num !== '') {
+      const targetBtn = document.querySelector('#modalTableBtns .modal-table-btn[onclick*="' + num + '"]');
+      if (targetBtn) targetBtn.classList.add('selected');
+    }
   }
 
-  function showAdminOrderPanel() { document.getElementById('adminPanel').style.display = 'none'; document.getElementById('adminOrderPanel').style.display = 'flex'; currentAdminFilter = 'all'; renderAdminMenu(); }
-  function hideAdminOrderPanel() { document.getElementById('adminOrderPanel').style.display = 'none'; document.getElementById('adminPanel').style.display = 'block'; renderOrders(); }
-  function filterAdminCategory(cat, e) { document.querySelectorAll('#adminLeftCategories button').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); currentAdminFilter = cat; renderAdminMenu(); }
+  function confirmOrder() {
+    const tableNumber = customerTable || '未选桌';
+    const isPack = document.getElementById('packCheckbox').checked;
+    const remark = document.getElementById('remarkInput').value.trim();
+    const items = getCartItems(cart);
+    const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
+    const orderNumber = generateOrderNumber();
+    const order = {
+      time: new Date().toLocaleString(), table: tableNumber, orderNumber: orderNumber,
+      isPack: isPack ? '打包' : '堂食', remark: remark,
+      items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })),
+      total: total, settled: false, timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+    ordersRef.push(order).then(() => {
+      document.getElementById('confirmModal').remove();
+      alert('下单成功！单号：' + orderNumber + '\n合计 ¥' + total);
+      cart = {}; renderMenu(currentFilter);
+    });
+  }
+
+  function showAdminOrderPanel() { 
+    document.getElementById('adminPanel').style.display = 'none'; 
+    document.getElementById('adminOrderPanel').style.display = 'flex'; 
+    currentAdminFilter = 'all'; 
+    renderAdminMenu(); 
+  }
+  function hideAdminOrderPanel() { 
+    document.getElementById('adminOrderPanel').style.display = 'none'; 
+    document.getElementById('adminPanel').style.display = 'block'; 
+    renderOrders(); 
+  }
+  function filterAdminCategory(cat, e) { 
+    document.querySelectorAll('#adminLeftCategories button').forEach(b => b.classList.remove('active')); 
+    e.target.classList.add('active'); 
+    currentAdminFilter = cat; 
+    renderAdminMenu(); 
+  }
   function renderAdminMenu() { renderMenu(currentAdminFilter, 'adminMenuContainer', adminCart, updateAdminCartBar, true); }
   function updateAdminCartBar() {
     const countSpan = document.getElementById('adminCartCount'), totalSpan = document.getElementById('adminCartTotal');
     if (!countSpan || !totalSpan) return;
     let totalCount = 0, totalPrice = 0;
-    Object.entries(adminCart).forEach(([itemId, levels]) => { const item = menu.find(m => m.id == itemId); Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; }); });
+    Object.entries(adminCart).forEach(([itemId, levels]) => {
+      const item = menu.find(m => m.id == itemId);
+      Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; });
+    });
     countSpan.innerText = totalCount; totalSpan.innerText = totalPrice.toFixed(2);
   }
   function showAdminConfirmModal() { const items = getCartItems(adminCart); if (items.length === 0) { alert('请先选择菜品'); return; } showCommonConfirm(items, 'admin'); }
   function confirmAdminOrder() {
-    const tableNumber = adminSelectedTable || '未选桌'; const isPack = document.getElementById('packCheckbox').checked; const remark = document.getElementById('remarkInput').value.trim();
-    const items = getCartItems(adminCart); const total = items.reduce((sum,i)=>sum+i.subtotal,0).toFixed(2); const orderNumber = generateOrderNumber();
-    const order = { time: new Date().toLocaleString(), table: tableNumber, orderNumber: orderNumber, isPack: isPack ? '打包' : '堂食', remark: remark, items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })), total: total, settled: false, timestamp: firebase.database.ServerValue.TIMESTAMP };
-    ordersRef.push(order).then(() => { document.getElementById('confirmModal').remove(); alert('代客下单成功！单号：'+orderNumber+'\n合计 ¥'+total); adminCart = {}; adminSelectedTable = ''; renderAdminMenu(); });
-  }
-
-  // 订单修改
-  function editOrder(key) {
-    const order = allOrders.find(o => o.key === key);
-    if (!order) return;
-    window.editOrderKey = key;
-    window.editOrderData = JSON.parse(JSON.stringify(order.items));
-    let html = `<div class="modal-overlay" id="editOrderModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">✏️ 修改订单 ${order.orderNumber||''}</div>`;
-    html += `<div class="modal-input-group"><label>🪑 桌号</label><input type="text" id="editTable" value="${order.table||''}" placeholder="桌号"></div>`;
-    html += `<div class="modal-checkbox"><input type="checkbox" id="editPack" ${order.isPack==='打包'?'checked':''}><label>🥡 打包</label></div>`;
-    html += `<div class="modal-input-group"><label>📝 备注</label><textarea id="editRemark" rows="2">${order.remark||''}</textarea></div>`;
-    html += '<div class="modal-input-group"><label>🍢 菜品</label><div id="editItemsContainer">';
-    window.editOrderData.forEach((item, idx) => {
-      html += `<div class="edit-item-row" style="display:flex; gap:5px; margin:5px 0;"><input type="text" value="${item.name}" placeholder="名称" onchange="updateEditItem(this, ${idx}, 'name')" style="flex:2"><input type="number" value="${item.qty}" min="0" onchange="updateEditItem(this, ${idx}, 'qty')" style="width:50px"><select onchange="updateEditItem(this, ${idx}, 'spicy')" style="width:60px"><option value="孜然" ${item.spicy==='孜然'?'selected':''}>孜然</option><option value="辣" ${item.spicy==='辣'?'selected':''}>辣</option></select><span>¥${item.subtotal.toFixed(2)}</span><button onclick="removeEditItem(${idx})" style="background:#e74c3c; color:white; border:none; border-radius:8px; padding:2px 8px;">删除</button></div>`;
+    const tableNumber = adminSelectedTable || '未选桌';
+    const isPack = document.getElementById('packCheckbox').checked;
+    const remark = document.getElementById('remarkInput').value.trim();
+    const items = getCartItems(adminCart);
+    const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
+    const orderNumber = generateOrderNumber();
+    const order = {
+      time: new Date().toLocaleString(), table: tableNumber, orderNumber: orderNumber,
+      isPack: isPack ? '打包' : '堂食', remark: remark,
+      items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty, spicy: i.spicy, subtotal: i.subtotal })),
+      total: total, settled: false, timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+    ordersRef.push(order).then(() => {
+      document.getElementById('confirmModal').remove();
+      alert('代客下单成功！单号：' + orderNumber + '\n合计 ¥' + total);
+      adminCart = {}; adminSelectedTable = ''; renderAdminMenu();
     });
-    html += '</div><button onclick="addEditItem()" style="margin-top:5px;">+ 添加菜品</button></div>';
-    html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('editOrderModal').remove()">取消</button><button class="btn-confirm" onclick="saveOrderEdit()">保存修改</button></div></div></div>`;
-    document.body.insertAdjacentHTML('beforeend', html);
-  }
-  function updateEditItem(input, idx, field) {
-    const val = field === 'qty' ? parseInt(input.value) : input.value;
-    window.editOrderData[idx][field] = val;
-    if (field === 'name' || field === 'qty') {
-      const menuItem = menu.find(m => m.name === window.editOrderData[idx].name);
-      const price = menuItem ? menuItem.price : (window.editOrderData[idx].price || 0);
-      window.editOrderData[idx].price = price;
-      window.editOrderData[idx].subtotal = price * window.editOrderData[idx].qty;
-    }
-  }
-  function removeEditItem(idx) { window.editOrderData.splice(idx, 1); document.getElementById('editOrderModal').remove(); editOrder(window.editOrderKey); }
-  function addEditItem() { window.editOrderData.push({ name: '', price: 0, qty: 1, spicy: '辣', subtotal: 0 }); document.getElementById('editOrderModal').remove(); editOrder(window.editOrderKey); }
-  async function saveOrderEdit() {
-    const key = window.editOrderKey;
-    const newItems = window.editOrderData.map(item => {
-      const menuItem = menu.find(m => m.name === item.name);
-      const price = menuItem ? menuItem.price : (item.price || 0);
-      const qty = parseInt(item.qty) || 0;
-      return { name: item.name, price: price, qty: qty, spicy: item.spicy, subtotal: price * qty };
-    }).filter(i => i.qty > 0);
-    const total = newItems.reduce((sum,i)=>sum+i.subtotal,0).toFixed(2);
-    const table = document.getElementById('editTable').value;
-    const isPack = document.getElementById('editPack').checked ? '打包' : '堂食';
-    const remark = document.getElementById('editRemark').value;
-    await ordersRef.child(key).update({ table, isPack, remark, items: newItems, total });
-    document.getElementById('editOrderModal').remove();
-    alert('订单已更新');
   }
 
-  // 菜品名称管理
-  function showMenuManager() {
-    let html = `<div class="modal-overlay" id="menuManagerModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">📋 菜品管理</div>`;
+  function showPriceManager() {
+    let html = '<div class="modal-overlay" id="priceModal"><div class="modal-content" style="max-width:450px;">' +
+      '<div class="modal-title">💲 菜品价格管理</div>';
     menu.forEach(item => {
-      html += `<div class="price-edit-row"><input type="text" id="menuName_${item.id}" value="${item.name}" style="width:120px"><input type="number" step="0.1" id="menuPrice_${item.id}" value="${item.price}" style="width:60px"><select id="menuCat_${item.id}">${['meat','veg','seafood','noodle','drink','other'].map(c=>`<option value="${c}" ${item.category===c?'selected':''}>${c}</option>`).join('')}</select><button onclick="deleteMenuItem(${item.id})" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:8px;">删除</button></div>`;
+      html += '<div class="price-edit-row"><span>' + item.name + '</span><input type="number" step="0.1" id="priceInput_' + item.id + '" value="' + item.price + '"></div>';
     });
-    html += '<button onclick="addNewMenuItem()" style="margin:10px 0;">+ 添加新菜品</button>';
-    html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('menuManagerModal').remove()">取消</button><button class="btn-confirm" onclick="saveMenuChanges()">保存</button></div></div></div>`;
+    html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'priceModal\').remove()">取消</button><button class="btn-confirm" onclick="savePrices()">保存价格</button></div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
   }
-  function addNewMenuItem() { const newId = menu.length > 0 ? Math.max(...menu.map(m=>m.id)) + 1 : 1; menu.push({ id: newId, name: "新菜品", price: 0, category: "meat", unit: "串", img: "https://placehold.co/150x150/eee/999?text=新" }); document.getElementById('menuManagerModal').remove(); showMenuManager(); }
-  function deleteMenuItem(id) { if (confirm('确定删除此菜品？')) { menu = menu.filter(m => m.id !== id); document.getElementById('menuManagerModal').remove(); showMenuManager(); } }
-  async function saveMenuChanges() {
+
+  function savePrices() {
     const updates = {};
     menu.forEach(item => {
-      const nameInput = document.getElementById('menuName_' + item.id);
-      const priceInput = document.getElementById('menuPrice_' + item.id);
-      const catSelect = document.getElementById('menuCat_' + item.id);
-      if (nameInput && priceInput && catSelect) {
-        updates[item.id] = { id: item.id, name: nameInput.value, price: parseFloat(priceInput.value) || 0, category: catSelect.value, unit: item.unit, img: item.img };
+      const input = document.getElementById('priceInput_' + item.id);
+      if (input) {
+        const newPrice = parseFloat(input.value);
+        if (!isNaN(newPrice) && newPrice >= 0) updates[item.id] = newPrice;
       }
     });
-    await menuItemsRef.set(updates);
-    document.getElementById('menuManagerModal').remove();
-    alert('菜品已更新');
+    pricesRef.update(updates).then(() => {
+      document.getElementById('priceModal').remove();
+      alert('价格已更新！');
+    }).catch(err => alert('保存失败：' + err.message));
   }
 
-  // 统计与预备
-  async function showStatistics() {
-    const today = new Date().toLocaleDateString();
-    const prepSnap = await dailyPrepRef.child(today).once('value');
-    const prepData = prepSnap.val() || {};
-    let html = `<div class="modal-overlay" id="statModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">📊 今日统计 (${today})</div>`;
-    html += '<div style="margin-bottom:10px;"><strong>预备数量设置</strong></div>';
-    menu.forEach(item => {
-      const prepQty = prepData[item.id] || 0;
-      html += `<div class="stat-row"><span>${item.name}</span><input type="number" id="prep_${item.id}" value="${prepQty}" min="0" style="width:60px"></div>`;
-    });
-    html += '<button class="btn-confirm" onclick="savePrep()" style="margin:10px 0; width:100%;">保存预备数量</button>';
-    const orders = allOrders.filter(o => { if (!o.timestamp) return false; const orderDate = new Date(o.timestamp).toLocaleDateString(); return orderDate === today; });
-    let totalAmount = 0; const soldMap = {};
-    orders.forEach(order => { totalAmount += parseFloat(order.total); order.items.forEach(item => { if (!soldMap[item.name]) soldMap[item.name] = 0; soldMap[item.name] += item.qty; }); });
-    html += `<div style="margin-top:15px;"><strong>今日销售总额：¥${totalAmount.toFixed(2)}</strong></div>`;
-    html += '<div style="margin-top:10px;"><strong>剩余数量</strong></div>';
-    menu.forEach(item => { const prep = prepData[item.id] || 0; const sold = soldMap[item.name] || 0; const left = prep - sold; html += `<div class="stat-row"><span>${item.name}</span><span>预备:${prep} 已售:${sold} 剩余:${left}</span></div>`; });
-    html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('statModal').remove()">关闭</button></div></div></div>`;
-    document.body.insertAdjacentHTML('beforeend', html);
-  }
-  async function savePrep() { const today = new Date().toLocaleDateString(); const updates = {}; menu.forEach(item => { const input = document.getElementById('prep_' + item.id); if (input) updates[item.id] = parseInt(input.value) || 0; }); await dailyPrepRef.child(today).set(updates); document.getElementById('statModal').remove(); alert('预备数量已保存'); }
-
-  // GBK管理
-  function showGBKManager() {
-    let html = `<div class="modal-overlay" id="gbkModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">🔤 自定义GBK编码管理</div><div style="margin-bottom:10px;">已添加的自定义编码：</div>`;
-    if (customGBKMap.size === 0) html += '<p style="color:#999;">暂无自定义编码</p>';
-    else customGBKMap.forEach((bytes, char) => { html += `<div class="gbk-row"><span>${char}</span><span>${bytes.map(b=>'0x'+b.toString(16).toUpperCase().padStart(2,'0')).join(', ')}</span><button onclick="deleteCustomGBK('${char}')" style="background:#e74c3c; color:white; border:none; padding:2px 8px; border-radius:8px;">删除</button></div>`; });
-    html += `<div style="margin-top:15px;"><strong>添加新编码：</strong></div><div style="display:flex; gap:5px; margin:5px 0;"><input type="text" id="newGBKChar" placeholder="汉字" maxlength="1" style="width:50px;"><input type="text" id="newGBKByte1" placeholder="第一字节" style="width:60px;"><input type="text" id="newGBKByte2" placeholder="第二字节" style="width:60px;"><button onclick="addCustomGBK()" style="background:#27ae60; color:white; border:none; padding:4px 10px; border-radius:8px;">添加</button></div><p style="font-size:12px; color:#666;">第一/二字节请输入十六进制，如 B1、C6</p>`;
-    html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('gbkModal').remove()">关闭</button></div></div></div>`;
-    document.body.insertAdjacentHTML('beforeend', html);
-  }
-  function addCustomGBK() {
-    const char = document.getElementById('newGBKChar').value.trim(); const byte1 = document.getElementById('newGBKByte1').value.trim(); const byte2 = document.getElementById('newGBKByte2').value.trim();
-    if (!char || !byte1 || !byte2) { alert('请填写完整'); return; }
-    const code1 = parseInt(byte1, 16), code2 = parseInt(byte2, 16);
-    if (isNaN(code1) || isNaN(code2)) { alert('字节格式错误'); return; }
-    customGBKRef.child(char).set([code1, code2]).then(() => { document.getElementById('gbkModal').remove(); showGBKManager(); });
-  }
-  function deleteCustomGBK(char) { if (confirm(`确定删除 “${char}” 的自定义编码吗？`)) { customGBKRef.child(char).remove().then(() => { document.getElementById('gbkModal').remove(); showGBKManager(); }); } }
-
-  // 订单管理
   let allOrders = [];
   function startListening() {
     ordersRef.off();
-    ordersRef.on('child_added', (snapshot) => { const order = snapshot.val(); allOrders.unshift({ key: snapshot.key, ...order }); autoPrint(order); playNotification(); renderOrders(); });
+    ordersRef.on('child_added', (snapshot) => {
+      const order = snapshot.val(); allOrders.unshift({ key: snapshot.key, ...order });
+      autoPrint(order); playNotification(); renderOrders();
+    });
     ordersRef.on('child_removed', (snapshot) => { allOrders = allOrders.filter(o => o.key !== snapshot.key); renderOrders(); });
-    ordersRef.on('child_changed', (snapshot) => { const idx = allOrders.findIndex(o => o.key === snapshot.key); if (idx !== -1) allOrders[idx] = { key: snapshot.key, ...snapshot.val() }; renderOrders(); });
+    ordersRef.on('child_changed', (snapshot) => {
+      const index = allOrders.findIndex(o => o.key === snapshot.key);
+      if (index !== -1) allOrders[index] = { key: snapshot.key, ...snapshot.val() };
+      renderOrders();
+    });
   }
+
   function filterTable(table, e) { document.querySelectorAll('#tableNav button').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); currentTableFilter = table; renderOrders(); }
   function searchOrders() { currentSearch = document.getElementById('searchInput').value.trim(); renderOrders(); }
+
   function renderOrders() {
     const list = document.getElementById('orderList'), settleBtn = document.getElementById('settleTableBtn'), tableTotalDiv = document.getElementById('tableTotal');
     let filtered = allOrders;
-    if (currentTableFilter !== 'all') { filtered = filtered.filter(o => o.table == currentTableFilter); settleBtn.style.display = 'inline-block'; } else settleBtn.style.display = 'none';
+    if (currentTableFilter !== 'all') { filtered = filtered.filter(o => o.table == currentTableFilter); settleBtn.style.display = 'inline-block'; }
+    else settleBtn.style.display = 'none';
     if (currentSearch) filtered = filtered.filter(o => o.orderNumber && o.orderNumber.includes(currentSearch));
     let tableTotal = 0; filtered.forEach(o => { if (!o.settled) tableTotal += parseFloat(o.total); });
-    tableTotalDiv.innerText = currentTableFilter === 'all' ? '' : `桌号 ${currentTableFilter} 未结算总额：¥${tableTotal.toFixed(2)}`;
+    tableTotalDiv.innerText = currentTableFilter === 'all' ? '' : '桌号 ' + currentTableFilter + ' 未结算总额：¥' + tableTotal.toFixed(2);
     if (filtered.length === 0) { list.innerHTML = '<p style="color:#999;">暂无订单</p>'; return; }
     let ordersHtml = '';
     filtered.forEach(order => {
       const settledClass = order.settled ? 'settled' : '';
-      let itemsHtml = ''; order.items.forEach(i => itemsHtml += `<li>${i.name} ${i.spicy} ×${i.qty} - ¥${i.subtotal}</li>`);
-      ordersHtml += `<div class="order-card ${settledClass}" id="order-${order.key}"><strong>🕒 ${order.time}</strong> | 🪑 ${order.table||'无'} | ${order.isPack||'堂食'} ${order.settled?' (已结算)':''}<br>单号：${order.orderNumber||'无'} ${order.remark ? '<br>备注：'+order.remark : ''}<br>合计 ¥${order.total}<ul style="margin:6px 0; padding-left:20px;">${itemsHtml}</ul><button class="print-btn" onclick="reprint('${order.key}')">🖨️ 补打小票</button><button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${order.key}')">删除</button><button style="background:#f39c12;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;margin-left:4px;" onclick="editOrder('${order.key}')">修改</button></div>`;
+      let itemsHtml = ''; order.items.forEach(i => itemsHtml += '<li>' + i.name + ' ' + i.spicy + ' ×' + i.qty + ' - ¥' + i.subtotal + '</li>');
+      ordersHtml += '<div class="order-card ' + settledClass + '" id="order-' + order.key + '">' +
+        '<strong>🕒 ' + order.time + '</strong> | 🪑 ' + (order.table || '无') + ' | ' + (order.isPack || '堂食') + (order.settled ? ' (已结算)' : '') +
+        '<br>单号：' + (order.orderNumber || '无') + (order.remark ? '<br>备注：' + order.remark : '') +
+        '<br>合计 ¥' + order.total + '<ul style="margin:6px 0; padding-left:20px;">' + itemsHtml + '</ul>' +
+        '<button class="print-btn" onclick="reprint(\'' + order.key + '\')">🖨️ 补打小票</button>' +
+        '<button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder(\'' + order.key + '\')">删除</button>' +
+      '</div>';
     });
     list.innerHTML = ordersHtml;
   }
@@ -599,7 +660,7 @@
     if (currentTableFilter === 'all') return;
     const tableOrders = allOrders.filter(o => o.table == currentTableFilter && !o.settled);
     if (tableOrders.length === 0) { alert('该桌没有未结算订单'); return; }
-    if (!confirm(`确定结算桌号 ${currentTableFilter} 的所有未结算订单吗？`)) return;
+    if (!confirm('确定结算桌号 ' + currentTableFilter + ' 的所有未结算订单吗？')) return;
     let combinedItems = [], totalAmount = 0;
     tableOrders.forEach(order => { order.items.forEach(item => { combinedItems.push({ name: item.name, spicy: item.spicy, qty: item.qty, subtotal: item.subtotal }); totalAmount += item.subtotal; }); });
     const mergedOrder = { time: new Date().toLocaleString(), table: currentTableFilter, isPack: '堂食', items: combinedItems, total: totalAmount.toFixed(2) };
@@ -607,72 +668,59 @@
     const updates = {}; tableOrders.forEach(order => { updates[order.key + '/settled'] = true; });
     ordersRef.update(updates).then(() => alert('已结算并打印汇总小票！'));
   }
+
   function deleteOrder(key) { if (confirm('确定删除此订单？')) ordersRef.child(key).remove(); }
   function clearOrders() { if (confirm('确定清空所有订单？')) ordersRef.remove(); }
   function reprint(key) { const order = allOrders.find(o => o.key === key); if (order) autoPrint(order); }
 
   function autoPrint(order) {
-    if (bluetoothCharacteristic) { try { const cmd = build72mmESC(order); sendBluetoothData(cmd); } catch(e) { fallbackPrint(order); } }
-    else fallbackPrint(order);
+    if (bluetoothCharacteristic) {
+      try { const command = build72mmESC(order); sendBluetoothData(command); } catch (e) { fallbackPrint(order); }
+    } else fallbackPrint(order);
   }
 
   function fallbackPrint(order) {
     const w = window.open('', '_blank', 'width=320,height=400');
     if (!w) return;
-    let html = '<html><head><title>久久家一元烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家一元烧烤</h2><p style="text-align:center;">'+order.time+'</p><p>单号：'+(order.orderNumber||'无')+'</p><p>桌号：'+(order.table||'无')+' | '+(order.isPack||'堂食')+'</p><div class="line"></div>';
-    order.items.forEach(item => html += '<div>'+item.name+' '+item.spicy+' ×'+item.qty+' <span style="float:right;">¥'+item.subtotal+'</span></div><div class="line"></div>');
-    if (order.remark) html += '<div>备注：'+order.remark+'</div><div class="line"></div>';
-    html += '<h3 class="right">合计: ¥'+order.total+'</h3><p style="text-align:center;">新订单 - 请及时处理</p></body></html>';
+    let html = '<html><head><title>久久家一元烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家一元烧烤</h2><p style="text-align:center;">' + order.time + '</p><p>单号：' + (order.orderNumber || '无') + '</p><p>桌号：' + (order.table||'无') + ' | ' + (order.isPack||'堂食') + '</p><div class="line"></div>';
+    order.items.forEach(item => html += '<div>' + item.name + ' 辣度:' + item.spicy + ' ×' + item.qty + ' <span style="float:right;">¥' + item.subtotal + '</span></div><div class="line"></div>');
+    if (order.remark) html += '<div>备注：' + order.remark + '</div><div class="line"></div>';
+    html += '<h3 class="right">合计: ¥' + order.total + '</h3><p style="text-align:center;">新订单 - 请及时处理</p></body></html>';
     w.document.write(html); w.document.close(); w.focus(); w.print(); setTimeout(() => w.close(), 2000);
   }
 
-  function build72mmESC(order) {
-    let str = '\x1B\x40';
-    str += '\x1B\x74\x0F';   // 强制选择代码页：GBK (0x0F)
-    str += '\x1B\x61\x01';
-    str += '\x1B\x21\x30';
-    str += '久久家一元烧烤\n';
-    str += '\x1B\x21\x00';
-    str += '----------------------------\n';
-    str += '\x1B\x61\x00';
-    str += '时间：' + order.time + '\n';
-    str += '单号：' + (order.orderNumber || '无') + '\n';
-    str += '\x1B\x45\x01\x1B\x21\x30';
-    str += '桌号：' + order.table + '  ' + order.isPack + '\n';
-    str += '\x1B\x21\x00\x1B\x45\x00';
-    str += '----------------------------\n';
-    str += '品名       数量  小计\n';
-    order.items.forEach(item => {
-      const name = item.name.padEnd(7, ' '); const qty = item.qty.toString().padStart(2, ' '); const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
-      str += name + ' ' + qty + ' ' + subtotal + '\n';
-      str += '  ' + item.spicy + '\n';
-    });
-    if (order.remark) { str += '----------------------------\n'; str += '备注：' + order.remark + '\n'; }
-    str += '----------------------------\n';
-    str += '\x1B\x61\x02';
-    str += '合计：¥ ' + order.total + '\n';
-    str += '\x1B\x61\x01';
-    str += '谢谢惠顾，欢迎再次光临\n';
-    str += '\n\n\n';
-    str += '\x1D\x56\x42\x00';
-    return encodeGBK(str);
+  function playNotification() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator();
+    osc.type = 'square'; osc.frequency.setValueAtTime(800, ctx.currentTime); osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.15);
   }
 
-  function playNotification() { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const osc = ctx.createOscillator(); osc.type='square'; osc.frequency.setValueAtTime(800, ctx.currentTime); osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime+0.15); }
   function hideAdmin() { window.location.href = window.location.pathname; }
 
   function showLoginForm() {
-    document.getElementById('customerView').style.display = 'none'; document.getElementById('adminPanel').style.display = 'none'; document.getElementById('adminOrderPanel').style.display = 'none';
-    document.body.insertAdjacentHTML('beforeend', '<div id="loginBox"><h3>🔐 店家登录</h3><input id="pwdInput" type="password" placeholder="请输入管理密码"><button onclick="checkPassword()">进入管理</button><p id="loginError"></p><a href="'+window.location.pathname+'" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a></div>');
+    document.getElementById('customerView').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('adminOrderPanel').style.display = 'none';
+    document.body.insertAdjacentHTML('beforeend', '<div id="loginBox"><h3>🔐 店家登录</h3><input id="pwdInput" type="password" placeholder="请输入管理密码"><button onclick="checkPassword()">进入管理</button><p id="loginError"></p><a href="' + window.location.pathname + '" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a></div>');
   }
+
   function checkPassword() {
     if (document.getElementById('pwdInput').value === ADMIN_PASSWORD) {
-      document.getElementById('loginBox').remove(); document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('loginBox').remove();
+      document.getElementById('adminPanel').style.display = 'block';
       if (navigator.bluetooth) document.getElementById('connectPrinterBtn').style.display = 'inline-block';
       initTableNav(); startListening();
     } else document.getElementById('loginError').innerText = '密码错误，请重试';
   }
-  function initTableNav() { const nav = document.getElementById('tableNav'); for (let i=1;i<=10;i++) { if (!nav.querySelector('button[data-table="'+i+'"]')) { const btn = document.createElement('button'); btn.setAttribute('data-table', i); btn.innerText = '🪑 '+i+'号桌'; btn.onclick = function(e) { filterTable(i, e); }; nav.appendChild(btn); } } }
+
+  function initTableNav() {
+    const nav = document.getElementById('tableNav');
+    for (let i = 1; i <= 10; i++) {
+      if (!nav.querySelector('button[data-table="' + i + '"]')) {
+        const btn = document.createElement('button'); btn.setAttribute('data-table', i); btn.innerText = '🪑 ' + i + '号桌';
+        btn.onclick = function(e) { filterTable(i, e); }; nav.appendChild(btn);
+      }
+    }
+  }
 
   function updatePrinterStatus(text) { document.getElementById('printerStatus').innerText = text; }
   async function connectBluetoothPrinter() {
@@ -689,6 +737,63 @@
   async function sendBluetoothData(data) {
     if (!bluetoothCharacteristic) throw new Error('未连接打印机');
     const chunkSize = 20; for (let i = 0; i < data.length; i += chunkSize) { await bluetoothCharacteristic.writeValue(data.slice(i, i + chunkSize)); }
+  }
+
+  const gbkMap = new Map([
+    ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
+    ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
+    ['鲜',[0xCF,0xCA]],['切',[0xC7,0xD0]],['羊',[0xD1,0xF2]],['鸡',[0xBC,0xA6]],
+    ['翅',[0xB3,0xE1]],['尖',[0xBC,0xE2]],['脆',[0xB4,0xE0]],['骨',[0xB9,0xC7]],
+    ['蒜',[0xCB,0xE2]],['瓣',[0xB0,0xEA]],['望',[0xCD,0xFB]],['京',[0xBE,0xA9]],
+    ['小',[0xD0,0xA1]],['腰',[0xD1,0xFC]],['鱼',[0xD3,0xE3]],['豆',[0xB6,0xB9]],
+    ['腐',[0xB8,0xAF]],['掌',[0xD5,0xC6]],['中',[0xD6,0xD0]],['宝',[0xB1,0xA6]],
+    ['肠',[0xB3,0xA6]],['牛',[0xC5,0xA3]],['心',[0xD0,0xC4]],['管',[0xB9,0xDC]],
+    ['碳',[0xCC,0xBC]],['皮',[0xC6,0xA4]],['面',[0xC3,0xE6]],['筋',[0xBD,0xEE]],
+    ['鱿',[0xF6,0xD9]],['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],
+    ['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],
+    ['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],
+    ['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],
+    ['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],['青',[0xC7,0xE0]],
+    ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xDB,0xC9]],
+    ['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
+    ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
+    ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
+    ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
+    ['量',[0xC1,0xBF]],['度',[0xB6,0xC8]],['不',[0xB2,0xBB]],['微',[0xCE,0xA2]],
+    ['特',[0xCC,0xD8]],['谢',[0xD0,0xBB]],['惠',[0xBB,0xDD]],['顾',[0xB9,0xCB]],
+    ['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],['再',[0xD4,0xD9]],['次',[0xB4,0xCE]],
+    ['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],
+    ['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],
+    ['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],
+    ['辣',[0xC0,0xB1]],['盐',[0xD1,0xCE]],['少',[0xC9,0xD9]],['注',[0xD7,0xA2]]
+  ]);
+
+  function encodeGBK(str) {
+    const bytes = [];
+    for (let c of str) {
+      const code = c.charCodeAt(0);
+      if (code <= 0x7F) bytes.push(code);
+      else { const gbk = gbkMap.get(c); if (gbk) bytes.push(gbk[0], gbk[1]); else bytes.push(0x20); }
+    }
+    return new Uint8Array(bytes);
+  }
+
+  function build72mmESC(order) {
+    let str = '\x1B\x40'; str += '\x1B\x61\x01'; str += '\x1B\x21\x30'; str += '久久家一元烧烤\n'; str += '\x1B\x21\x00';
+    str += '----------------------------\n'; str += '\x1B\x61\x00';
+    str += '时间：' + order.time + '\n'; str += '单号：' + (order.orderNumber || '无') + '\n';
+    str += '\x1B\x45\x01\x1B\x21\x30'; str += '桌号：' + order.table + '  ' + order.isPack + '\n';
+    str += '\x1B\x21\x00\x1B\x45\x00'; str += '----------------------------\n';
+    str += '品名       数量  小计\n';
+    order.items.forEach(item => {
+      const name = item.name.padEnd(7, ' '); const qty = item.qty.toString().padStart(2, ' '); const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
+      str += name + ' ' + qty + ' ' + subtotal + '\n';
+      str += '  辣度:' + item.spicy + '\n';
+    });
+    if (order.remark) { str += '----------------------------\n'; str += '备注：' + order.remark + '\n'; }
+    str += '----------------------------\n'; str += '\x1B\x61\x02'; str += '合计：¥ ' + order.total + '\n';
+    str += '\x1B\x61\x01'; str += '谢谢惠顾，欢迎再次光临\n'; str += '\n\n\n'; str += '\x1D\x56\x42\x00';
+    return encodeGBK(str);
   }
 </script>
 </body>
