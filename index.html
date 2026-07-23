@@ -167,6 +167,7 @@
 </div>
 
 <script>
+  // Firebase 配置
   const firebaseConfig = {
     apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
     authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
@@ -184,6 +185,7 @@
   const dailyPrepRef = database.ref('dailyPrep');
   const customGBKRef = database.ref('customGBK');
 
+  // 内置 GBK 编码表
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -239,6 +241,7 @@
     return new Uint8Array(bytes);
   }
 
+  // 默认菜单
   const defaultMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
@@ -281,6 +284,7 @@
   let currentTableFilter = 'all', currentSearch = '';
   let bluetoothDevice = null, bluetoothCharacteristic = null;
 
+  // 菜单加载
   menuItemsRef.on('value', (snap) => {
     if (snap.exists()) {
       menu = Object.values(snap.val());
@@ -377,7 +381,7 @@
     if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter);
   }
 
-  function editDetail(itemId, type = 'guest') { /* 简化处理，可忽略 */ }
+  function editDetail(itemId, type = 'guest') { /* 点数量可编辑，但此处简化 */ }
   function closeDetailModal(itemId, type) { /* 同上 */ }
 
   function updateCartBar(cartObj = cart) {
@@ -453,7 +457,7 @@
     ordersRef.push(order).then(() => { document.getElementById('confirmModal').remove(); alert('代客下单成功！单号：'+orderNumber+'\n合计 ¥'+total); adminCart = {}; adminSelectedTable = ''; renderAdminMenu(); });
   }
 
-  // 订单修改
+  // ================== 订单修改 ==================
   function editOrder(key) {
     const order = allOrders.find(o => o.key === key);
     if (!order) return;
@@ -471,6 +475,7 @@
     html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('editOrderModal').remove()">取消</button><button class="btn-confirm" onclick="saveOrderEdit()">保存修改</button></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
   }
+
   function updateEditItem(input, idx, field) {
     const val = field === 'qty' ? parseInt(input.value) : input.value;
     window.editOrderData[idx][field] = val;
@@ -481,8 +486,19 @@
       window.editOrderData[idx].subtotal = price * window.editOrderData[idx].qty;
     }
   }
-  function removeEditItem(idx) { window.editOrderData.splice(idx, 1); document.getElementById('editOrderModal').remove(); editOrder(window.editOrderKey); }
-  function addEditItem() { window.editOrderData.push({ name: '', price: 0, qty: 1, spicy: '辣', subtotal: 0 }); document.getElementById('editOrderModal').remove(); editOrder(window.editOrderKey); }
+
+  function removeEditItem(idx) {
+    window.editOrderData.splice(idx, 1);
+    document.getElementById('editOrderModal').remove();
+    editOrder(window.editOrderKey);
+  }
+
+  function addEditItem() {
+    window.editOrderData.push({ name: '', price: 0, qty: 1, spicy: '辣', subtotal: 0 });
+    document.getElementById('editOrderModal').remove();
+    editOrder(window.editOrderKey);
+  }
+
   async function saveOrderEdit() {
     const key = window.editOrderKey;
     const newItems = window.editOrderData.map(item => {
@@ -500,7 +516,7 @@
     alert('订单已更新');
   }
 
-  // 菜品名称管理
+  // ================== 菜品名称管理 ==================
   function showMenuManager() {
     let html = `<div class="modal-overlay" id="menuManagerModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">📋 菜品管理</div>`;
     menu.forEach(item => {
@@ -510,8 +526,22 @@
     html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('menuManagerModal').remove()">取消</button><button class="btn-confirm" onclick="saveMenuChanges()">保存</button></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
   }
-  function addNewMenuItem() { const newId = menu.length > 0 ? Math.max(...menu.map(m=>m.id)) + 1 : 1; menu.push({ id: newId, name: "新菜品", price: 0, category: "meat", unit: "串", img: "https://placehold.co/150x150/eee/999?text=新" }); document.getElementById('menuManagerModal').remove(); showMenuManager(); }
-  function deleteMenuItem(id) { if (confirm('确定删除此菜品？')) { menu = menu.filter(m => m.id !== id); document.getElementById('menuManagerModal').remove(); showMenuManager(); } }
+
+  function addNewMenuItem() {
+    const newId = menu.length > 0 ? Math.max(...menu.map(m=>m.id)) + 1 : 1;
+    menu.push({ id: newId, name: "新菜品", price: 0, category: "meat", unit: "串", img: "https://placehold.co/150x150/eee/999?text=新" });
+    document.getElementById('menuManagerModal').remove();
+    showMenuManager();
+  }
+
+  function deleteMenuItem(id) {
+    if (confirm('确定删除此菜品？')) {
+      menu = menu.filter(m => m.id !== id);
+      document.getElementById('menuManagerModal').remove();
+      showMenuManager();
+    }
+  }
+
   async function saveMenuChanges() {
     const updates = {};
     menu.forEach(item => {
@@ -527,7 +557,7 @@
     alert('菜品已更新');
   }
 
-  // 统计与预备
+  // ================== 统计与预备 ==================
   async function showStatistics() {
     const today = new Date().toLocaleDateString();
     const prepSnap = await dailyPrepRef.child(today).once('value');
@@ -539,18 +569,45 @@
       html += `<div class="stat-row"><span>${item.name}</span><input type="number" id="prep_${item.id}" value="${prepQty}" min="0" style="width:60px"></div>`;
     });
     html += '<button class="btn-confirm" onclick="savePrep()" style="margin:10px 0; width:100%;">保存预备数量</button>';
-    const orders = allOrders.filter(o => { if (!o.timestamp) return false; const orderDate = new Date(o.timestamp).toLocaleDateString(); return orderDate === today; });
-    let totalAmount = 0; const soldMap = {};
-    orders.forEach(order => { totalAmount += parseFloat(order.total); order.items.forEach(item => { if (!soldMap[item.name]) soldMap[item.name] = 0; soldMap[item.name] += item.qty; }); });
+    const orders = allOrders.filter(o => {
+      if (!o.timestamp) return false;
+      const orderDate = new Date(o.timestamp).toLocaleDateString();
+      return orderDate === today;
+    });
+    let totalAmount = 0;
+    const soldMap = {};
+    orders.forEach(order => {
+      totalAmount += parseFloat(order.total);
+      order.items.forEach(item => {
+        if (!soldMap[item.name]) soldMap[item.name] = 0;
+        soldMap[item.name] += item.qty;
+      });
+    });
     html += `<div style="margin-top:15px;"><strong>今日销售总额：¥${totalAmount.toFixed(2)}</strong></div>`;
     html += '<div style="margin-top:10px;"><strong>剩余数量</strong></div>';
-    menu.forEach(item => { const prep = prepData[item.id] || 0; const sold = soldMap[item.name] || 0; const left = prep - sold; html += `<div class="stat-row"><span>${item.name}</span><span>预备:${prep} 已售:${sold} 剩余:${left}</span></div>`; });
+    menu.forEach(item => {
+      const prep = prepData[item.id] || 0;
+      const sold = soldMap[item.name] || 0;
+      const left = prep - sold;
+      html += `<div class="stat-row"><span>${item.name}</span><span>预备:${prep} 已售:${sold} 剩余:${left}</span></div>`;
+    });
     html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('statModal').remove()">关闭</button></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
   }
-  async function savePrep() { const today = new Date().toLocaleDateString(); const updates = {}; menu.forEach(item => { const input = document.getElementById('prep_' + item.id); if (input) updates[item.id] = parseInt(input.value) || 0; }); await dailyPrepRef.child(today).set(updates); document.getElementById('statModal').remove(); alert('预备数量已保存'); }
 
-  // GBK管理
+  async function savePrep() {
+    const today = new Date().toLocaleDateString();
+    const updates = {};
+    menu.forEach(item => {
+      const input = document.getElementById('prep_' + item.id);
+      if (input) updates[item.id] = parseInt(input.value) || 0;
+    });
+    await dailyPrepRef.child(today).set(updates);
+    document.getElementById('statModal').remove();
+    alert('预备数量已保存');
+  }
+
+  // ================== GBK 管理 ==================
   function showGBKManager() {
     let html = `<div class="modal-overlay" id="gbkModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">🔤 自定义GBK编码管理</div><div style="margin-bottom:10px;">已添加的自定义编码：</div>`;
     if (customGBKMap.size === 0) html += '<p style="color:#999;">暂无自定义编码</p>';
@@ -560,7 +617,9 @@
     document.body.insertAdjacentHTML('beforeend', html);
   }
   function addCustomGBK() {
-    const char = document.getElementById('newGBKChar').value.trim(); const byte1 = document.getElementById('newGBKByte1').value.trim(); const byte2 = document.getElementById('newGBKByte2').value.trim();
+    const char = document.getElementById('newGBKChar').value.trim();
+    const byte1 = document.getElementById('newGBKByte1').value.trim();
+    const byte2 = document.getElementById('newGBKByte2').value.trim();
     if (!char || !byte1 || !byte2) { alert('请填写完整'); return; }
     const code1 = parseInt(byte1, 16), code2 = parseInt(byte2, 16);
     if (isNaN(code1) || isNaN(code2)) { alert('字节格式错误'); return; }
@@ -568,7 +627,7 @@
   }
   function deleteCustomGBK(char) { if (confirm(`确定删除 “${char}” 的自定义编码吗？`)) { customGBKRef.child(char).remove().then(() => { document.getElementById('gbkModal').remove(); showGBKManager(); }); } }
 
-  // 订单管理
+  // ================== 订单管理（含修改按钮） ==================
   let allOrders = [];
   function startListening() {
     ordersRef.off();
@@ -578,6 +637,7 @@
   }
   function filterTable(table, e) { document.querySelectorAll('#tableNav button').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); currentTableFilter = table; renderOrders(); }
   function searchOrders() { currentSearch = document.getElementById('searchInput').value.trim(); renderOrders(); }
+
   function renderOrders() {
     const list = document.getElementById('orderList'), settleBtn = document.getElementById('settleTableBtn'), tableTotalDiv = document.getElementById('tableTotal');
     let filtered = allOrders;
@@ -590,7 +650,15 @@
     filtered.forEach(order => {
       const settledClass = order.settled ? 'settled' : '';
       let itemsHtml = ''; order.items.forEach(i => itemsHtml += `<li>${i.name} ${i.spicy} ×${i.qty} - ¥${i.subtotal}</li>`);
-      ordersHtml += `<div class="order-card ${settledClass}" id="order-${order.key}"><strong>🕒 ${order.time}</strong> | 🪑 ${order.table||'无'} | ${order.isPack||'堂食'} ${order.settled?' (已结算)':''}<br>单号：${order.orderNumber||'无'} ${order.remark ? '<br>备注：'+order.remark : ''}<br>合计 ¥${order.total}<ul style="margin:6px 0; padding-left:20px;">${itemsHtml}</ul><button class="print-btn" onclick="reprint('${order.key}')">🖨️ 补打小票</button><button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${order.key}')">删除</button><button style="background:#f39c12;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;margin-left:4px;" onclick="editOrder('${order.key}')">修改</button></div>`;
+      ordersHtml += `<div class="order-card ${settledClass}" id="order-${order.key}">
+        <strong>🕒 ${order.time}</strong> | 🪑 ${order.table||'无'} | ${order.isPack||'堂食'} ${order.settled?' (已结算)':''}
+        <br>单号：${order.orderNumber||'无'} ${order.remark ? '<br>备注：'+order.remark : ''}
+        <br>合计 ¥${order.total}
+        <ul style="margin:6px 0; padding-left:20px;">${itemsHtml}</ul>
+        <button class="print-btn" onclick="reprint('${order.key}')">🖨️ 补打小票</button>
+        <button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${order.key}')">删除</button>
+        <button style="background:#f39c12;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;margin-left:4px;" onclick="editOrder('${order.key}')">修改</button>
+      </div>`;
     });
     list.innerHTML = ordersHtml;
   }
@@ -607,6 +675,7 @@
     const updates = {}; tableOrders.forEach(order => { updates[order.key + '/settled'] = true; });
     ordersRef.update(updates).then(() => alert('已结算并打印汇总小票！'));
   }
+
   function deleteOrder(key) { if (confirm('确定删除此订单？')) ordersRef.child(key).remove(); }
   function clearOrders() { if (confirm('确定清空所有订单？')) ordersRef.remove(); }
   function reprint(key) { const order = allOrders.find(o => o.key === key); if (order) autoPrint(order); }
@@ -627,20 +696,11 @@
   }
 
   function build72mmESC(order) {
-    let str = '\x1B\x40';
-    str += '\x1B\x74\x0F';   // 强制选择代码页：GBK (0x0F)
-    str += '\x1B\x61\x01';
-    str += '\x1B\x21\x30';
-    str += '久久家一元烧烤\n';
-    str += '\x1B\x21\x00';
-    str += '----------------------------\n';
-    str += '\x1B\x61\x00';
-    str += '时间：' + order.time + '\n';
-    str += '单号：' + (order.orderNumber || '无') + '\n';
-    str += '\x1B\x45\x01\x1B\x21\x30';
-    str += '桌号：' + order.table + '  ' + order.isPack + '\n';
-    str += '\x1B\x21\x00\x1B\x45\x00';
-    str += '----------------------------\n';
+    let str = '\x1B\x40'; str += '\x1B\x61\x01'; str += '\x1B\x21\x30'; str += '久久家一元烧烤\n'; str += '\x1B\x21\x00';
+    str += '----------------------------\n'; str += '\x1B\x61\x00';
+    str += '时间：' + order.time + '\n'; str += '单号：' + (order.orderNumber || '无') + '\n';
+    str += '\x1B\x45\x01\x1B\x21\x30'; str += '桌号：' + order.table + '  ' + order.isPack + '\n';
+    str += '\x1B\x21\x00\x1B\x45\x00'; str += '----------------------------\n';
     str += '品名       数量  小计\n';
     order.items.forEach(item => {
       const name = item.name.padEnd(7, ' '); const qty = item.qty.toString().padStart(2, ' '); const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
@@ -648,13 +708,8 @@
       str += '  ' + item.spicy + '\n';
     });
     if (order.remark) { str += '----------------------------\n'; str += '备注：' + order.remark + '\n'; }
-    str += '----------------------------\n';
-    str += '\x1B\x61\x02';
-    str += '合计：¥ ' + order.total + '\n';
-    str += '\x1B\x61\x01';
-    str += '谢谢惠顾，欢迎再次光临\n';
-    str += '\n\n\n';
-    str += '\x1D\x56\x42\x00';
+    str += '----------------------------\n'; str += '\x1B\x61\x02'; str += '合计：¥ ' + order.total + '\n';
+    str += '\x1B\x61\x01'; str += '谢谢惠顾，欢迎再次光临\n'; str += '\n\n\n'; str += '\x1D\x56\x42\x00';
     return encodeGBK(str);
   }
 
