@@ -453,11 +453,11 @@
     ordersRef.push(order).then(() => { document.getElementById('confirmModal').remove(); alert('代客下单成功！单号：'+orderNumber+'\n合计 ¥'+total); adminCart = {}; adminSelectedTable = ''; renderAdminMenu(); });
   }
 
-  // ================== 价格管理 ==================
+  // ================== 菜品价格管理 ==================
   function showPriceManager() {
     let html = `<div class="modal-overlay" id="priceModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">💲 菜品价格管理</div>`;
     menu.forEach(item => {
-      html += `<div class="price-edit-row"><span>${item.name}</span><input type="number" step="0.1" id="priceInput_${item.id}" value="${item.price}" style="width:80px"></div>`;
+      html += `<div class="price-edit-row"><span>${item.name}</span><input type="number" step="0.1" id="priceInput_${item.id}" value="${item.price}"></div>`;
     });
     html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('priceModal').remove()">取消</button><button class="btn-confirm" onclick="savePrices()">保存价格</button></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
@@ -475,7 +475,7 @@
     pricesRef.update(updates).then(() => {
       document.getElementById('priceModal').remove();
       alert('价格已更新！');
-    }).catch(err => alert('保存失败：' + err.message));
+    }).catch(err => alert('保存失败：'+err.message));
   }
 
   // ================== 订单修改 ==================
@@ -578,42 +578,43 @@
     alert('菜品已更新');
   }
 
-  // ================== 统计与预备（修复） ==================
+  // ================== 统计与预备 ==================
   async function showStatistics() {
-    const today = new Date().toLocaleDateString();
-    const prepSnap = await dailyPrepRef.child(today).once('value');
-    const prepData = prepSnap.val() || {};
-    let html = `<div class="modal-overlay" id="statModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">📊 今日统计 (${today})</div>`;
-    html += '<div style="margin-bottom:10px;"><strong>预备数量设置</strong></div>';
-    menu.forEach(item => {
-      const prepQty = prepData[item.id] || 0;
-      html += `<div class="stat-row"><span>${item.name}</span><input type="number" id="prep_${item.id}" value="${prepQty}" min="0" style="width:60px"></div>`;
-    });
-    html += '<button class="btn-confirm" onclick="savePrep()" style="margin:10px 0; width:100%;">保存预备数量</button>';
-    const orders = allOrders.filter(o => {
-      if (!o.timestamp) return false;
-      const date = new Date(o.timestamp).toLocaleDateString();
-      return date === today;
-    });
-    let totalAmount = 0;
-    const soldMap = {};
-    orders.forEach(order => {
-      totalAmount += parseFloat(order.total);
-      order.items.forEach(item => {
-        if (!soldMap[item.name]) soldMap[item.name] = 0;
-        soldMap[item.name] += item.qty;
+    try {
+      const today = new Date().toLocaleDateString();
+      const prepSnap = await dailyPrepRef.child(today).once('value');
+      const prepData = prepSnap.val() || {};
+      let html = `<div class="modal-overlay" id="statModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">📊 今日统计 (${today})</div>`;
+      html += '<div style="margin-bottom:10px;"><strong>预备数量设置</strong></div>';
+      menu.forEach(item => {
+        const prepQty = prepData[item.id] || 0;
+        html += `<div class="stat-row"><span>${item.name}</span><input type="number" id="prep_${item.id}" value="${prepQty}" min="0" style="width:60px"></div>`;
       });
-    });
-    html += `<div style="margin-top:15px;"><strong>今日销售总额：¥${totalAmount.toFixed(2)}</strong></div>`;
-    html += '<div style="margin-top:10px;"><strong>剩余数量</strong></div>';
-    menu.forEach(item => {
-      const prep = prepData[item.id] || 0;
-      const sold = soldMap[item.name] || 0;
-      const left = prep - sold;
-      html += `<div class="stat-row"><span>${item.name}</span><span>预备:${prep} 已售:${sold} 剩余:${left}</span></div>`;
-    });
-    html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('statModal').remove()">关闭</button></div></div></div>`;
-    document.body.insertAdjacentHTML('beforeend', html);
+      html += '<button class="btn-confirm" onclick="savePrep()" style="margin:10px 0; width:100%;">保存预备数量</button>';
+
+      const orders = allOrders.filter(o => o.timestamp && new Date(o.timestamp).toLocaleDateString() === today);
+      let totalAmount = 0;
+      const soldMap = {};
+      orders.forEach(order => {
+        totalAmount += parseFloat(order.total);
+        order.items.forEach(item => {
+          if (!soldMap[item.name]) soldMap[item.name] = 0;
+          soldMap[item.name] += item.qty;
+        });
+      });
+      html += `<div style="margin-top:15px;"><strong>今日销售总额：¥${totalAmount.toFixed(2)}</strong></div>`;
+      html += '<div style="margin-top:10px;"><strong>剩余数量</strong></div>';
+      menu.forEach(item => {
+        const prep = prepData[item.id] || 0;
+        const sold = soldMap[item.name] || 0;
+        const left = prep - sold;
+        html += `<div class="stat-row"><span>${item.name}</span><span>预备:${prep} 已售:${sold} 剩余:${left}</span></div>`;
+      });
+      html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('statModal').remove()">关闭</button></div></div></div>`;
+      document.body.insertAdjacentHTML('beforeend', html);
+    } catch (err) {
+      alert('统计数据加载失败：' + err.message);
+    }
   }
 
   async function savePrep() {
