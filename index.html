@@ -83,7 +83,7 @@
 </div>
 
 <script>
-  // ==================== Firebase ====================
+  // ==================== Firebase 配置 ====================
   const firebaseConfig = {
     apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
     authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
@@ -97,7 +97,12 @@
   const database = firebase.database();
   const ordersRef = database.ref('orders');
 
-  // ==================== 固定菜单 ====================
+  // 测试数据库连接（控制台输出）
+  ordersRef.child('_test_connection').set(firebase.database.ServerValue.TIMESTAMP)
+    .then(() => console.log('✅ Firebase 连接正常，可写入'))
+    .catch(err => console.error('❌ Firebase 写入失败，请检查数据库规则：', err));
+
+  // ==================== 菜单 ====================
   const menu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", unit:"串" },
@@ -130,12 +135,12 @@
   ];
 
   const tasteOptions = ['孜然', '辣'];
-  let cart = {};                // { itemId: { '孜然': qty, '辣': qty } }
-  let currentSpicy = '辣';      // 当前选中口味
+  let cart = {};
+  let currentSpicy = '辣';
   let customerTable = '';
   let currentFilter = 'all';
 
-  // ==================== 初始化 ====================
+  // 初始化桌号参数
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has('table')) {
     const t = urlParams.get('table');
@@ -145,7 +150,6 @@
   }
   renderMenu('all');
 
-  // ==================== 桌号 ====================
   function setCustomerTable(num) {
     customerTable = num;
     updateTableDisplay();
@@ -156,7 +160,6 @@
     text.innerText = customerTable === '' ? '选桌' : customerTable;
   }
 
-  // ==================== 分类 ====================
   function filterCategory(cat, e) {
     document.querySelectorAll('#leftCategories button').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
@@ -164,7 +167,6 @@
     renderMenu(cat);
   }
 
-  // ==================== 渲染菜单 ====================
   function renderMenu(filter = 'all') {
     const container = document.getElementById('menuContainer');
     const items = filter === 'all' ? menu : menu.filter(m => m.category === filter);
@@ -174,27 +176,19 @@
       const total = (itemCart['孜然'] || 0) + (itemCart['辣'] || 0);
       const unit = item.unit || '串';
 
-      // 口味标签
       let tasteHtml = tasteOptions.map(opt => {
         const qty = itemCart[opt] || 0;
         const sel = opt === currentSpicy ? ' selected' : '';
         return `<span class="taste-tag${sel}" onclick="selectSpicy('${opt}')">${opt} ${qty}</span>`;
       }).join('');
 
-      // 步进器
       let stepperHtml = '';
       if (item.price < 6) {
         stepperHtml = `
           <div class="stepper" style="margin-top:4px;">
-            <button class="stepper-btn" onclick="quickAdjust(${item.id}, -1)">-1</button>
-            <span class="stepper-val">1${unit}</span>
-            <button class="stepper-btn" onclick="quickAdjust(${item.id}, 1)">+1</button>
-            <button class="stepper-btn" onclick="quickAdjust(${item.id}, -5)">-5</button>
-            <span class="stepper-val">5${unit}</span>
-            <button class="stepper-btn" onclick="quickAdjust(${item.id}, 5)">+5</button>
-            <button class="stepper-btn" onclick="quickAdjust(${item.id}, -10)">-10</button>
-            <span class="stepper-val">10${unit}</span>
-            <button class="stepper-btn" onclick="quickAdjust(${item.id}, 10)">+10</button>
+            <button class="stepper-btn" onclick="quickAdjust(${item.id}, -1)">-1</button><span class="stepper-val">1${unit}</span><button class="stepper-btn" onclick="quickAdjust(${item.id}, 1)">+1</button>
+            <button class="stepper-btn" onclick="quickAdjust(${item.id}, -5)">-5</button><span class="stepper-val">5${unit}</span><button class="stepper-btn" onclick="quickAdjust(${item.id}, 5)">+5</button>
+            <button class="stepper-btn" onclick="quickAdjust(${item.id}, -10)">-10</button><span class="stepper-val">10${unit}</span><button class="stepper-btn" onclick="quickAdjust(${item.id}, 10)">+10</button>
           </div>
           <div style="margin-top:2px;">
             <button class="stepper-btn" onclick="quickAdjust(${item.id}, 20)">+20${unit}</button>
@@ -205,9 +199,7 @@
       } else {
         stepperHtml = `
           <div class="stepper" style="margin-top:4px;">
-            <button class="stepper-btn" onclick="quickAdjust(${item.id}, -1)">-1</button>
-            <span class="stepper-val">1${unit}</span>
-            <button class="stepper-btn" onclick="quickAdjust(${item.id}, 1)">+1</button>
+            <button class="stepper-btn" onclick="quickAdjust(${item.id}, -1)">-1</button><span class="stepper-val">1${unit}</span><button class="stepper-btn" onclick="quickAdjust(${item.id}, 1)">+1</button>
           </div>`;
       }
 
@@ -217,9 +209,7 @@
             <div class="item-name">${item.name}</div>
             <div class="item-price">¥${item.price}</div>
             <div class="taste-row">${tasteHtml}</div>
-            <div class="qty-row">
-              <span class="qty-num">${total}</span> ${unit}
-            </div>
+            <div class="qty-row"><span class="qty-num">${total}</span> ${unit}</div>
             ${stepperHtml}
           </div>
         </div>`;
@@ -228,13 +218,8 @@
     updateCartBar();
   }
 
-  // ==================== 口味选择 ====================
-  function selectSpicy(level) {
-    currentSpicy = level;
-    renderMenu(currentFilter);
-  }
+  function selectSpicy(level) { currentSpicy = level; renderMenu(currentFilter); }
 
-  // ==================== 数量调整 ====================
   function quickAdjust(itemId, delta) {
     if (!cart[itemId]) cart[itemId] = {};
     const key = currentSpicy;
@@ -244,23 +229,19 @@
     renderMenu(currentFilter);
   }
 
-  // ==================== 更新底部栏 ====================
   function updateCartBar() {
     let totalCount = 0, totalPrice = 0;
     Object.entries(cart).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
       if (item) {
-        Object.values(levels).forEach(qty => {
-          totalCount += qty;
-          totalPrice += item.price * qty;
-        });
+        Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; });
       }
     });
     document.getElementById('cartCount').innerText = totalCount;
     document.getElementById('cartTotal').innerText = totalPrice.toFixed(2);
   }
 
-  // ==================== 下单确认 ====================
+  // ==================== 下单 ====================
   function showConfirmModal() {
     const items = [];
     Object.entries(cart).forEach(([itemId, levels]) => {
@@ -282,6 +263,7 @@
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
+    modal.id = 'confirmModal';
     modal.innerHTML = `
       <div class="modal-content">
         <h3>确认订单</h3>
@@ -293,21 +275,19 @@
         <div style="margin-top:10px;"><label>备注：</label><textarea id="remarkInput" rows="2" style="width:100%"></textarea></div>
         <div style="margin-top:10px;"><label><input type="checkbox" id="packCheckbox"> 打包</label></div>
         <div style="display:flex; gap:10px; margin-top:15px;">
-          <button class="btn-cancel" onclick="this.closest('.modal-overlay').remove()">取消</button>
+          <button class="btn-cancel" onclick="document.getElementById('confirmModal').remove()">取消</button>
           <button class="btn-confirm" onclick="confirmOrder()">确认下单</button>
         </div>
       </div>`;
     document.body.appendChild(modal);
-    window._currentModal = modal; // 用于关闭
   }
 
   function setTableFromModal(num) {
     customerTable = num;
     updateTableDisplay();
-    // 更新弹窗内按钮样式
-    const btns = document.querySelectorAll('.modal-table-btn');
+    const btns = document.querySelectorAll('#confirmModal .modal-table-btn');
     btns.forEach(b => b.classList.remove('selected'));
-    const target = document.querySelector(`.modal-table-btn:nth-child(${num})`);
+    const target = document.querySelector(`#confirmModal .modal-table-btn:nth-child(${num})`);
     if (target) target.classList.add('selected');
   }
 
@@ -337,15 +317,29 @@
       settled: false,
       timestamp: firebase.database.ServerValue.TIMESTAMP
     };
-    ordersRef.push(order).then(() => {
-      document.querySelector('.modal-overlay')?.remove();
-      alert('下单成功！单号：' + orderNumber + '\n合计 ¥' + total);
-      cart = {};
-      renderMenu(currentFilter);
-    }).catch(err => {
-      alert('提交失败，请检查网络后重试');
-      console.error(err);
-    });
+
+    // 显示加载状态
+    const btn = document.querySelector('.btn-confirm');
+    btn.disabled = true;
+    btn.innerText = '提交中...';
+
+    ordersRef.push(order)
+      .then(() => {
+        document.getElementById('confirmModal')?.remove();
+        alert('下单成功！单号：' + orderNumber + '\n合计 ¥' + total);
+        cart = {};
+        renderMenu(currentFilter);
+      })
+      .catch(err => {
+        console.error('提交失败详情：', err);
+        alert('提交失败：' + (err.message || '未知错误') + '\n请打开控制台查看详情，或检查数据库规则是否为“允许写入”。');
+      })
+      .finally(() => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = '确认下单';
+        }
+      });
   }
 </script>
 </body>
