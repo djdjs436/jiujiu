@@ -64,12 +64,10 @@
     .order-card { border: 1px solid #eee; padding: 10px; border-radius: 10px; margin-bottom: 10px; animation: fadeIn 0.3s; background: #fff; }
     .order-card.settled { opacity: 0.6; background: #f9f9f9; }
     .print-btn { background: #27ae60; color: white; border: none; padding: 4px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; margin-right: 4px; }
-    .edit-btn { background: #f39c12; color: white; border: none; padding: 4px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; margin-right: 4px; }
     .clear-btn { background: #e67e22; color: white; border: none; padding: 6px 16px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     .bluetooth-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; display: none; }
     .settle-btn { background: #9b59b6; color: white; border: none; padding: 5px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; margin-left: 4px; }
-    .menu-mgr-btn { background: #e67e22; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
-    .stats-btn { background: #2ecc71; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
+    .price-mgr-btn { background: #e67e22; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     .status { margin: 6px 0; font-size: 12px; color: #555; }
     .admin-order-btn { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -89,8 +87,8 @@
     .modal-table-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
     .modal-table-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 6px 12px; border-radius: 12px; font-size: 14px; cursor: pointer; }
     .modal-table-btn.selected { background: #c0392b; color: white; border-color: #c0392b; }
-    .menu-edit-row { display: flex; flex-wrap: wrap; align-items: center; margin: 8px 0; }
-    .menu-edit-row input, .menu-edit-row select { margin-right: 6px; padding: 4px; border: 1px solid #ddd; border-radius: 6px; }
+    .price-edit-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
+    .price-edit-row input { width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 8px; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -151,8 +149,7 @@
   <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
   <div id="printerStatus" class="status">打印机未连接</div>
   <button class="admin-order-btn" onclick="showAdminOrderPanel()">📝 代客点餐</button>
-  <button class="menu-mgr-btn" onclick="showMenuManager()">🍽️ 菜品管理</button>
-  <button class="stats-btn" onclick="showStatistics()">📊 库存统计</button>
+  <button class="price-mgr-btn" onclick="showPriceManager()">💲 菜品价格管理</button>
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="输入单号搜索" oninput="searchOrders()">
     <button onclick="searchOrders()">搜索</button>
@@ -194,7 +191,6 @@
 </div>
 
 <script>
-  // ==================== Firebase 初始化 ====================
   const firebaseConfig = {
     apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
     authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
@@ -207,9 +203,8 @@
   firebase.initializeApp(firebaseConfig);
   const database = firebase.database();
   const ordersRef = database.ref('orders');
-  const menuCustomRef = database.ref('menuCustom');
+  const pricesRef = database.ref('menuPrices');
 
-  // ==================== 默认菜单 ====================
   const defaultMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
@@ -242,10 +237,10 @@
   ];
 
   let menu = JSON.parse(JSON.stringify(defaultMenu));
-  const tasteOptions = ['孜然', '辣'];
+  const tasteOptions = ['孜然', '辣']; // 仅两种口味
   let cart = {};
   let adminCart = {};
-  let currentSpicy = '辣';
+  let currentSpicy = '辣'; // 默认选中辣
   let adminCurrentSpicy = '辣';
   let customerTable = '';
   let adminSelectedTable = '';
@@ -258,32 +253,19 @@
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
-  // 监听菜单自定义数据
-  menuCustomRef.on('value', (snapshot) => {
-    const customData = snapshot.val() || {};
-    menu = defaultMenu.map(item => {
-      const custom = customData[item.id];
-      if (custom) {
-        return { ...item, name: custom.name || item.name, price: custom.price !== undefined ? custom.price : item.price, category: custom.category || item.category, unit: custom.unit || item.unit, img: custom.img || item.img };
+  pricesRef.on('value', (snapshot) => {
+    const prices = snapshot.val() || {};
+    menu.forEach(item => {
+      if (prices[item.id] !== undefined) item.price = parseFloat(prices[item.id]);
+      else {
+        const def = defaultMenu.find(d => d.id === item.id);
+        if (def) item.price = def.price;
       }
-      return { ...item };
     });
-    for (const id in customData) {
-      if (!menu.find(m => m.id == id)) {
-        const custom = customData[id];
-        if (custom.name) {
-          menu.push({ id: parseInt(id), name: custom.name, price: custom.price || 0, category: custom.category || 'other', unit: custom.unit || '串', img: custom.img || '' });
-        }
-      }
-    }
-    menu.sort((a,b) => a.id - b.id);
     if (!isAdmin) renderMenu(currentFilter);
-    else {
-      if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
-    }
+    else if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
   });
 
-  // URL 桌号参数
   const urlParams = new URLSearchParams(window.location.search);
   if (!isAdmin && urlParams.has('table')) {
     const tableParam = urlParams.get('table');
@@ -537,7 +519,6 @@
     });
   }
 
-  // ==================== 代客点餐 ====================
   function showAdminOrderPanel() { 
     document.getElementById('adminPanel').style.display = 'none'; 
     document.getElementById('adminOrderPanel').style.display = 'flex'; 
@@ -587,7 +568,31 @@
     });
   }
 
-  // ==================== 订单管理 ====================
+  function showPriceManager() {
+    let html = '<div class="modal-overlay" id="priceModal"><div class="modal-content" style="max-width:450px;">' +
+      '<div class="modal-title">💲 菜品价格管理</div>';
+    menu.forEach(item => {
+      html += '<div class="price-edit-row"><span>' + item.name + '</span><input type="number" step="0.1" id="priceInput_' + item.id + '" value="' + item.price + '"></div>';
+    });
+    html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'priceModal\').remove()">取消</button><button class="btn-confirm" onclick="savePrices()">保存价格</button></div></div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  function savePrices() {
+    const updates = {};
+    menu.forEach(item => {
+      const input = document.getElementById('priceInput_' + item.id);
+      if (input) {
+        const newPrice = parseFloat(input.value);
+        if (!isNaN(newPrice) && newPrice >= 0) updates[item.id] = newPrice;
+      }
+    });
+    pricesRef.update(updates).then(() => {
+      document.getElementById('priceModal').remove();
+      alert('价格已更新！');
+    }).catch(err => alert('保存失败：' + err.message));
+  }
+
   let allOrders = [];
   function startListening() {
     ordersRef.off();
@@ -623,8 +628,7 @@
         '<strong>🕒 ' + order.time + '</strong> | 🪑 ' + (order.table || '无') + ' | ' + (order.isPack || '堂食') + (order.settled ? ' (已结算)' : '') +
         '<br>单号：' + (order.orderNumber || '无') + (order.remark ? '<br>备注：' + order.remark : '') +
         '<br>合计 ¥' + order.total + '<ul style="margin:6px 0; padding-left:20px;">' + itemsHtml + '</ul>' +
-        '<button class="print-btn" onclick="reprint(\'' + order.key + '\')">🖨️</button>' +
-        '<button class="edit-btn" onclick="editOrder(\'' + order.key + '\')">✏️</button>' +
+        '<button class="print-btn" onclick="reprint(\'' + order.key + '\')">🖨️ 补打小票</button>' +
         '<button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder(\'' + order.key + '\')">删除</button>' +
       '</div>';
     });
@@ -648,206 +652,6 @@
   function clearOrders() { if (confirm('确定清空所有订单？')) ordersRef.remove(); }
   function reprint(key) { const order = allOrders.find(o => o.key === key); if (order) autoPrint(order); }
 
-  // ==================== 订单修改 ====================
-  function editOrder(key) {
-    const order = allOrders.find(o => o.key === key);
-    if (!order) return;
-    let html = '<div class="modal-overlay" id="editOrderModal"><div class="modal-content" style="max-width:450px;">';
-    html += '<div class="modal-title">✏️ 修改订单</div>';
-    html += '<div><label>桌号：</label><div class="modal-table-btns" id="editTableBtns">';
-    for (let i = 1; i <= 10; i++) {
-      const sel = order.table == i ? ' selected' : '';
-      html += `<button class="modal-table-btn${sel}" onclick="document.getElementById('editTableInput').value='${i}'">${i}号</button>`;
-    }
-    html += '</div><input type="hidden" id="editTableInput" value="' + (order.table || '') + '"></div>';
-    html += '<div class="modal-input-group"><label>备注</label><textarea id="editRemark" rows="2" style="width:100%">' + (order.remark || '') + '</textarea></div>';
-    html += '<div class="modal-checkbox"><input type="checkbox" id="editPack" ' + (order.isPack === '打包' ? 'checked' : '') + '><label>🥡 打包</label></div>';
-    html += '<div class="modal-title" style="margin-top:15px;">菜品明细</div>';
-    html += '<div id="editOrderItems">';
-    order.items.forEach((item, idx) => {
-      html += `<div class="menu-edit-row" style="justify-content:space-between;">
-        <span>${item.name}</span>
-        <span>${item.spicy}</span>
-        <input type="number" id="editQty_${idx}" value="${item.qty}" min="0" style="width:50px;">
-        <button onclick="removeEditItem(${idx})" style="background:#e74c3c;color:white;border:none;border-radius:50%;width:20px;height:20px;">✕</button>
-      </div>`;
-    });
-    html += '</div>';
-    html += '<div class="modal-actions">';
-    html += '<button class="btn-cancel" onclick="document.getElementById(\'editOrderModal\').remove()">取消</button>';
-    html += '<button class="btn-confirm" onclick="saveEditOrder(\'' + key + '\', ' + order.items.length + ')">保存修改</button>';
-    html += '</div></div></div>';
-    document.body.insertAdjacentHTML('beforeend', html);
-  }
-
-  function removeEditItem(idx) {
-    const el = document.getElementById(`editQty_${idx}`);
-    if (el) el.closest('.menu-edit-row').remove();
-  }
-
-  function saveEditOrder(key, originalLength) {
-    const table = document.getElementById('editTableInput').value.trim() || '未选桌';
-    const remark = document.getElementById('editRemark').value.trim();
-    const isPack = document.getElementById('editPack').checked ? '打包' : '堂食';
-    const newItems = [];
-    let total = 0;
-    const order = allOrders.find(o => o.key === key);
-    for (let i = 0; i < originalLength; i++) {
-      const qtyEl = document.getElementById(`editQty_${i}`);
-      if (!qtyEl) continue;
-      const qty = parseInt(qtyEl.value) || 0;
-      if (qty > 0) {
-        const item = order.items[i];
-        if (item) {
-          const subtotal = qty * item.price;
-          total += subtotal;
-          newItems.push({ name: item.name, price: item.price, qty, spicy: item.spicy, subtotal });
-        }
-      }
-    }
-    if (newItems.length === 0) { alert('请至少保留一个菜品'); return; }
-    const updates = {};
-    updates[key + '/table'] = table;
-    updates[key + '/remark'] = remark;
-    updates[key + '/isPack'] = isPack;
-    updates[key + '/items'] = newItems;
-    updates[key + '/total'] = total.toFixed(2);
-    ordersRef.update(updates).then(() => {
-      document.getElementById('editOrderModal').remove();
-      alert('订单已更新');
-    });
-  }
-
-  // ==================== 菜品管理 ====================
-  function showMenuManager() {
-    let html = '<div class="modal-overlay" id="menuManagerModal"><div class="modal-content" style="max-width:500px;">';
-    html += '<div class="modal-title">🍽️ 菜品管理</div>';
-    menu.forEach(item => {
-      html += `<div class="menu-edit-row">
-        <input type="text" id="mname_${item.id}" value="${item.name}" style="width:100px;" placeholder="名称">
-        <input type="number" step="0.1" id="mprice_${item.id}" value="${item.price}" style="width:60px;" placeholder="价格">
-        <select id="mcat_${item.id}" style="width:70px;">
-          <option value="meat" ${item.category==='meat'?'selected':''}>肉类</option>
-          <option value="veg" ${item.category==='veg'?'selected':''}>蔬菜</option>
-          <option value="seafood" ${item.category==='seafood'?'selected':''}>海鲜</option>
-          <option value="noodle" ${item.category==='noodle'?'selected':''}>面食</option>
-          <option value="drink" ${item.category==='drink'?'selected':''}>饮品</option>
-          <option value="other" ${item.category==='other'?'selected':''}>其他</option>
-        </select>
-        <input type="text" id="munit_${item.id}" value="${item.unit}" style="width:40px;" placeholder="单位">
-        <button onclick="deleteMenuItem(${item.id})" style="background:#e74c3c;color:white;border:none;border-radius:4px;">删除</button>
-      </div>`;
-    });
-    html += '<hr><div class="modal-title">添加新菜品</div>';
-    html += `<div class="menu-edit-row">
-      <input type="text" id="newName" placeholder="名称" style="width:100px;">
-      <input type="number" step="0.1" id="newPrice" placeholder="价格" style="width:60px;">
-      <select id="newCat"><option value="meat">肉类</option><option value="veg">蔬菜</option><option value="seafood">海鲜</option><option value="noodle">面食</option><option value="drink">饮品</option><option value="other">其他</option></select>
-      <input type="text" id="newUnit" placeholder="单位" style="width:40px;" value="串">
-      <input type="text" id="newImg" placeholder="图片链接" style="width:100px;">
-    </div>`;
-    html += '<div class="modal-actions">';
-    html += '<button class="btn-cancel" onclick="document.getElementById(\'menuManagerModal\').remove()">取消</button>';
-    html += '<button class="btn-confirm" onclick="saveMenuManager()">保存</button>';
-    html += '</div></div></div>';
-    document.body.insertAdjacentHTML('beforeend', html);
-  }
-
-  function deleteMenuItem(id) {
-    if (!confirm('确定删除此菜品？')) return;
-    const updates = {};
-    updates[id] = null;
-    menuCustomRef.update(updates);
-  }
-
-  function saveMenuManager() {
-    const updates = {};
-    menu.forEach(item => {
-      const nameEl = document.getElementById('mname_' + item.id);
-      const priceEl = document.getElementById('mprice_' + item.id);
-      const catEl = document.getElementById('mcat_' + item.id);
-      const unitEl = document.getElementById('munit_' + item.id);
-      if (nameEl && priceEl) {
-        const name = nameEl.value.trim();
-        const price = parseFloat(priceEl.value);
-        if (name && !isNaN(price) && price >= 0) {
-          updates[item.id] = { name, price, category: catEl.value, unit: unitEl.value, img: item.img };
-        }
-      }
-    });
-    const newName = document.getElementById('newName').value.trim();
-    const newPrice = parseFloat(document.getElementById('newPrice').value);
-    if (newName && !isNaN(newPrice) && newPrice >= 0) {
-      const newId = Date.now();
-      updates[newId] = {
-        name: newName,
-        price: newPrice,
-        category: document.getElementById('newCat').value,
-        unit: document.getElementById('newUnit').value.trim() || '串',
-        img: document.getElementById('newImg').value.trim() || ''
-      };
-    }
-    menuCustomRef.update(updates).then(() => {
-      document.getElementById('menuManagerModal').remove();
-      alert('菜单已更新！');
-    });
-  }
-
-  // ==================== 库存统计（本地存储） ====================
-  function getStockData() {
-    const stored = localStorage.getItem('stockData');
-    return stored ? JSON.parse(stored) : {};
-  }
-
-  function saveStockData(data) {
-    localStorage.setItem('stockData', JSON.stringify(data));
-  }
-
-  function showStatistics() {
-    const stock = getStockData();
-    let html = '<div class="modal-overlay" id="statsModal"><div class="modal-content" style="max-width:500px;">';
-    html += '<div class="modal-title">📊 库存统计 (今日)</div>';
-    html += '<div style="max-height:400px; overflow-y:auto;">';
-    const today = new Date().toLocaleDateString();
-    let totalSales = 0;
-    menu.forEach(item => {
-      const stockQty = stock[item.id] || 0;
-      let soldQty = 0;
-      allOrders.forEach(order => {
-        if (order.time && order.time.indexOf(today) !== -1) {
-          order.items.forEach(oi => {
-            if (oi.name === item.name) soldQty += oi.qty;
-          });
-        }
-      });
-      const remaining = stockQty - soldQty;
-      const itemSales = soldQty * item.price;
-      totalSales += itemSales;
-      html += `<div class="menu-edit-row">
-        <span style="width:80px;">${item.name}</span>
-        <input type="number" id="stock_${item.id}" value="${stockQty}" min="0" style="width:50px;" onchange="updateStock(${item.id}, this.value)">
-        <span style="width:60px;">已售:${soldQty}</span>
-        <span style="width:60px;">剩余:${remaining}</span>
-        <span>¥${itemSales.toFixed(2)}</span>
-      </div>`;
-    });
-    html += `<div class="modal-total" style="margin-top:10px;">今日总销售额：¥${totalSales.toFixed(2)}</div>`;
-    html += '</div>';
-    html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'statsModal\').remove()">关闭</button></div>';
-    html += '</div></div>';
-    document.body.insertAdjacentHTML('beforeend', html);
-  }
-
-  function updateStock(itemId, value) {
-    const stock = getStockData();
-    const qty = parseInt(value) || 0;
-    if (qty >= 0) {
-      stock[itemId] = qty;
-      saveStockData(stock);
-    }
-  }
-
-  // ==================== 打印 ====================
   function autoPrint(order) {
     if (bluetoothCharacteristic) {
       try { const command = build72mmESC(order); sendBluetoothData(command); } catch (e) { fallbackPrint(order); }
@@ -914,7 +718,6 @@
     const chunkSize = 20; for (let i = 0; i < data.length; i += chunkSize) { await bluetoothCharacteristic.writeValue(data.slice(i, i + chunkSize)); }
   }
 
-  // ==================== GBK 编码 ====================
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
