@@ -41,7 +41,6 @@
     .qty-num { font-size: 14px; min-width: 18px; text-align: center; cursor: pointer; border-bottom: 1px dashed #aaa; padding: 0 3px; display: inline-block; margin-left: 4px; }
     .clear-item-btn { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center; cursor: pointer; margin-left: 4px; }
     .quick-adjust { display: flex; gap: 4px; margin-top: 4px; align-items: center; flex-wrap: wrap; }
-    .quick-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 8px; font-size: 12px; border-radius: 12px; cursor: pointer; }
     .stepper { display: flex; align-items: center; gap: 0; }
     .stepper-btn { background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b; padding: 4px 10px; font-size: 13px; cursor: pointer; min-width: 32px; }
     .stepper-btn.left { border-radius: 12px 0 0 12px; }
@@ -68,9 +67,9 @@
     .clear-btn { background: #e67e22; color: white; border: none; padding: 6px 16px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     .bluetooth-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; display: none; }
     .settle-btn { background: #9b59b6; color: white; border: none; padding: 5px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; margin-left: 4px; }
-    .price-mgr-btn, .menu-mgr-btn, .stat-btn, .gbk-btn { background: #e67e22; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; margin-right: 4px; }
+    .price-mgr-btn, .menu-mgr-btn, .stat-btn, .gbk-btn { background: #e67e22; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     .status { margin: 6px 0; font-size: 12px; color: #555; }
-    .admin-order-btn { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; margin-right: 4px; }
+    .admin-order-btn { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
     #loginBox { max-width: 300px; margin: 60px auto; background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
@@ -88,16 +87,8 @@
     .modal-table-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
     .modal-table-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 6px 12px; border-radius: 12px; font-size: 14px; cursor: pointer; }
     .modal-table-btn.selected { background: #c0392b; color: white; border-color: #c0392b; }
-    .price-edit-row, .stat-row, .gbk-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; font-size: 14px; }
+    .price-edit-row, .stat-row, .gbk-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
     .price-edit-row input, .stat-row input, .gbk-row input { width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 8px; }
-    .modal-item { display: flex; justify-content: space-between; margin: 8px 0; border-bottom: 1px dashed #eee; padding-bottom: 4px; }
-    .modal-item-name { font-weight: bold; }
-    .modal-item-detail { font-size: 12px; color: #666; margin-left: 5px; }
-    .modal-item-subtotal { font-weight: bold; color: #c0392b; }
-    .modal-total { text-align: right; font-size: 16px; font-weight: bold; color: #c0392b; margin: 10px 0; }
-    .modal-input-group { margin: 10px 0; }
-    .modal-input-group label { display: block; font-weight: bold; margin-bottom: 5px; }
-    .modal-checkbox { display: flex; align-items: center; margin: 10px 0; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -112,8 +103,8 @@
   <div class="table-row">
     <div class="table-big-btn" id="tableBigBtn" onclick="toggleTableDropdown()"><span id="tableBigText">选桌</span></div>
     <div class="table-dropdown" id="tableDropdown">
-      <button class="table-opt-btn" onclick="setCustomerTable('')">无桌</button>
-      <script>for(let i=1;i<=10;i++) document.write('<button class="table-opt-btn" onclick="setCustomerTable('+i+')">'+i+'号</button>');</script>
+      <button class="table-opt-btn" onclick="setCustomerTable('', true)">无桌</button>
+      <script>for(let i=1;i<=10;i++) document.write('<button class="table-opt-btn" onclick="setCustomerTable('+i+', true)">'+i+'号</button>');</script>
     </div>
     <div style="flex:1; text-align:right;"><button class="submit-btn" onclick="showConfirmModal()">下单</button></div>
   </div>
@@ -138,13 +129,11 @@
   <h3 style="margin-bottom:15px;">📋 实时订单（自动接收）</h3>
   <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
   <div id="printerStatus" class="status">打印机未连接</div>
-  <div style="margin-bottom: 10px;">
-    <button class="admin-order-btn" onclick="showAdminOrderPanel()">📝 代客点餐</button>
-    <button class="price-mgr-btn" onclick="showPriceManager()">💲 菜品价格管理</button>
-    <button class="menu-mgr-btn" onclick="showMenuManager()">📋 菜品名称管理</button>
-    <button class="stat-btn" onclick="showStatistics()">📊 统计与预备</button>
-    <button class="gbk-btn" onclick="showGBKManager()">🔤 补充GBK编码</button>
-  </div>
+  <button class="admin-order-btn" onclick="showAdminOrderPanel()">📝 代客点餐</button>
+  <button class="price-mgr-btn" onclick="showPriceManager()">💲 菜品价格管理</button>
+  <button class="menu-mgr-btn" onclick="showMenuManager()">📋 菜品名称管理</button>
+  <button class="stat-btn" onclick="showStatistics()">📊 统计与预备</button>
+  <button class="gbk-btn" onclick="showGBKManager()">🔤 补充GBK编码</button>
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="输入单号搜索" oninput="searchOrders()">
     <button onclick="searchOrders()">搜索</button>
@@ -248,14 +237,6 @@
       else bytes.push(0x20);
     }
     return new Uint8Array(bytes);
-  }
-
-  function getTodayKey() {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
   }
 
   const defaultMenu = [
@@ -378,7 +359,7 @@
         quickHtml = '<div class="quick-adjust"><span class="spicy-indicator">当前：'+curSpicy+'</span>'+
           '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust('+item.id+', -1, \''+type+'\')">-1</button><span class="stepper-val">1'+unit+'</span><button class="stepper-btn right" onclick="quickAdjust('+item.id+', 1, \''+type+'\')">+1</button></div></div>';
       }
-      htmlArr.push('<div class="menu-item"><img src="'+item.img+'" alt="'+item.name+'" onerror="this.src=\'https://placehold.co/70x70/eee/999?text=🍖\'"><div class="item-info"><div class="item-name">'+item.name+'</div><div class="item-price">¥'+item.price+'</div><div class="taste-row">'+tasteTags+'</div><div class="qty-row"><span class="qty-num">'+total+'</span> '+unit+'<button class="clear-item-btn" onclick="clearItem('+item.id+', \''+type+'\')" title="清除此菜品">✕</button></div>'+quickHtml+'</div></div>');
+      htmlArr.push('<div class="menu-item"><img src="'+item.img+'" alt="'+item.name+'" onerror="this.src=\'https://placehold.co/70x70/eee/999?text=🍖\'"><div class="item-info"><div class="item-name">'+item.name+'</div><div class="item-price">¥'+item.price+'</div><div class="taste-row">'+tasteTags+'</div><div class="qty-row"><span class="qty-num" onclick="editDetail('+item.id+', \''+type+'\')">'+total+'</span> '+unit+'<button class="clear-item-btn" onclick="clearItem('+item.id+', \''+type+'\')" title="清除此菜品">✕</button></div>'+quickHtml+'</div></div>');
     });
     container.innerHTML = htmlArr.join('');
     updateCartFn(cartObj);
@@ -396,13 +377,16 @@
     if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter);
   }
 
+  function editDetail(itemId, type = 'guest') { /* 简化 */ }
+  function closeDetailModal(itemId, type) { /* 简化 */ }
+
   function updateCartBar(cartObj = cart) {
     const countSpan = document.getElementById('cartCount'), totalSpan = document.getElementById('cartTotal');
     if (!countSpan || !totalSpan) return;
     let totalCount = 0, totalPrice = 0;
     Object.entries(cartObj).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
-      if (item) { Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; }); }
+      Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; });
     });
     countSpan.innerText = totalCount; totalSpan.innerText = totalPrice.toFixed(2);
   }
@@ -411,9 +395,7 @@
     let items = [];
     Object.entries(cartObj).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
-      if (item) {
-        Object.entries(levels).forEach(([level, qty]) => { if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty }); });
-      }
+      Object.entries(levels).forEach(([level, qty]) => { if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty }); });
     });
     return items;
   }
@@ -460,7 +442,7 @@
     const countSpan = document.getElementById('adminCartCount'), totalSpan = document.getElementById('adminCartTotal');
     if (!countSpan || !totalSpan) return;
     let totalCount = 0, totalPrice = 0;
-    Object.entries(adminCart).forEach(([itemId, levels]) => { const item = menu.find(m => m.id == itemId); if (item) { Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; }); } });
+    Object.entries(adminCart).forEach(([itemId, levels]) => { const item = menu.find(m => m.id == itemId); Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; }); });
     countSpan.innerText = totalCount; totalSpan.innerText = totalPrice.toFixed(2);
   }
   function showAdminConfirmModal() { const items = getCartItems(adminCart); if (items.length === 0) { alert('请先选择菜品'); return; } showCommonConfirm(items, 'admin'); }
@@ -473,33 +455,27 @@
 
   // ================== 价格管理 ==================
   function showPriceManager() {
-    let html = `<div class="modal-overlay" id="priceManagerModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">💲 菜品价格管理</div>`;
+    let html = `<div class="modal-overlay" id="priceModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">💲 菜品价格管理</div>`;
     menu.forEach(item => {
-      html += `<div class="price-edit-row"><span>${item.name}</span><div><input type="number" step="0.5" id="price_${item.id}" value="${item.price}" style="width:80px; padding:4px;"> 元</div></div>`;
+      html += `<div class="price-edit-row"><span>${item.name}</span><input type="number" step="0.1" id="priceInput_${item.id}" value="${item.price}" style="width:80px"></div>`;
     });
-    html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('priceManagerModal').remove()">取消</button><button class="btn-confirm" onclick="savePrices()">保存</button></div></div></div>`;
+    html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('priceModal').remove()">取消</button><button class="btn-confirm" onclick="savePrices()">保存价格</button></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
   }
 
-  async function savePrices() {
-    try {
-      const updates = {};
-      menu.forEach(item => {
-        const input = document.getElementById('price_' + item.id);
-        if (input) {
-          const newPrice = parseFloat(input.value) || 0;
-          item.price = newPrice;
-          updates[item.id] = newPrice;
-        }
-      });
-      await pricesRef.set(updates);
-      document.getElementById('priceManagerModal').remove();
-      alert('价格修改已保存');
-      if (!isAdmin) renderMenu(currentFilter);
-      else if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
-    } catch(e) {
-      alert('保存失败：' + e.message);
-    }
+  function savePrices() {
+    const updates = {};
+    menu.forEach(item => {
+      const input = document.getElementById('priceInput_' + item.id);
+      if (input) {
+        const newPrice = parseFloat(input.value);
+        if (!isNaN(newPrice) && newPrice >= 0) updates[item.id] = newPrice;
+      }
+    });
+    pricesRef.update(updates).then(() => {
+      document.getElementById('priceModal').remove();
+      alert('价格已更新！');
+    }).catch(err => alert('保存失败：' + err.message));
   }
 
   // ================== 订单修改 ==================
@@ -509,20 +485,20 @@
     window.editOrderKey = key;
     window.editOrderData = JSON.parse(JSON.stringify(order.items));
     let html = `<div class="modal-overlay" id="editOrderModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">✏️ 修改订单 ${order.orderNumber||''}</div>`;
-    html += `<div class="modal-input-group"><label>🪑 桌号</label><input type="text" id="editTable" value="${order.table||''}" placeholder="桌号" style="width:100%; padding:6px;"></div>`;
-    html += `<div class="modal-checkbox"><input type="checkbox" id="editPack" ${order.isPack==='打包'?'checked':''}><label style="margin-left:5px;">🥡 打包</label></div>`;
-    html += `<div class="modal-input-group"><label>📝 备注</label><textarea id="editRemark" rows="2" style="width:100%; padding:6px;">${order.remark||''}</textarea></div>`;
+    html += `<div class="modal-input-group"><label>🪑 桌号</label><input type="text" id="editTable" value="${order.table||''}" placeholder="桌号"></div>`;
+    html += `<div class="modal-checkbox"><input type="checkbox" id="editPack" ${order.isPack==='打包'?'checked':''}><label>🥡 打包</label></div>`;
+    html += `<div class="modal-input-group"><label>📝 备注</label><textarea id="editRemark" rows="2">${order.remark||''}</textarea></div>`;
     html += '<div class="modal-input-group"><label>🍢 菜品</label><div id="editItemsContainer">';
     window.editOrderData.forEach((item, idx) => {
-      html += `<div class="edit-item-row" style="display:flex; gap:5px; margin:5px 0; align-items:center;"><input type="text" value="${item.name}" placeholder="名称" onchange="updateEditItem(this, ${idx}, 'name')" style="flex:2; padding:4px;"><input type="number" value="${item.qty}" min="0" onchange="updateEditItem(this, ${idx}, 'qty')" style="width:50px; padding:4px;"><select onchange="updateEditItem(this, ${idx}, 'spicy')" style="width:60px; padding:4px;"><option value="孜然" ${item.spicy==='孜然'?'selected':''}>孜然</option><option value="辣" ${item.spicy==='辣'?'selected':''}>辣</option></select><span>¥${item.subtotal.toFixed(2)}</span><button onclick="removeEditItem(${idx})" style="background:#e74c3c; color:white; border:none; border-radius:8px; padding:4px 8px; cursor:pointer;">删除</button></div>`;
+      html += `<div class="edit-item-row" style="display:flex; gap:5px; margin:5px 0;"><input type="text" value="${item.name}" placeholder="名称" onchange="updateEditItem(this, ${idx}, 'name')" style="flex:2"><input type="number" value="${item.qty}" min="0" onchange="updateEditItem(this, ${idx}, 'qty')" style="width:50px"><select onchange="updateEditItem(this, ${idx}, 'spicy')" style="width:60px"><option value="孜然" ${item.spicy==='孜然'?'selected':''}>孜然</option><option value="辣" ${item.spicy==='辣'?'selected':''}>辣</option></select><span>¥${item.subtotal.toFixed(2)}</span><button onclick="removeEditItem(${idx})" style="background:#e74c3c; color:white; border:none; border-radius:8px; padding:2px 8px;">删除</button></div>`;
     });
-    html += '</div><button onclick="addEditItem()" style="margin-top:5px; padding:4px 10px;">+ 添加菜品</button></div>';
+    html += '</div><button onclick="addEditItem()" style="margin-top:5px;">+ 添加菜品</button></div>';
     html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('editOrderModal').remove()">取消</button><button class="btn-confirm" onclick="saveOrderEdit()">保存修改</button></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
   }
 
   function updateEditItem(input, idx, field) {
-    const val = field === 'qty' ? parseInt(input.value) || 0 : input.value;
+    const val = field === 'qty' ? parseInt(input.value) : input.value;
     window.editOrderData[idx][field] = val;
     if (field === 'name' || field === 'qty') {
       const menuItem = menu.find(m => m.name === window.editOrderData[idx].name);
@@ -565,9 +541,9 @@
   function showMenuManager() {
     let html = `<div class="modal-overlay" id="menuManagerModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">📋 菜品管理</div>`;
     menu.forEach(item => {
-      html += `<div class="price-edit-row"><input type="text" id="menuName_${item.id}" value="${item.name}" style="width:120px"><input type="number" step="0.1" id="menuPrice_${item.id}" value="${item.price}" style="width:60px"><select id="menuCat_${item.id}">${['meat','veg','seafood','noodle','drink','other'].map(c=>`<option value="${c}" ${item.category===c?'selected':''}>${c}</option>`).join('')}</select><button onclick="deleteMenuItem(${item.id})" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:8px; cursor:pointer;">删除</button></div>`;
+      html += `<div class="price-edit-row"><input type="text" id="menuName_${item.id}" value="${item.name}" style="width:120px"><input type="number" step="0.1" id="menuPrice_${item.id}" value="${item.price}" style="width:60px"><select id="menuCat_${item.id}">${['meat','veg','seafood','noodle','drink','other'].map(c=>`<option value="${c}" ${item.category===c?'selected':''}>${c}</option>`).join('')}</select><button onclick="deleteMenuItem(${item.id})" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:8px;">删除</button></div>`;
     });
-    html += '<button onclick="addNewMenuItem()" style="margin:10px 0; padding:6px 12px; cursor:pointer;">+ 添加新菜品</button>';
+    html += '<button onclick="addNewMenuItem()" style="margin:10px 0;">+ 添加新菜品</button>';
     html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('menuManagerModal').remove()">取消</button><button class="btn-confirm" onclick="saveMenuChanges()">保存</button></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
   }
@@ -594,88 +570,70 @@
       const priceInput = document.getElementById('menuPrice_' + item.id);
       const catSelect = document.getElementById('menuCat_' + item.id);
       if (nameInput && priceInput && catSelect) {
-        updates[item.id] = { id: item.id, name: nameInput.value, price: parseFloat(priceInput.value) || 0, category: catSelect.value, unit: item.unit || "串", img: item.img || "" };
+        updates[item.id] = { id: item.id, name: nameInput.value, price: parseFloat(priceInput.value) || 0, category: catSelect.value, unit: item.unit, img: item.img };
       }
     });
     await menuItemsRef.set(updates);
     document.getElementById('menuManagerModal').remove();
-    alert('菜品信息已更新');
+    alert('菜品已更新');
   }
 
-  // ================== 统计与预备 (修复优化) ==================
+  // ================== 统计与预备（修复） ==================
   async function showStatistics() {
-    try {
-      const today = getTodayKey();
-      const prepSnap = await dailyPrepRef.child(today).once('value');
-      const prepData = prepSnap.val() || {};
-      
-      let html = `<div class="modal-overlay" id="statModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">📊 今日统计 (${today})</div>`;
-      html += '<div style="margin-bottom:10px;"><strong>预备数量设置</strong></div>';
-      menu.forEach(item => {
-        const prepQty = prepData[item.id] || 0;
-        html += `<div class="stat-row"><span>${item.name}</span><input type="number" id="prep_${item.id}" value="${prepQty}" min="0" style="width:70px; padding:4px;"></div>`;
+    const today = new Date().toLocaleDateString();
+    const prepSnap = await dailyPrepRef.child(today).once('value');
+    const prepData = prepSnap.val() || {};
+    let html = `<div class="modal-overlay" id="statModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">📊 今日统计 (${today})</div>`;
+    html += '<div style="margin-bottom:10px;"><strong>预备数量设置</strong></div>';
+    menu.forEach(item => {
+      const prepQty = prepData[item.id] || 0;
+      html += `<div class="stat-row"><span>${item.name}</span><input type="number" id="prep_${item.id}" value="${prepQty}" min="0" style="width:60px"></div>`;
+    });
+    html += '<button class="btn-confirm" onclick="savePrep()" style="margin:10px 0; width:100%;">保存预备数量</button>';
+    const orders = allOrders.filter(o => {
+      if (!o.timestamp) return false;
+      const date = new Date(o.timestamp).toLocaleDateString();
+      return date === today;
+    });
+    let totalAmount = 0;
+    const soldMap = {};
+    orders.forEach(order => {
+      totalAmount += parseFloat(order.total);
+      order.items.forEach(item => {
+        if (!soldMap[item.name]) soldMap[item.name] = 0;
+        soldMap[item.name] += item.qty;
       });
-      html += '<button class="btn-confirm" onclick="savePrep()" style="margin:12px 0; width:100%; padding:8px;">保存预备数量</button>';
-      
-      const orders = allOrders.filter(o => {
-        if (!o.timestamp) return false;
-        const d = new Date(o.timestamp);
-        const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        return k === today;
-      });
-
-      let totalAmount = 0;
-      const soldMap = {};
-      orders.forEach(order => {
-        totalAmount += parseFloat(order.total) || 0;
-        if (Array.isArray(order.items)) {
-          order.items.forEach(item => {
-            const qty = parseInt(item.qty) || 0;
-            soldMap[item.name] = (soldMap[item.name] || 0) + qty;
-          });
-        }
-      });
-
-      html += `<div style="margin-top:15px; font-size:16px; border-top:1px solid #eee; padding-top:10px;"><strong>今日销售总额：<span style="color:#c0392b;">¥${totalAmount.toFixed(2)}</span></strong></div>`;
-      html += '<div style="margin-top:10px; margin-bottom:5px;"><strong>菜品库存 / 剩余数量</strong></div>';
-      menu.forEach(item => {
-        const prep = parseInt(prepData[item.id]) || 0;
-        const sold = soldMap[item.name] || 0;
-        const left = prep - sold;
-        const leftColor = left < 0 ? '#e74c3c' : '#27ae60';
-        html += `<div class="stat-row"><span>${item.name}</span><span style="font-size:13px;">预备:${prep} | 已售:${sold} | 剩余:<strong style="color:${leftColor};">${left}</strong></span></div>`;
-      });
-      
-      html += `<div class="modal-actions" style="margin-top:15px;"><button class="btn-cancel" onclick="document.getElementById('statModal').remove()">关闭</button></div></div></div>`;
-      document.body.insertAdjacentHTML('beforeend', html);
-    } catch(e) {
-      console.error(e);
-      alert('加载统计失败：' + e.message);
-    }
+    });
+    html += `<div style="margin-top:15px;"><strong>今日销售总额：¥${totalAmount.toFixed(2)}</strong></div>`;
+    html += '<div style="margin-top:10px;"><strong>剩余数量</strong></div>';
+    menu.forEach(item => {
+      const prep = prepData[item.id] || 0;
+      const sold = soldMap[item.name] || 0;
+      const left = prep - sold;
+      html += `<div class="stat-row"><span>${item.name}</span><span>预备:${prep} 已售:${sold} 剩余:${left}</span></div>`;
+    });
+    html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('statModal').remove()">关闭</button></div></div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
   }
 
   async function savePrep() {
-    try {
-      const today = getTodayKey();
-      const updates = {};
-      menu.forEach(item => {
-        const input = document.getElementById('prep_' + item.id);
-        if (input) updates[item.id] = parseInt(input.value) || 0;
-      });
-      await dailyPrepRef.child(today).set(updates);
-      document.getElementById('statModal').remove();
-      alert('预备数量已保存');
-    } catch(e) {
-      alert('保存失败：' + e.message);
-    }
+    const today = new Date().toLocaleDateString();
+    const updates = {};
+    menu.forEach(item => {
+      const input = document.getElementById('prep_' + item.id);
+      if (input) updates[item.id] = parseInt(input.value) || 0;
+    });
+    await dailyPrepRef.child(today).set(updates);
+    document.getElementById('statModal').remove();
+    alert('预备数量已保存');
   }
 
   // ================== GBK 管理 ==================
   function showGBKManager() {
     let html = `<div class="modal-overlay" id="gbkModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">🔤 自定义GBK编码管理</div><div style="margin-bottom:10px;">已添加的自定义编码：</div>`;
     if (customGBKMap.size === 0) html += '<p style="color:#999;">暂无自定义编码</p>';
-    else customGBKMap.forEach((bytes, char) => { html += `<div class="gbk-row"><span>${char}</span><span>${bytes.map(b=>'0x'+b.toString(16).toUpperCase().padStart(2,'0')).join(', ')}</span><button onclick="deleteCustomGBK('${char}')" style="background:#e74c3c; color:white; border:none; padding:2px 8px; border-radius:8px; cursor:pointer;">删除</button></div>`; });
-    html += `<div style="margin-top:15px;"><strong>添加新编码：</strong></div><div style="display:flex; gap:5px; margin:5px 0;"><input type="text" id="newGBKChar" placeholder="汉字" maxlength="1" style="width:50px; padding:4px;"><input type="text" id="newGBKByte1" placeholder="第一字节" style="width:70px; padding:4px;"><input type="text" id="newGBKByte2" placeholder="第二字节" style="width:70px; padding:4px;"><button onclick="addCustomGBK()" style="background:#27ae60; color:white; border:none; padding:4px 10px; border-radius:8px; cursor:pointer;">添加</button></div><p style="font-size:12px; color:#666;">第一/二字节请输入十六进制，如 B1、C6</p>`;
+    else customGBKMap.forEach((bytes, char) => { html += `<div class="gbk-row"><span>${char}</span><span>${bytes.map(b=>'0x'+b.toString(16).toUpperCase().padStart(2,'0')).join(', ')}</span><button onclick="deleteCustomGBK('${char}')" style="background:#e74c3c; color:white; border:none; padding:2px 8px; border-radius:8px;">删除</button></div>`; });
+    html += `<div style="margin-top:15px;"><strong>添加新编码：</strong></div><div style="display:flex; gap:5px; margin:5px 0;"><input type="text" id="newGBKChar" placeholder="汉字" maxlength="1" style="width:50px;"><input type="text" id="newGBKByte1" placeholder="第一字节" style="width:60px;"><input type="text" id="newGBKByte2" placeholder="第二字节" style="width:60px;"><button onclick="addCustomGBK()" style="background:#27ae60; color:white; border:none; padding:4px 10px; border-radius:8px;">添加</button></div><p style="font-size:12px; color:#666;">第一/二字节请输入十六进制，如 B1、C6</p>`;
     html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('gbkModal').remove()">关闭</button></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
   }
@@ -707,21 +665,21 @@
     let filtered = allOrders;
     if (currentTableFilter !== 'all') { filtered = filtered.filter(o => o.table == currentTableFilter); settleBtn.style.display = 'inline-block'; } else settleBtn.style.display = 'none';
     if (currentSearch) filtered = filtered.filter(o => o.orderNumber && o.orderNumber.includes(currentSearch));
-    let tableTotal = 0; filtered.forEach(o => { if (!o.settled) tableTotal += parseFloat(o.total) || 0; });
+    let tableTotal = 0; filtered.forEach(o => { if (!o.settled) tableTotal += parseFloat(o.total); });
     tableTotalDiv.innerText = currentTableFilter === 'all' ? '' : `桌号 ${currentTableFilter} 未结算总额：¥${tableTotal.toFixed(2)}`;
-    if (filtered.length === 0) { list.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">暂无订单</p>'; return; }
+    if (filtered.length === 0) { list.innerHTML = '<p style="color:#999;">暂无订单</p>'; return; }
     let ordersHtml = '';
     filtered.forEach(order => {
       const settledClass = order.settled ? 'settled' : '';
-      let itemsHtml = ''; if (Array.isArray(order.items)) { order.items.forEach(i => itemsHtml += `<li>${i.name} ${i.spicy} ×${i.qty} - ¥${i.subtotal}</li>`); }
+      let itemsHtml = ''; order.items.forEach(i => itemsHtml += `<li>${i.name} ${i.spicy} ×${i.qty} - ¥${i.subtotal}</li>`);
       ordersHtml += `<div class="order-card ${settledClass}" id="order-${order.key}">
         <strong>🕒 ${order.time}</strong> | 🪑 ${order.table||'无'} | ${order.isPack||'堂食'} ${order.settled?' (已结算)':''}
         <br>单号：${order.orderNumber||'无'} ${order.remark ? '<br>备注：'+order.remark : ''}
         <br>合计 ¥${order.total}
         <ul style="margin:6px 0; padding-left:20px;">${itemsHtml}</ul>
         <button class="print-btn" onclick="reprint('${order.key}')">🖨️ 补打小票</button>
-        <button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;cursor:pointer;" onclick="deleteOrder('${order.key}')">删除</button>
-        <button style="background:#f39c12;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;margin-left:4px;cursor:pointer;" onclick="editOrder('${order.key}')">修改</button>
+        <button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${order.key}')">删除</button>
+        <button style="background:#f39c12;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;margin-left:4px;" onclick="editOrder('${order.key}')">修改</button>
       </div>`;
     });
     list.innerHTML = ordersHtml;
@@ -733,7 +691,7 @@
     if (tableOrders.length === 0) { alert('该桌没有未结算订单'); return; }
     if (!confirm(`确定结算桌号 ${currentTableFilter} 的所有未结算订单吗？`)) return;
     let combinedItems = [], totalAmount = 0;
-    tableOrders.forEach(order => { if (Array.isArray(order.items)) { order.items.forEach(item => { combinedItems.push({ name: item.name, spicy: item.spicy, qty: item.qty, subtotal: item.subtotal }); totalAmount += item.subtotal; }); } });
+    tableOrders.forEach(order => { order.items.forEach(item => { combinedItems.push({ name: item.name, spicy: item.spicy, qty: item.qty, subtotal: item.subtotal }); totalAmount += item.subtotal; }); });
     const mergedOrder = { time: new Date().toLocaleString(), table: currentTableFilter, isPack: '堂食', items: combinedItems, total: totalAmount.toFixed(2) };
     autoPrint(mergedOrder);
     const updates = {}; tableOrders.forEach(order => { updates[order.key + '/settled'] = true; });
@@ -753,9 +711,7 @@
     const w = window.open('', '_blank', 'width=320,height=400');
     if (!w) return;
     let html = '<html><head><title>久久家一元烧烤·新订单</title><style>@page{size:80mm auto;margin:0;}body{width:80mm;font-family:monospace;font-size:12px;padding:2mm;}h2{text-align:center;font-size:16px;}.line{border-top:1px dashed #000;margin:4px 0;}.right{text-align:right;}</style></head><body><h2>久久家一元烧烤</h2><p style="text-align:center;">'+order.time+'</p><p>单号：'+(order.orderNumber||'无')+'</p><p>桌号：'+(order.table||'无')+' | '+(order.isPack||'堂食')+'</p><div class="line"></div>';
-    if (Array.isArray(order.items)) {
-      order.items.forEach(item => html += '<div>'+item.name+' '+item.spicy+' ×'+item.qty+' <span style="float:right;">¥'+item.subtotal+'</span></div><div class="line"></div>');
-    }
+    order.items.forEach(item => html += '<div>'+item.name+' '+item.spicy+' ×'+item.qty+' <span style="float:right;">¥'+item.subtotal+'</span></div><div class="line"></div>');
     if (order.remark) html += '<div>备注：'+order.remark+'</div><div class="line"></div>';
     html += '<h3 class="right">合计: ¥'+order.total+'</h3><p style="text-align:center;">新订单 - 请及时处理</p></body></html>';
     w.document.write(html); w.document.close(); w.focus(); w.print(); setTimeout(() => w.close(), 2000);
@@ -768,30 +724,27 @@
     str += '\x1B\x45\x01\x1B\x21\x30'; str += '桌号：' + order.table + '  ' + order.isPack + '\n';
     str += '\x1B\x21\x00\x1B\x45\x00'; str += '----------------------------\n';
     str += '品名       数量  小计\n';
-    if (Array.isArray(order.items)) {
-      order.items.forEach(item => {
-        const name = item.name.padEnd(7, ' '); const qty = item.qty.toString().padStart(2, ' '); const subtotal = parseFloat(item.subtotal).toFixed(2).padStart(6, ' ');
-        str += name + ' ' + qty + ' ' + subtotal + '\n';
-        str += '  ' + item.spicy + '\n';
-      });
-    }
+    order.items.forEach(item => {
+      const name = item.name.padEnd(7, ' '); const qty = item.qty.toString().padStart(2, ' '); const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
+      str += name + ' ' + qty + ' ' + subtotal + '\n';
+      str += '  ' + item.spicy + '\n';
+    });
     if (order.remark) { str += '----------------------------\n'; str += '备注：' + order.remark + '\n'; }
     str += '----------------------------\n'; str += '\x1B\x61\x02'; str += '合计：¥ ' + order.total + '\n';
     str += '\x1B\x61\x01'; str += '谢谢惠顾，欢迎再次光临\n'; str += '\n\n\n'; str += '\x1D\x56\x42\x00';
     return encodeGBK(str);
   }
 
-  function playNotification() { try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const osc = ctx.createOscillator(); osc.type='square'; osc.frequency.setValueAtTime(800, ctx.currentTime); osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime+0.15); } catch(e){} }
+  function playNotification() { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const osc = ctx.createOscillator(); osc.type='square'; osc.frequency.setValueAtTime(800, ctx.currentTime); osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime+0.15); }
+  function hideAdmin() { window.location.href = window.location.pathname; }
 
   function showLoginForm() {
     document.getElementById('customerView').style.display = 'none'; document.getElementById('adminPanel').style.display = 'none'; document.getElementById('adminOrderPanel').style.display = 'none';
-    const oldBox = document.getElementById('loginBox'); if (oldBox) oldBox.remove();
     document.body.insertAdjacentHTML('beforeend', '<div id="loginBox"><h3>🔐 店家登录</h3><input id="pwdInput" type="password" placeholder="请输入管理密码"><button onclick="checkPassword()">进入管理</button><p id="loginError"></p><a href="'+window.location.pathname+'" style="font-size:13px;color:#999;display:block;margin-top:10px;">返回点餐页</a></div>');
   }
   function checkPassword() {
     if (document.getElementById('pwdInput').value === ADMIN_PASSWORD) {
-      const box = document.getElementById('loginBox'); if (box) box.remove();
-      document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('loginBox').remove(); document.getElementById('adminPanel').style.display = 'block';
       if (navigator.bluetooth) document.getElementById('connectPrinterBtn').style.display = 'inline-block';
       initTableNav(); startListening();
     } else document.getElementById('loginError').innerText = '密码错误，请重试';
