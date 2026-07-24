@@ -167,7 +167,6 @@
 </div>
 
 <script>
-  // Firebase 配置
   const firebaseConfig = {
     apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
     authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
@@ -185,7 +184,6 @@
   const dailyPrepRef = database.ref('dailyPrep');
   const customGBKRef = database.ref('customGBK');
 
-  // 内置 GBK 编码表
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -196,13 +194,13 @@
     ['腐',[0xB8,0xAF]],['掌',[0xD5,0xC6]],['中',[0xD6,0xD0]],['宝',[0xB1,0xA6]],
     ['肠',[0xB3,0xA6]],['牛',[0xC5,0xA3]],['心',[0xD0,0xC4]],['管',[0xB9,0xDC]],
     ['碳',[0xCC,0xBC]],['皮',[0xC6,0xA4]],['面',[0xC3,0xE6]],['筋',[0xBD,0xEE]],
-    ['',[0xF6,0xD9]],['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],
+    ['鱿',[0xF6,0xD9]],['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],
     ['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],
     ['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],
     ['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],
     ['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],['青',[0xC7,0xE0]],
-    ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['',[0xDB,0xC9]],
-    ['',[0xE1,0xBE]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
+    ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xDB,0xC9]],
+    ['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
     ['孜',[0xD7,0xAC]],['然',[0xC8,0xBB]],['辣',[0xC0,0xB1]],
     ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
     ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
@@ -241,7 +239,6 @@
     return new Uint8Array(bytes);
   }
 
-  // 默认菜单
   const defaultMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
@@ -284,7 +281,6 @@
   let currentTableFilter = 'all', currentSearch = '';
   let bluetoothDevice = null, bluetoothCharacteristic = null;
 
-  // 菜单加载
   menuItemsRef.on('value', (snap) => {
     if (snap.exists()) {
       menu = Object.values(snap.val());
@@ -381,8 +377,8 @@
     if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter);
   }
 
-  function editDetail(itemId, type = 'guest') { /* 点数量可编辑，但此处简化 */ }
-  function closeDetailModal(itemId, type) { /* 同上 */ }
+  function editDetail(itemId, type = 'guest') { /* 简化 */ }
+  function closeDetailModal(itemId, type) { /* 简化 */ }
 
   function updateCartBar(cartObj = cart) {
     const countSpan = document.getElementById('cartCount'), totalSpan = document.getElementById('cartTotal');
@@ -569,11 +565,7 @@
       html += `<div class="stat-row"><span>${item.name}</span><input type="number" id="prep_${item.id}" value="${prepQty}" min="0" style="width:60px"></div>`;
     });
     html += '<button class="btn-confirm" onclick="savePrep()" style="margin:10px 0; width:100%;">保存预备数量</button>';
-    const orders = allOrders.filter(o => {
-      if (!o.timestamp) return false;
-      const orderDate = new Date(o.timestamp).toLocaleDateString();
-      return orderDate === today;
-    });
+    const orders = allOrders.filter(o => o.timestamp && new Date(o.timestamp).toLocaleDateString() === today);
     let totalAmount = 0;
     const soldMap = {};
     orders.forEach(order => {
@@ -623,11 +615,12 @@
     if (!char || !byte1 || !byte2) { alert('请填写完整'); return; }
     const code1 = parseInt(byte1, 16), code2 = parseInt(byte2, 16);
     if (isNaN(code1) || isNaN(code2)) { alert('字节格式错误'); return; }
-    customGBKRef.child(char).set([code1, code2]).then(() => { document.getElementById('gbkModal').remove(); showGBKManager(); });
+    customGBKMap.set(char, [code1, code2]);
+    customGBKRef.child(char).set([code1, code2]).then(() => { document.getElementById('gbkModal').remove(); showGBKManager(); }).catch(err => { alert('保存失败：'+err.message); customGBKMap.delete(char); });
   }
-  function deleteCustomGBK(char) { if (confirm(`确定删除 “${char}” 的自定义编码吗？`)) { customGBKRef.child(char).remove().then(() => { document.getElementById('gbkModal').remove(); showGBKManager(); }); } }
+  function deleteCustomGBK(char) { if (confirm(`确定删除 “${char}” 的自定义编码吗？`)) { customGBKMap.delete(char); customGBKRef.child(char).remove().then(() => { document.getElementById('gbkModal').remove(); showGBKManager(); }); } }
 
-  // ================== 订单管理（含修改按钮） ==================
+  // ================== 订单管理 ==================
   let allOrders = [];
   function startListening() {
     ordersRef.off();
