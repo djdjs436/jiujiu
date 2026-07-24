@@ -258,7 +258,7 @@
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
-  // ==================== 监听菜单自定义数据 ====================
+  // 监听菜单自定义数据
   menuCustomRef.on('value', (snapshot) => {
     const customData = snapshot.val() || {};
     menu = defaultMenu.map(item => {
@@ -268,7 +268,6 @@
       }
       return { ...item };
     });
-    // 添加额外自定义菜品
     for (const id in customData) {
       if (!menu.find(m => m.id == id)) {
         const custom = customData[id];
@@ -284,7 +283,7 @@
     }
   });
 
-  // ==================== URL 桌号参数 ====================
+  // URL 桌号参数
   const urlParams = new URLSearchParams(window.location.search);
   if (!isAdmin && urlParams.has('table')) {
     const tableParam = urlParams.get('table');
@@ -295,7 +294,6 @@
     }
   }
 
-  // ==================== 桌号选择器 ====================
   function toggleTableDropdown() { document.getElementById('tableDropdown').classList.toggle('open'); }
   function updateTableDisplay() {
     const bigText = document.getElementById('tableBigText'), bigBtn = document.getElementById('tableBigBtn');
@@ -306,7 +304,6 @@
   function setCustomerTable(num) { customerTable = num; updateTableDisplay(); }
   updateTableDisplay();
 
-  // ==================== 初始化界面 ====================
   if (isAdmin) {
     document.getElementById('customerView').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'block';
@@ -320,7 +317,6 @@
     renderMenu('all');
   }
 
-  // ==================== 通用函数 ====================
   function getTotalQty(itemId, cartObj = cart) { return Object.values(cartObj[itemId] || {}).reduce((a, b) => a + b, 0); }
 
   function renderMenu(filter = 'all', containerId = 'menuContainer', cartObj = cart, updateCartFn = updateCartBar, isAdminPanel = false) {
@@ -479,7 +475,6 @@
     renderMenu(cat);
   }
 
-  // ==================== 下单流程 ====================
   function showConfirmModal() {
     const items = getCartItems(cart);
     if (items.length === 0) { alert('请先选择菜品'); return; }
@@ -852,7 +847,7 @@
     }
   }
 
-  // ==================== 打印相关 ====================
+  // ==================== 打印 ====================
   function autoPrint(order) {
     if (bluetoothCharacteristic) {
       try { const command = build72mmESC(order); sendBluetoothData(command); } catch (e) { fallbackPrint(order); }
