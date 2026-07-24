@@ -7,6 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <style>
+    /* 样式同上，保持不变 */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f8f8f8; max-width: 500px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; }
     .header { background: #c0392b; color: white; padding: 12px 18px; text-align: center; border-radius: 0 0 12px 12px; flex-shrink: 0; }
@@ -167,6 +168,7 @@
 </div>
 
 <script>
+  // Firebase 配置
   const firebaseConfig = {
     apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
     authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
@@ -184,6 +186,7 @@
   const dailyPrepRef = database.ref('dailyPrep');
   const customGBKRef = database.ref('customGBK');
 
+  // 内置 GBK 编码表
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -239,6 +242,7 @@
     return new Uint8Array(bytes);
   }
 
+  // 默认菜单
   const defaultMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
@@ -281,6 +285,7 @@
   let currentTableFilter = 'all', currentSearch = '';
   let bluetoothDevice = null, bluetoothCharacteristic = null;
 
+  // 菜单监听
   menuItemsRef.on('value', (snap) => {
     if (snap.exists()) {
       menu = Object.values(snap.val());
@@ -578,12 +583,19 @@
     alert('菜品已更新');
   }
 
-  // ================== 统计与预备 ==================
+  // ================== 统计与预备（优化版） ==================
   async function showStatistics() {
     try {
       const today = new Date().toLocaleDateString();
-      const prepSnap = await dailyPrepRef.child(today).once('value');
-      const prepData = prepSnap.val() || {};
+      // 获取预备数据
+      let prepData = {};
+      try {
+        const prepSnap = await dailyPrepRef.child(today).once('value');
+        prepData = prepSnap.val() || {};
+      } catch (e) {
+        console.warn('预备数据读取失败，使用空数据', e);
+      }
+
       let html = `<div class="modal-overlay" id="statModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">📊 今日统计 (${today})</div>`;
       html += '<div style="margin-bottom:10px;"><strong>预备数量设置</strong></div>';
       menu.forEach(item => {
@@ -592,16 +604,19 @@
       });
       html += '<button class="btn-confirm" onclick="savePrep()" style="margin:10px 0; width:100%;">保存预备数量</button>';
 
-      const orders = allOrders.filter(o => o.timestamp && new Date(o.timestamp).toLocaleDateString() === today);
+      // 计算今日销售额
       let totalAmount = 0;
       const soldMap = {};
-      orders.forEach(order => {
-        totalAmount += parseFloat(order.total);
-        order.items.forEach(item => {
-          if (!soldMap[item.name]) soldMap[item.name] = 0;
-          soldMap[item.name] += item.qty;
+      if (allOrders && allOrders.length > 0) {
+        const todayOrders = allOrders.filter(o => o.timestamp && new Date(o.timestamp).toLocaleDateString() === today);
+        todayOrders.forEach(order => {
+          totalAmount += parseFloat(order.total) || 0;
+          order.items.forEach(item => {
+            if (!soldMap[item.name]) soldMap[item.name] = 0;
+            soldMap[item.name] += item.qty || 0;
+          });
         });
-      });
+      }
       html += `<div style="margin-top:15px;"><strong>今日销售总额：¥${totalAmount.toFixed(2)}</strong></div>`;
       html += '<div style="margin-top:10px;"><strong>剩余数量</strong></div>';
       menu.forEach(item => {
@@ -613,7 +628,8 @@
       html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('statModal').remove()">关闭</button></div></div></div>`;
       document.body.insertAdjacentHTML('beforeend', html);
     } catch (err) {
-      alert('统计数据加载失败：' + err.message);
+      console.error('统计错误', err);
+      alert('统计数据加载失败，请稍后重试。错误信息：' + err.message);
     }
   }
 
