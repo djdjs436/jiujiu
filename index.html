@@ -7,6 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <style>
+    /* 样式保持不变，与之前版本完全一致，此处省略以节省篇幅 */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f8f8f8; max-width: 500px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; }
     .header { background: #c0392b; color: white; padding: 12px 18px; text-align: center; border-radius: 0 0 12px 12px; flex-shrink: 0; }
@@ -97,7 +98,7 @@
   </style>
 </head>
 <body>
-<!-- 页面结构同前，在此省略，完整代码见下方 script 前 -->
+<!-- 客人点餐页面 -->
 <div id="customerView" style="display:flex; flex-direction:column; height:100vh;">
   <div class="header"><h1>久久家一元烧烤</h1><p>扫码点餐 · 干净卫生 · 现串现烤</p></div>
   <div class="hint-bar">💡 点击正方形选桌，选择孜然或辣后用步进器调数量</div>
@@ -126,6 +127,7 @@
   <div class="admin-link"><a href="?admin">🔐 店家管理</a></div>
 </div>
 
+<!-- 管理面板 -->
 <div id="adminPanel" style="display:none;">
   <h3 style="margin-bottom:15px;">📋 实时订单（自动接收）</h3>
   <button id="connectPrinterBtn" class="bluetooth-btn" onclick="connectBluetoothPrinter()">🖨️ 连接蓝牙打印机</button>
@@ -146,6 +148,7 @@
   <div id="orderList"></div>
 </div>
 
+<!-- 代客点餐面板 -->
 <div id="adminOrderPanel" style="display:none;">
   <div class="main-container">
     <div class="left-categories" id="adminLeftCategories">
@@ -168,7 +171,7 @@
 </div>
 
 <script>
-  // Firebase 配置
+  // ==================== Firebase 初始化 ====================
   const firebaseConfig = {
     apiKey: "AIzaSyDFCN5ttr5w3xM8n3eeqndZBHNKaWGfG-0",
     authDomain: "jiujiukaorou-53a3d.firebaseapp.com",
@@ -186,7 +189,7 @@
   const dailyPrepRef = database.ref('dailyPrep');
   const customGBKRef = database.ref('customGBK');
 
-  // 内置 GBK 编码表（完整）
+  // ==================== GBK 编码 ====================
   const gbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -242,7 +245,7 @@
     return new Uint8Array(bytes);
   }
 
-  // 默认菜单
+  // ==================== 菜单数据 ====================
   const defaultMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
@@ -285,11 +288,10 @@
   let currentTableFilter = 'all', currentSearch = '';
   let bluetoothDevice = null, bluetoothCharacteristic = null;
 
-  // 监听菜单
+  // 菜单监听
   menuItemsRef.on('value', (snap) => {
-    if (snap.exists()) {
-      menu = Object.values(snap.val());
-    } else {
+    if (snap.exists()) menu = Object.values(snap.val());
+    else {
       const menuObj = {};
       defaultMenu.forEach(item => menuObj[item.id] = item);
       menuItemsRef.set(menuObj);
@@ -305,6 +307,7 @@
     else if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
   });
 
+  // URL 桌号参数
   const urlParams = new URLSearchParams(window.location.search);
   if (!isAdmin && urlParams.has('table')) {
     const tableParam = urlParams.get('table');
@@ -382,8 +385,30 @@
     if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter);
   }
 
-  function editDetail(itemId, type = 'guest') { /* 可保留简单实现 */ }
-  function closeDetailModal(itemId, type) { /* 可保留简单实现 */ }
+  // 简单的编辑数量弹窗（修复缺失定义）
+  function editDetail(itemId, type) {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    const item = menu.find(m => m.id === itemId);
+    const itemCart = cartObj[itemId] || {};
+    let html = `<div class="modal-overlay" id="detailModal"><div class="modal-content"><div class="modal-title">调整【${item.name}】</div>`;
+    tasteOptions.forEach(opt => {
+      const qty = itemCart[opt] || 0;
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0;"><span>${opt}</span><input type="number" id="detailQty_${itemId}_${opt}" value="${qty}" min="0" style="width:60px;text-align:center;" inputmode="numeric"></div>`;
+    });
+    html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('detailModal').remove()">取消</button><button class="btn-confirm" onclick="saveDetail(${itemId}, '${type}')">保存</button></div></div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+  function saveDetail(itemId, type) {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    tasteOptions.forEach(opt => {
+      const val = parseInt(document.getElementById('detailQty_' + itemId + '_' + opt).value) || 0;
+      if (val === 0) { if (cartObj[itemId]) delete cartObj[itemId][opt]; }
+      else { if (!cartObj[itemId]) cartObj[itemId] = {}; cartObj[itemId][opt] = val; }
+    });
+    if (cartObj[itemId] && Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
+    document.getElementById('detailModal').remove();
+    if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter);
+  }
 
   function updateCartBar(cartObj = cart) {
     const countSpan = document.getElementById('cartCount'), totalSpan = document.getElementById('cartTotal');
@@ -415,7 +440,7 @@
 
   function filterCategory(cat, e) { document.querySelectorAll('#leftCategories button').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); currentFilter = cat; renderMenu(cat); }
 
-  // ================== 点餐下单 ==================
+  // ==================== 下单流程 ====================
   function showConfirmModal() { const items = getCartItems(cart); if (items.length === 0) { alert('请先选择菜品'); return; } showCommonConfirm(items, 'guest'); }
   function showCommonConfirm(items, type) {
     const total = items.reduce((sum,i)=>sum+i.subtotal,0).toFixed(2);
@@ -440,7 +465,7 @@
     ordersRef.push(order).then(() => { document.getElementById('confirmModal').remove(); alert('下单成功！单号：'+orderNumber+'\n合计 ¥'+total); cart = {}; renderMenu(currentFilter); });
   }
 
-  // ================== 管理端功能 ==================
+  // ==================== 管理端功能 ====================
   function showAdminOrderPanel() { document.getElementById('adminPanel').style.display = 'none'; document.getElementById('adminOrderPanel').style.display = 'flex'; currentAdminFilter = 'all'; renderAdminMenu(); }
   function hideAdminOrderPanel() { document.getElementById('adminOrderPanel').style.display = 'none'; document.getElementById('adminPanel').style.display = 'block'; renderOrders(); }
   function filterAdminCategory(cat, e) { document.querySelectorAll('#adminLeftCategories button').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); currentAdminFilter = cat; renderAdminMenu(); }
@@ -460,7 +485,7 @@
     ordersRef.push(order).then(() => { document.getElementById('confirmModal').remove(); alert('代客下单成功！单号：'+orderNumber+'\n合计 ¥'+total); adminCart = {}; adminSelectedTable = ''; renderAdminMenu(); });
   }
 
-  // 菜品价格管理
+  // 价格管理
   function showPriceManager() {
     let html = `<div class="modal-overlay" id="priceModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">💲 菜品价格管理</div>`;
     menu.forEach(item => { html += `<div class="price-edit-row"><span>${item.name}</span><input type="number" step="0.1" id="priceInput_${item.id}" value="${item.price}"></div>`; });
@@ -507,7 +532,7 @@
     try {
       const today = new Date().toLocaleDateString();
       let prepData = {};
-      try { const prepSnap = await dailyPrepRef.child(today).once('value'); prepData = prepSnap.val() || {}; } catch (e) { console.warn('预备数据读取失败', e); }
+      try { const prepSnap = await dailyPrepRef.child(today).once('value'); prepData = prepSnap.val() || {}; } catch (e) { console.warn(e); }
       let html = `<div class="modal-overlay" id="statModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">📊 今日统计 (${today})</div>`;
       html += '<div style="margin-bottom:10px;"><strong>预备数量设置</strong></div>';
       menu.forEach(item => { const prepQty = prepData[item.id] || 0; html += `<div class="stat-row"><span>${item.name}</span><input type="number" id="prep_${item.id}" value="${prepQty}" min="0" style="width:60px"></div>`; });
@@ -522,7 +547,7 @@
       menu.forEach(item => { const prep = prepData[item.id] || 0, sold = soldMap[item.name] || 0, left = prep - sold; html += `<div class="stat-row"><span>${item.name}</span><span>预备:${prep} 已售:${sold} 剩余:${left}</span></div>`; });
       html += `<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('statModal').remove()">关闭</button></div></div></div>`;
       document.body.insertAdjacentHTML('beforeend', html);
-    } catch (err) { console.error('统计错误', err); alert('统计数据加载失败，请稍后重试。错误信息：' + err.message); }
+    } catch (err) { console.error(err); alert('统计数据加载失败，请稍后重试。错误信息：' + err.message); }
   }
   async function savePrep() {
     const today = new Date().toLocaleDateString();
@@ -532,7 +557,7 @@
     document.getElementById('statModal').remove(); alert('预备数量已保存');
   }
 
-  // 补充 GBK 编码
+  // GBK 管理
   function showGBKManager() {
     let html = `<div class="modal-overlay" id="gbkModal"><div class="modal-content" style="max-width:450px;"><div class="modal-title">🔤 自定义GBK编码管理</div><div style="margin-bottom:10px;">已添加的自定义编码：</div>`;
     if (customGBKMap.size === 0) html += '<p style="color:#999;">暂无自定义编码</p>';
@@ -573,14 +598,7 @@
     filtered.forEach(order => {
       const settledClass = order.settled ? 'settled' : '';
       let itemsHtml = ''; order.items.forEach(i => itemsHtml += `<li>${i.name} ${i.spicy} ×${i.qty} - ¥${i.subtotal}</li>`);
-      ordersHtml += `<div class="order-card ${settledClass}" id="order-${order.key}">
-        <strong>🕒 ${order.time}</strong> | 🪑 ${order.table||'无'} | ${order.isPack||'堂食'} ${order.settled?' (已结算)':''}
-        <br>单号：${order.orderNumber||'无'} ${order.remark ? '<br>备注：'+order.remark : ''}
-        <br>合计 ¥${order.total}
-        <ul style="margin:6px 0; padding-left:20px;">${itemsHtml}</ul>
-        <button class="print-btn" onclick="reprint('${order.key}')">🖨️ 补打小票</button>
-        <button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${order.key}')">删除</button>
-      </div>`;
+      ordersHtml += `<div class="order-card ${settledClass}" id="order-${order.key}"><strong>🕒 ${order.time}</strong> | 🪑 ${order.table||'无'} | ${order.isPack||'堂食'} ${order.settled?' (已结算)':''}<br>单号：${order.orderNumber||'无'} ${order.remark ? '<br>备注：'+order.remark : ''}<br>合计 ¥${order.total}<ul style="margin:6px 0; padding-left:20px;">${itemsHtml}</ul><button class="print-btn" onclick="reprint('${order.key}')">🖨️ 补打小票</button><button style="background:#e74c3c;color:white;border:none;padding:4px 12px;border-radius:10px;font-size:12px;" onclick="deleteOrder('${order.key}')">删除</button></div>`;
     });
     list.innerHTML = ordersHtml;
   }
