@@ -95,6 +95,13 @@
     .modal-table-btn.selected { background: #c0392b; color: white; border-color: #c0392b; }
     .menu-edit-row { display: flex; flex-wrap: wrap; align-items: center; margin: 8px 0; }
     .menu-edit-row input, .menu-edit-row select { margin-right: 6px; padding: 4px; border: 1px solid #ddd; border-radius: 6px; }
+    .cat-edit-row { display: flex; align-items: center; margin: 6px 0; }
+    .cat-edit-row input { margin-right: 6px; padding: 4px; border: 1px solid #ddd; border-radius: 6px; }
+    .gbk-edit-row { display: flex; align-items: center; margin: 4px 0; }
+    .gbk-edit-row span { margin-right: 10px; }
+    .gbk-edit-row input { width: 60px; padding: 2px; border: 1px solid #ddd; border-radius: 4px; }
+    .add-item-row { display: flex; gap: 4px; align-items: center; margin-bottom: 8px; }
+    .add-item-row select { padding: 4px; border-radius: 6px; border: 1px solid #ddd; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -407,18 +414,8 @@
     updateCartFn(cartObj);
   }
 
-  function clearItem(itemId, type = 'guest') {
-    const cartObj = type === 'admin' ? adminCart : cart;
-    delete cartObj[itemId];
-    if (type === 'admin') renderAdminMenu();
-    else renderMenu(currentFilter);
-  }
-
-  function selectSpicy(level, type = 'guest') {
-    if (type === 'admin') { adminCurrentSpicy = level; renderAdminMenu(); }
-    else { currentSpicy = level; renderMenu(currentFilter); }
-  }
-
+  function clearItem(itemId, type = 'guest') { const cartObj = type === 'admin' ? adminCart : cart; delete cartObj[itemId]; if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter); }
+  function selectSpicy(level, type = 'guest') { if (type === 'admin') { adminCurrentSpicy = level; renderAdminMenu(); } else { currentSpicy = level; renderMenu(currentFilter); } }
   function quickAdjust(itemId, delta, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     const curSpicy = type === 'admin' ? adminCurrentSpicy : currentSpicy;
@@ -433,10 +430,8 @@
       if (cartObj[itemId][curSpicy] === 0) delete cartObj[itemId][curSpicy];
     }
     if (Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
-    if (type === 'admin') renderAdminMenu();
-    else renderMenu(currentFilter);
+    if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter);
   }
-
   function editDetail(itemId, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     const item = menu.find(m => m.id == itemId);
@@ -454,7 +449,6 @@
     html += '<div class="modal-actions"><button class="btn-cancel" onclick="closeDetailModal(' + itemId + ', \'' + type + '\')">完成</button></div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
   }
-
   function closeDetailModal(itemId, type) {
     const cartObj = type === 'admin' ? adminCart : cart;
     tasteOptions.forEach(option => {
@@ -464,37 +458,27 @@
     });
     if (cartObj[itemId] && Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
     document.getElementById('detailModal').remove();
-    if (type === 'admin') renderAdminMenu();
-    else renderMenu(currentFilter);
+    if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter);
   }
-
   function updateCartBar(cartObj = cart) {
     const countSpan = document.getElementById('cartCount'), totalSpan = document.getElementById('cartTotal');
     if (!countSpan || !totalSpan) return;
     let totalCount = 0, totalPrice = 0;
     Object.entries(cartObj).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
-      if (item) {
-        Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; });
-      }
+      if (item) Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; });
     });
     countSpan.innerText = totalCount;
     totalSpan.innerText = totalPrice.toFixed(2);
   }
-
   function getCartItems(cartObj = cart) {
     let items = [];
     Object.entries(cartObj).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
-      if (item) {
-        Object.entries(levels).forEach(([level, qty]) => {
-          if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty });
-        });
-      }
+      if (item) Object.entries(levels).forEach(([level, qty]) => { if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty }); });
     });
     return items;
   }
-
   function generateOrderNumber() {
     const now = new Date();
     const dateStr = now.getFullYear().toString().slice(-2) + ('0' + (now.getMonth() + 1)).slice(-2) + ('0' + now.getDate()).slice(-2);
@@ -650,7 +634,7 @@
   function clearOrders() { if (confirm('确定清空所有订单？')) ordersRef.remove(); }
   function reprint(key) { const order = allOrders.find(o => o.key === key); if (order) autoPrint(order); }
 
-  // ==================== 订单修改（含添加菜品） ====================
+  // ==================== 订单修改 ====================
   function editOrder(key) {
     const order = allOrders.find(o => o.key === key);
     if (!order) return;
@@ -728,16 +712,10 @@
       const qty = parseInt(qtyEl.value) || 0;
       if (qty > 0) {
         const item = order.items[i];
-        if (item) {
-          const subtotal = qty * item.price;
-          total += subtotal;
-          newItems.push({ name: item.name, price: item.price, qty, spicy: item.spicy, subtotal });
-        }
+        if (item) { const subtotal = qty * item.price; total += subtotal; newItems.push({ name: item.name, price: item.price, qty, spicy: item.spicy, subtotal }); }
       }
     }
-    if (window.editOrderNewItems) {
-      window.editOrderNewItems.forEach(item => { total += item.subtotal; newItems.push(item); });
-    }
+    if (window.editOrderNewItems) { window.editOrderNewItems.forEach(item => { total += item.subtotal; newItems.push(item); }); }
     window.editOrderNewItems = [];
     if (newItems.length === 0) { alert('请至少保留一个菜品'); return; }
     const updates = {};
@@ -758,9 +736,7 @@
         <input type="text" id="mname_${item.id}" value="${item.name}" style="width:80px;" placeholder="名称">
         <input type="number" step="0.1" id="mprice_${item.id}" value="${item.price}" style="width:60px;" placeholder="价格">
         <select id="mcat_${item.id}" style="width:70px;">`;
-      categories.forEach(cat => {
-        html += `<option value="${cat.id}" ${item.category===cat.id?'selected':''}>${cat.name}</option>`;
-      });
+      categories.forEach(cat => { html += `<option value="${cat.id}" ${item.category===cat.id?'selected':''}>${cat.name}</option>`; });
       html += `</select>
         <input type="text" id="munit_${item.id}" value="${item.unit}" style="width:40px;" placeholder="单位">
         <input type="text" id="mimg_${item.id}" value="${item.img}" style="width:120px;" placeholder="图片链接">
@@ -800,13 +776,7 @@
         const name = nameEl.value.trim();
         const price = parseFloat(priceEl.value);
         if (name && !isNaN(price) && price >= 0) {
-          updates[item.id] = {
-            name, price,
-            category: catEl.value,
-            unit: unitEl.value,
-            img: imgEl ? imgEl.value.trim() : item.img,
-            soldOut: soldOutEl ? soldOutEl.checked : false
-          };
+          updates[item.id] = { name, price, category: catEl.value, unit: unitEl.value, img: imgEl ? imgEl.value.trim() : item.img, soldOut: soldOutEl ? soldOutEl.checked : false };
         }
       }
     });
@@ -814,13 +784,7 @@
     const newPrice = parseFloat(document.getElementById('newPrice').value);
     if (newName && !isNaN(newPrice) && newPrice >= 0) {
       const newId = Date.now();
-      updates[newId] = {
-        name: newName, price: newPrice,
-        category: document.getElementById('newCat').value,
-        unit: document.getElementById('newUnit').value.trim() || '串',
-        img: document.getElementById('newImg').value.trim() || '',
-        soldOut: false
-      };
+      updates[newId] = { name: newName, price: newPrice, category: document.getElementById('newCat').value, unit: document.getElementById('newUnit').value.trim() || '串', img: document.getElementById('newImg').value.trim() || '', soldOut: false };
     }
     menuCustomRef.update(updates).then(() => { document.getElementById('menuManagerModal').remove(); alert('菜单已更新！'); });
   }
@@ -848,11 +812,7 @@
     document.body.insertAdjacentHTML('beforeend', html);
   }
 
-  function deleteCategory(id) {
-    if (!confirm('确定删除此分类？')) return;
-    categories = categories.filter(c => c.id !== id);
-    saveCategoriesToDb();
-  }
+  function deleteCategory(id) { if (!confirm('确定删除此分类？')) return; categories = categories.filter(c => c.id !== id); saveCategoriesToDb(); }
 
   function saveCategories() {
     const newCategories = [];
@@ -865,20 +825,14 @@
     });
     const newName = document.getElementById('newCatName').value.trim();
     const newIcon = document.getElementById('newCatIcon').value.trim();
-    if (newName) {
-      const newId = 'cat_' + Date.now();
-      newCategories.push({ id: newId, name: newIcon + ' ' + newName, icon: newIcon || '🔸' });
-    }
+    if (newName) { const newId = 'cat_' + Date.now(); newCategories.push({ id: newId, name: newIcon + ' ' + newName, icon: newIcon || '🔸' }); }
     saveCategoriesToDb(newCategories);
   }
 
   function saveCategoriesToDb(updatedCategories = categories) {
     const obj = {};
     updatedCategories.forEach(c => obj[c.id] = c);
-    menuCustomRef.child('categories').set(obj).then(() => {
-      document.getElementById('catModal')?.remove();
-      alert('分类已更新');
-    });
+    menuCustomRef.child('categories').set(obj).then(() => { document.getElementById('catModal')?.remove(); alert('分类已更新'); });
   }
 
   // ==================== 库存统计 ====================
@@ -914,7 +868,7 @@
   }
   function updateStock(itemId, value) { const stock = getStockData(); const qty = parseInt(value) || 0; if (qty >= 0) { stock[itemId] = qty; saveStockData(stock); } }
 
-  // ==================== GBK 及打印 ====================
+  // ==================== GBK 映射管理（已修复） ====================
   const defaultGbkMap = new Map([
     ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
     ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
@@ -933,6 +887,9 @@
     ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xDB,0xC9]],
     ['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
     ['孜',[0xD7,0xAC]],['然',[0xC8,0xBB]],['辣',[0xC0,0xB1]],
+    ['尔',[0xB6,0xFB]],['良',[0xC1,0xBC]],['醋',[0xB4,0xD7]],['香',[0xCF,0xE3]],
+    ['脉',[0xC2,0xF6]],['动',[0xB6,0xAF]],['农',[0xC5,0xA9]],['夫',[0xB7,0xF2]],
+    ['泉',[0xC8,0xAA]],['燕',[0xD1,0xE0]],['京',[0xBE,0xA9]],['U',[0x55,0x00]],
     ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
     ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
     ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
@@ -967,11 +924,82 @@
     return new Uint8Array(bytes);
   }
 
-  function showGbkManager() { /* 同之前版本 */ }
-  function updateGbkChar(char) { /* 同之前版本 */ }
-  function deleteGbkChar(char) { /* 同之前版本 */ }
-  function addGbkChar() { /* 同之前版本 */ }
+  // GBK 字符管理器（完整实现）
+  function showGbkManager() {
+    const customMap = loadCustomGbk();
+    const activeMap = getActiveGbkMap();
+    let html = '<div class="modal-overlay" id="gbkModal"><div class="modal-content" style="max-width:500px;">';
+    html += '<div class="modal-title">🔤 GBK 字符管理</div>';
+    html += '<div style="max-height:350px; overflow-y:auto;">';
+    const allChars = Array.from(activeMap.keys()).sort();
+    html += '<div class="gbk-edit-row"><span><b>字符</b></span><span><b>编码(Hex)</b></span><span><b>操作</b></span></div>';
+    for (const char of allChars) {
+      const code = activeMap.get(char);
+      const hex = code[0].toString(16).toUpperCase().padStart(2, '0') + code[1].toString(16).toUpperCase().padStart(2, '0');
+      const isCustom = customMap.has(char);
+      html += `<div class="gbk-edit-row">
+        <span>${char}</span>
+        <input type="text" id="gbkCode_${char}" value="${hex}" style="width:60px;" maxlength="4">
+        <button onclick="updateGbkChar('${char}')" style="margin:0 4px; background:#27ae60; color:white; border:none; border-radius:4px;">保存</button>
+        <button onclick="deleteGbkChar('${char}')" style="background:#e74c3c; color:white; border:none; border-radius:4px;">删除</button>
+        ${isCustom ? '<span style="font-size:10px; color:green;">自定义</span>' : '<span style="font-size:10px; color:#999;">默认</span>'}
+      </div>`;
+    }
+    html += '</div>';
+    html += '<hr><div class="modal-title">添加新字符</div>';
+    html += `<div class="gbk-edit-row">
+      <input type="text" id="newGbkChar" placeholder="字" maxlength="1" style="width:40px;">
+      <input type="text" id="newGbkCode" placeholder="编码(Hex)" maxlength="4" style="width:80px;">
+      <button onclick="addGbkChar()" style="background:#3498db; color:white; border:none; border-radius:4px; padding:4px 8px;">添加</button>
+    </div>`;
+    html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'gbkModal\').remove()">关闭</button></div>';
+    html += '</div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
 
+  function updateGbkChar(char) {
+    const hex = document.getElementById('gbkCode_' + char).value.trim();
+    if (!/^[0-9A-Fa-f]{4}$/.test(hex)) { alert('请输入4位十六进制编码'); return; }
+    const byte1 = parseInt(hex.substring(0,2), 16);
+    const byte2 = parseInt(hex.substring(2,4), 16);
+    const customMap = loadCustomGbk();
+    customMap.set(char, [byte1, byte2]);
+    saveCustomGbk(customMap);
+    alert('修改成功');
+    document.getElementById('gbkModal').remove();
+    showGbkManager();
+  }
+
+  function deleteGbkChar(char) {
+    const customMap = loadCustomGbk();
+    if (customMap.has(char)) {
+      if (!confirm('确定删除自定义字符 "' + char + '" 吗？')) return;
+      customMap.delete(char);
+      saveCustomGbk(customMap);
+      alert('已删除');
+    } else {
+      alert('默认字符不可删除');
+    }
+    document.getElementById('gbkModal').remove();
+    showGbkManager();
+  }
+
+  function addGbkChar() {
+    const char = document.getElementById('newGbkChar').value.trim();
+    const hex = document.getElementById('newGbkCode').value.trim();
+    if (!char) { alert('请输入一个字符'); return; }
+    if (!/^[0-9A-Fa-f]{4}$/.test(hex)) { alert('请输入4位十六进制编码'); return; }
+    const byte1 = parseInt(hex.substring(0,2), 16);
+    const byte2 = parseInt(hex.substring(2,4), 16);
+    const customMap = loadCustomGbk();
+    customMap.set(char, [byte1, byte2]);
+    saveCustomGbk(customMap);
+    alert('添加成功');
+    document.getElementById('gbkModal').remove();
+    showGbkManager();
+  }
+
+  // ==================== 打印 ====================
   function autoPrint(order) {
     if (bluetoothCharacteristic) {
       try { const command = build72mmESC(order); sendBluetoothData(command); } catch (e) { fallbackPrint(order); }
@@ -1027,6 +1055,7 @@
     if (!bluetoothCharacteristic) throw new Error('未连接打印机');
     const chunkSize = 20; for (let i = 0; i < data.length; i += chunkSize) { await bluetoothCharacteristic.writeValue(data.slice(i, i + chunkSize)); }
   }
+
   function build72mmESC(order) {
     let str = '\x1B\x40'; str += '\x1B\x61\x01'; str += '\x1B\x21\x30'; str += '久久家一元烧烤\n'; str += '\x1B\x21\x00';
     str += '----------------------------\n'; str += '\x1B\x61\x00';
@@ -1045,7 +1074,7 @@
     return encodeGBK(str);
   }
 
-  // 初始化桌号等
+  // 初始化
   const urlParams = new URLSearchParams(window.location.search);
   if (!isAdmin && urlParams.has('table')) {
     const tableParam = urlParams.get('table');
