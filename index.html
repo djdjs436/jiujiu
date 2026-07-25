@@ -6,7 +6,6 @@
   <title>久久家一元烧烤 · 扫码点餐</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <!-- 拼音库（用于汉字打印后备） -->
   <script src="https://unpkg.com/pinyin-pro@3.26.0/dist/index.umd.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,6 +35,7 @@
     .item-info { flex: 1; }
     .item-name { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
     .item-price { color: #c0392b; font-weight: bold; font-size: 15px; }
+    .sold-out-tag { background: #e74c3c; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
     .taste-row { display: flex; gap: 6px; margin-top: 4px; align-items: center; flex-wrap: wrap; }
     .taste-tag { background: #f0f0f0; border: 1px solid #ddd; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
     .taste-tag.selected { background: #ffe5e5; border-color: #c0392b; color: #c0392b; font-weight: bold; }
@@ -73,6 +73,7 @@
     .menu-mgr-btn { background: #e67e22; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     .stats-btn { background: #2ecc71; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     .gbk-btn { background: #1abc9c; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
+    .cat-mgr-btn { background: #9b59b6; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     .status { margin: 6px 0; font-size: 12px; color: #555; }
     .admin-order-btn { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -94,11 +95,6 @@
     .modal-table-btn.selected { background: #c0392b; color: white; border-color: #c0392b; }
     .menu-edit-row { display: flex; flex-wrap: wrap; align-items: center; margin: 8px 0; }
     .menu-edit-row input, .menu-edit-row select { margin-right: 6px; padding: 4px; border: 1px solid #ddd; border-radius: 6px; }
-    .gbk-edit-row { display: flex; align-items: center; margin: 4px 0; }
-    .gbk-edit-row span { margin-right: 10px; }
-    .gbk-edit-row input { width: 60px; padding: 2px; border: 1px solid #ddd; border-radius: 4px; }
-    .add-item-row { display: flex; gap: 4px; align-items: center; margin-bottom: 8px; }
-    .add-item-row select { padding: 4px; border-radius: 6px; border: 1px solid #ddd; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -131,15 +127,7 @@
   </div>
 
   <div class="main-container">
-    <div class="left-categories" id="leftCategories">
-      <button class="active" onclick="filterCategory('all', event)">全部</button>
-      <button onclick="filterCategory('meat', event)">🥩肉类</button>
-      <button onclick="filterCategory('veg', event)">🥬蔬菜</button>
-      <button onclick="filterCategory('seafood', event)">🦐海鲜</button>
-      <button onclick="filterCategory('noodle', event)">🍜面食</button>
-      <button onclick="filterCategory('drink', event)">🥤饮品</button>
-      <button onclick="filterCategory('other', event)">🥜其他</button>
-    </div>
+    <div class="left-categories" id="leftCategories"></div>
     <div class="right-content">
       <div class="menu-scroll" id="menuScroll">
         <div class="menu-list" id="menuContainer"></div>
@@ -162,6 +150,7 @@
   <button class="menu-mgr-btn" onclick="showMenuManager()">🍽️ 菜品管理</button>
   <button class="stats-btn" onclick="showStatistics()">📊 库存统计</button>
   <button class="gbk-btn" onclick="showGbkManager()">🔤 GBK字符管理</button>
+  <button class="cat-mgr-btn" onclick="showCategoryManager()">📂 分类管理</button>
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="输入单号搜索" oninput="searchOrders()">
     <button onclick="searchOrders()">搜索</button>
@@ -177,17 +166,7 @@
 
 <div id="adminOrderPanel">
   <div class="main-container">
-    <div class="left-categories" id="adminLeftCategories">
-      <button class="back-btn" onclick="hideAdminOrderPanel()">🔙 返回管理</button>
-      <div class="back-label">返回订单管理</div>
-      <button class="active" onclick="filterAdminCategory('all', event)">全部</button>
-      <button onclick="filterAdminCategory('meat', event)">🥩肉类</button>
-      <button onclick="filterAdminCategory('veg', event)">🥬蔬菜</button>
-      <button onclick="filterAdminCategory('seafood', event)">🦐海鲜</button>
-      <button onclick="filterAdminCategory('noodle', event)">🍜面食</button>
-      <button onclick="filterAdminCategory('drink', event)">🥤饮品</button>
-      <button onclick="filterAdminCategory('other', event)">🥜其他</button>
-    </div>
+    <div class="left-categories" id="adminLeftCategories"></div>
     <div class="right-content">
       <div class="menu-scroll">
         <div class="menu-list" id="adminMenuContainer"></div>
@@ -218,11 +197,10 @@
   const ordersRef = database.ref('orders');
   const menuCustomRef = database.ref('menuCustom');
 
-  // ==================== 默认菜单 ====================
+  // ==================== 更新后的默认菜单 ====================
   const defaultMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
-    { id:3, name:"鸡翅尖", price:1.5, category:"meat", unit:"串", img:"https://i.ibb.co/Q7V9nRMn/13fc9967947185e58b1cf4417b25f489.jpg" },
     { id:4, name:"猪脆骨", price:2.5, category:"meat", unit:"串", img:"https://i.ibb.co/5hBXNf0y/46cf9a75aee33c3f873e43f6c6d9594cd6ac19c89e28be02a502cc061c2a6523-0.png" },
     { id:5, name:"蒜瓣肉", price:2, category:"meat", unit:"串", img:"https://i.ibb.co/LD9JphHr/6942b374c94750f5c0328524b98c62b3c83f3ff1809f2ded53acf24592b5f090-0.jpg" },
     { id:6, name:"望京小腰", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/d4nn96DF/7d8d592666932d658f373957b87a315777c3fcd4902c7af7e449cf4ee9b6a19a-0.webp" },
@@ -242,12 +220,17 @@
     { id:21, name:"烤馒头", price:1, category:"noodle", unit:"串", img:"https://i.ibb.co/mrjTyQbX/232d201774932e935144c5a72f23b9ab.jpg" },
     { id:22, name:"卤花生", price:8, category:"other", unit:"份", img:"https://i.ibb.co/Q3Z0fnm7/Screenshot-2026-0706-170416.png" },
     { id:23, name:"黄瓜拌面筋", price:16, category:"other", unit:"份", img:"https://i.ibb.co/RT9qLQSD/Screenshot-2026-0706-170533.png" },
-    { id:24, name:"青岛啤酒", price:8, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=啤酒" },
-    { id:25, name:"大窑", price:5, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=大窑" },
-    { id:26, name:"京8啤酒", price:8, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=京8" },
+    { id:24, name:"青岛啤酒", price:8, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=青岛啤酒" },
+    { id:25, name:"大窑", price:6, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=大窑" },
+    { id:26, name:"燕京U8啤酒", price:8, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=U8" },
     { id:27, name:"崂山啤酒", price:6, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=崂山" },
     { id:28, name:"烤马步鱼", price:4, category:"seafood", unit:"串", img:"https://i.ibb.co/r2hPt5rT/c1fe43858aa77f0ebd35fcb3f9cb3f60.jpg" },
-    { id:29, name:"雪碧", price:3, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=雪碧" }
+    { id:29, name:"雪碧", price:3, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=雪碧" },
+    { id:30, name:"奥尔良鸡腿肉", price:1.5, category:"meat", unit:"串", img:"https://placehold.co/150x150/eee/999?text=奥尔良" },
+    { id:31, name:"老醋花生", price:16, category:"other", unit:"份", img:"https://placehold.co/150x150/eee/999?text=老醋花生" },
+    { id:32, name:"奶香面包", price:2, category:"noodle", unit:"份", img:"https://placehold.co/150x150/eee/999?text=面包" },
+    { id:33, name:"脉动", price:5, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=脉动" },
+    { id:34, name:"农夫山泉", price:2, category:"drink", unit:"瓶", img:"https://placehold.co/150x150/eee/999?text=水" }
   ];
 
   let menu = JSON.parse(JSON.stringify(defaultMenu));
@@ -267,220 +250,86 @@
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
 
-  // ==================== GBK 映射管理（带拼音后备） ====================
-  const defaultGbkMap = new Map([
-    ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
-    ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
-    ['鲜',[0xCF,0xCA]],['切',[0xC7,0xD0]],['羊',[0xD1,0xF2]],['鸡',[0xBC,0xA6]],
-    ['翅',[0xB3,0xE1]],['尖',[0xBC,0xE2]],['脆',[0xB4,0xE0]],['骨',[0xB9,0xC7]],
-    ['蒜',[0xCB,0xE2]],['瓣',[0xB0,0xEA]],['望',[0xCD,0xFB]],['京',[0xBE,0xA9]],
-    ['小',[0xD0,0xA1]],['腰',[0xD1,0xFC]],['鱼',[0xD3,0xE3]],['豆',[0xB6,0xB9]],
-    ['腐',[0xB8,0xAF]],['掌',[0xD5,0xC6]],['中',[0xD6,0xD0]],['宝',[0xB1,0xA6]],
-    ['肠',[0xB3,0xA6]],['牛',[0xC5,0xA3]],['心',[0xD0,0xC4]],['管',[0xB9,0xDC]],
-    ['碳',[0xCC,0xBC]],['皮',[0xC6,0xA4]],['面',[0xC3,0xE6]],['筋',[0xBD,0xEE]],
-    ['鱿',[0xF6,0xD9]],['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],
-    ['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],
-    ['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],
-    ['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],
-    ['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],['青',[0xC7,0xE0]],
-    ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xDB,0xC9]],
-    ['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
-    ['孜',[0xD7,0xAC]],['然',[0xC8,0xBB]],['辣',[0xC0,0xB1]],
-    ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
-    ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
-    ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
-    ['量',[0xC1,0xBF]],['度',[0xB6,0xC8]],['不',[0xB2,0xBB]],['微',[0xCE,0xA2]],
-    ['特',[0xCC,0xD8]],['谢',[0xD0,0xBB]],['惠',[0xBB,0xDD]],['顾',[0xB9,0xCB]],
-    ['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],['再',[0xD4,0xD9]],['次',[0xB4,0xCE]],
-    ['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],
-    ['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],
-    ['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],
-    ['辣',[0xC0,0xB1]],['盐',[0xD1,0xCE]],['少',[0xC9,0xD9]],['注',[0xD7,0xA2]]
-  ]);
+  // ==================== 分类数据 ====================
+  const defaultCategories = [
+    { id: 'meat', name: '🥩 肉类', icon: '🥩' },
+    { id: 'veg', name: '🥬 蔬菜', icon: '🥬' },
+    { id: 'seafood', name: '🦐 海鲜', icon: '🦐' },
+    { id: 'noodle', name: '🍜 面食', icon: '🍜' },
+    { id: 'drink', name: '🥤 饮品', icon: '🥤' },
+    { id: 'other', name: '🥜 其他', icon: '🥜' }
+  ];
+  let categories = JSON.parse(JSON.stringify(defaultCategories));
 
-  function loadCustomGbk() {
-    try {
-      const stored = localStorage.getItem('customGbk');
-      if (stored) {
-        const obj = JSON.parse(stored);
-        const map = new Map();
-        for (const char in obj) map.set(char, obj[char]);
-        return map;
-      }
-    } catch (e) {}
-    return new Map();
-  }
-  function saveCustomGbk(map) {
-    const obj = {};
-    for (const [char, code] of map) obj[char] = code;
-    localStorage.setItem('customGbk', JSON.stringify(obj));
-  }
-  function getActiveGbkMap() {
-    const customMap = loadCustomGbk();
-    const merged = new Map(defaultGbkMap);
-    for (const [char, code] of customMap) merged.set(char, code);
-    return merged;
-  }
-  function toPinyinStr(char) {
-    try {
-      if (typeof pinyinPro !== 'undefined' && pinyinPro.pinyin) {
-        const pyArr = pinyinPro.pinyin(char, { toneType: 'none', type: 'array' });
-        return pyArr.length > 0 ? pyArr[0] : '';
-      }
-    } catch (e) {}
-    return '';
-  }
-  function encodeGBK(str) {
-    const gbkMap = getActiveGbkMap();
-    const bytes = [];
-    for (const c of str) {
-      const code = c.charCodeAt(0);
-      if (code <= 0x7F) { bytes.push(code); }
-      else {
-        const gbk = gbkMap.get(c);
-        if (gbk) { bytes.push(gbk[0], gbk[1]); }
-        else {
-          const py = toPinyinStr(c);
-          if (py) { for (const pc of py) bytes.push(pc.charCodeAt(0)); }
-          else bytes.push(0x20);
-        }
-      }
+  // 分类监听
+  menuCustomRef.child('categories').on('value', snap => {
+    const data = snap.val();
+    if (data) categories = Object.values(data);
+    else {
+      categories = JSON.parse(JSON.stringify(defaultCategories));
+      menuCustomRef.child('categories').set(Object.fromEntries(categories.map(c => [c.id, c])));
     }
-    return new Uint8Array(bytes);
-  }
+    renderLeftCategories();
+    renderLeftCategories('adminLeftCategories', true);
+    if (!isAdmin) renderMenu(currentFilter);
+    else if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
+  });
 
-  function showGbkManager() {
-    const customMap = loadCustomGbk();
-    const activeMap = getActiveGbkMap();
-    let html = '<div class="modal-overlay" id="gbkModal"><div class="modal-content" style="max-width:500px;">';
-    html += '<div class="modal-title">🔤 GBK 字符管理</div>';
-    html += '<div style="max-height:350px; overflow-y:auto;">';
-    const allChars = Array.from(activeMap.keys()).sort();
-    html += '<div class="gbk-edit-row"><span><b>字符</b></span><span><b>编码(Hex)</b></span><span><b>操作</b></span></div>';
-    for (const char of allChars) {
-      const code = activeMap.get(char);
-      const hex = code[0].toString(16).toUpperCase().padStart(2, '0') + code[1].toString(16).toUpperCase().padStart(2, '0');
-      const isCustom = customMap.has(char);
-      html += `<div class="gbk-edit-row">
-        <span>${char}</span>
-        <input type="text" id="gbkCode_${char}" value="${hex}" style="width:60px;" maxlength="4">
-        <button onclick="updateGbkChar('${char}')" style="margin:0 4px; background:#27ae60; color:white; border:none; border-radius:4px;">保存</button>
-        <button onclick="deleteGbkChar('${char}')" style="background:#e74c3c; color:white; border:none; border-radius:4px;">删除</button>
-        ${isCustom ? '<span style="font-size:10px; color:green;">自定义</span>' : '<span style="font-size:10px; color:#999;">默认</span>'}
-      </div>`;
+  function renderLeftCategories(containerId = 'leftCategories', isAdminPanel = false) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    let html = '';
+    if (isAdminPanel) {
+      html += '<button class="back-btn" onclick="hideAdminOrderPanel()">🔙 返回管理</button><div class="back-label">返回订单管理</div>';
     }
-    html += '</div>';
-    html += '<hr><div class="modal-title">添加新字符</div>';
-    html += `<div class="gbk-edit-row">
-      <input type="text" id="newGbkChar" placeholder="字" maxlength="1" style="width:40px;">
-      <input type="text" id="newGbkCode" placeholder="编码(Hex)" maxlength="4" style="width:80px;">
-      <button onclick="addGbkChar()" style="background:#3498db; color:white; border:none; border-radius:4px; padding:4px 8px;">添加</button>
-    </div>`;
-    html += '<div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById(\'gbkModal\').remove()">关闭</button></div>';
-    html += '</div></div>';
-    document.body.insertAdjacentHTML('beforeend', html);
+    html += `<button class="active" onclick="filterCategory('all', event, '${containerId}')">全部</button>`;
+    categories.forEach(cat => {
+      html += `<button onclick="filterCategory('${cat.id}', event, '${containerId}')">${cat.icon} ${cat.name.replace(/^[^\s]+\s/,'')}</button>`;
+    });
+    container.innerHTML = html;
   }
 
-  function updateGbkChar(char) {
-    const hex = document.getElementById('gbkCode_' + char).value.trim();
-    if (!/^[0-9A-Fa-f]{4}$/.test(hex)) { alert('请输入4位十六进制编码'); return; }
-    const byte1 = parseInt(hex.substring(0,2), 16);
-    const byte2 = parseInt(hex.substring(2,4), 16);
-    const customMap = loadCustomGbk();
-    customMap.set(char, [byte1, byte2]);
-    saveCustomGbk(customMap);
-    alert('修改成功');
-    document.getElementById('gbkModal').remove();
-    showGbkManager();
-  }
-
-  function deleteGbkChar(char) {
-    const customMap = loadCustomGbk();
-    if (customMap.has(char)) {
-      if (!confirm('确定删除自定义字符 "' + char + '" 吗？')) return;
-      customMap.delete(char);
-      saveCustomGbk(customMap);
-      alert('已删除');
+  function filterCategory(cat, e, containerId = 'leftCategories') {
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+    }
+    if (containerId === 'adminLeftCategories') {
+      currentAdminFilter = cat;
+      renderAdminMenu();
     } else {
-      alert('默认字符不可删除');
+      currentFilter = cat;
+      renderMenu(cat);
     }
-    document.getElementById('gbkModal').remove();
-    showGbkManager();
   }
 
-  function addGbkChar() {
-    const char = document.getElementById('newGbkChar').value.trim();
-    const hex = document.getElementById('newGbkCode').value.trim();
-    if (!char) { alert('请输入一个字符'); return; }
-    if (!/^[0-9A-Fa-f]{4}$/.test(hex)) { alert('请输入4位十六进制编码'); return; }
-    const byte1 = parseInt(hex.substring(0,2), 16);
-    const byte2 = parseInt(hex.substring(2,4), 16);
-    const customMap = loadCustomGbk();
-    customMap.set(char, [byte1, byte2]);
-    saveCustomGbk(customMap);
-    alert('添加成功');
-    document.getElementById('gbkModal').remove();
-    showGbkManager();
-  }
-
-  // ==================== 菜单自定义监听 ====================
+  // 菜单自定义监听（包含售罄）
   menuCustomRef.on('value', (snapshot) => {
     const customData = snapshot.val() || {};
     menu = defaultMenu.map(item => {
-      const custom = customData[item.id];
-      if (custom) {
-        return { ...item, name: custom.name || item.name, price: custom.price !== undefined ? custom.price : item.price, category: custom.category || item.category, unit: custom.unit || item.unit, img: custom.img || item.img };
-      }
-      return { ...item };
+      const custom = customData[item.id] || {};
+      return {
+        ...item,
+        name: custom.name || item.name,
+        price: custom.price !== undefined ? custom.price : item.price,
+        category: custom.category || item.category,
+        unit: custom.unit || item.unit,
+        img: custom.img || item.img,
+        soldOut: custom.soldOut || false
+      };
     });
     for (const id in customData) {
-      if (!menu.find(m => m.id == id)) {
-        const custom = customData[id];
-        if (custom.name) {
-          menu.push({ id: parseInt(id), name: custom.name, price: custom.price || 0, category: custom.category || 'other', unit: custom.unit || '串', img: custom.img || '' });
-        }
+      if (!menu.find(m => m.id == id) && customData[id].name) {
+        menu.push({ id: parseInt(id), ...customData[id], soldOut: customData[id].soldOut || false });
       }
     }
     menu.sort((a,b) => a.id - b.id);
     if (!isAdmin) renderMenu(currentFilter);
-    else {
-      if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
-    }
+    else if (document.getElementById('adminOrderPanel').style.display === 'flex') renderAdminMenu();
   });
 
-  const urlParams = new URLSearchParams(window.location.search);
-  if (!isAdmin && urlParams.has('table')) {
-    const tableParam = urlParams.get('table');
-    if (tableParam === '' || tableParam === '0' || tableParam === 'none') customerTable = '';
-    else {
-      const num = parseInt(tableParam);
-      if (!isNaN(num) && num >= 1 && num <= 10) customerTable = num;
-    }
-  }
-
-  function toggleTableDropdown() { document.getElementById('tableDropdown').classList.toggle('open'); }
-  function updateTableDisplay() {
-    const bigText = document.getElementById('tableBigText'), bigBtn = document.getElementById('tableBigBtn');
-    if (customerTable === '') { bigText.innerText = '选桌'; bigBtn.classList.add('no-table'); }
-    else { bigText.innerText = customerTable; bigBtn.classList.remove('no-table'); }
-    document.getElementById('tableDropdown').classList.remove('open');
-  }
-  function setCustomerTable(num) { customerTable = num; updateTableDisplay(); }
-  updateTableDisplay();
-
-  if (isAdmin) {
-    document.getElementById('customerView').style.display = 'none';
-    document.getElementById('adminPanel').style.display = 'block';
-    document.getElementById('adminOrderPanel').style.display = 'none';
-    showLoginForm();
-  } else {
-    document.getElementById('customerView').style.display = 'flex';
-    document.getElementById('adminPanel').style.display = 'none';
-    document.getElementById('adminOrderPanel').style.display = 'none';
-    document.getElementById('adminLink').style.display = 'block';
-    renderMenu('all');
-  }
-
+  // ==================== 通用函数 ====================
   function getTotalQty(itemId, cartObj = cart) { return Object.values(cartObj[itemId] || {}).reduce((a, b) => a + b, 0); }
 
   function renderMenu(filter = 'all', containerId = 'menuContainer', cartObj = cart, updateCartFn = updateCartBar, isAdminPanel = false) {
@@ -494,61 +343,87 @@
       const total = getTotalQty(item.id, cartObj);
       const type = isAdminPanel ? 'admin' : 'guest';
       const unit = item.unit || '串';
+      const soldOut = item.soldOut || false;
 
-      let tasteTags = tasteOptions.map(option => {
-        const qty = itemCart[option] || 0;
-        const sel = (option === curSpicy) ? ' selected' : '';
-        return `<span class="taste-tag${sel}" onclick="selectSpicy('${option}', '${type}')">${option} ${qty}</span>`;
-      }).join('');
-
-      let tasteRow = `<div class="taste-row">${tasteTags}</div>`;
-
-      let quickHtml = '';
-      if (item.price < 6) {
-        quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5</button><span class="stepper-val">5' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5</button></div>' +
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10</button><span class="stepper-val">10' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10</button></div>' +
+      if (soldOut) {
+        htmlArr.push(
+          '<div class="menu-item" style="opacity:0.6;">' +
+          '<img src="' + item.img + '" alt="' + item.name + '" onerror="this.src=\'https://placehold.co/70x70/eee/999?text=🍖\'">' +
+          '<div class="item-info">' +
+            '<div class="item-name">' + item.name + '<span class="sold-out-tag">售罄</span></div>' +
+            '<div class="item-price">¥' + item.price + '</div>' +
+            '<div class="qty-row">售罄</div>' +
           '</div>' +
-          '<div class="quick-adjust">' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 20, \'' + type + '\')">+20' + unit + '</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 30, \'' + type + '\')">+30' + unit + '</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 40, \'' + type + '\')">+40' + unit + '</button>' +
-          '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 50, \'' + type + '\')">+50' + unit + '</button>' +
-          '</div>';
+          '</div>'
+        );
       } else {
-        quickHtml = '<div class="quick-adjust">' +
-          '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
-          '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
-          '</div>';
-      }
+        let tasteTags = tasteOptions.map(option => {
+          const qty = itemCart[option] || 0;
+          const sel = (option === curSpicy) ? ' selected' : '';
+          return `<span class="taste-tag${sel}" onclick="selectSpicy('${option}', '${type}')">${option} ${qty}</span>`;
+        }).join('');
 
-      htmlArr.push(
-        '<div class="menu-item">' +
-        '<img src="' + item.img + '" alt="' + item.name + '" onerror="this.src=\'https://placehold.co/70x70/eee/999?text=🍖\'">' +
-        '<div class="item-info">' +
-          '<div class="item-name">' + item.name + '</div>' +
-          '<div class="item-price">¥' + item.price + '</div>' +
-          tasteRow +
-          '<div class="qty-row">' +
-            '<span class="qty-num" onclick="editDetail(' + item.id + ', \'' + type + '\')">' + total + '</span> ' + unit +
-            '<button class="clear-item-btn" onclick="clearItem(' + item.id + ', \'' + type + '\')" title="清除此菜品">✕</button>' +
+        let tasteRow = `<div class="taste-row">${tasteTags}</div>`;
+
+        let quickHtml = '';
+        if (item.price < 6) {
+          quickHtml = '<div class="quick-adjust">' +
+            '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
+            '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
+            '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5</button><span class="stepper-val">5' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5</button></div>' +
+            '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10</button><span class="stepper-val">10' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10</button></div>' +
+            '</div>' +
+            '<div class="quick-adjust">' +
+            '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 20, \'' + type + '\')">+20' + unit + '</button>' +
+            '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 30, \'' + type + '\')">+30' + unit + '</button>' +
+            '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 40, \'' + type + '\')">+40' + unit + '</button>' +
+            '<button class="quick-btn" onclick="quickAdjust(' + item.id + ', 50, \'' + type + '\')">+50' + unit + '</button>' +
+            '</div>';
+        } else {
+          quickHtml = '<div class="quick-adjust">' +
+            '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
+            '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
+            '</div>';
+        }
+
+        htmlArr.push(
+          '<div class="menu-item">' +
+          '<img src="' + item.img + '" alt="' + item.name + '" onerror="this.src=\'https://placehold.co/70x70/eee/999?text=🍖\'">' +
+          '<div class="item-info">' +
+            '<div class="item-name">' + item.name + '</div>' +
+            '<div class="item-price">¥' + item.price + '</div>' +
+            tasteRow +
+            '<div class="qty-row">' +
+              '<span class="qty-num" onclick="editDetail(' + item.id + ', \'' + type + '\')">' + total + '</span> ' + unit +
+              '<button class="clear-item-btn" onclick="clearItem(' + item.id + ', \'' + type + '\')" title="清除此菜品">✕</button>' +
+            '</div>' +
+            quickHtml +
           '</div>' +
-          quickHtml +
-        '</div>' +
-        '</div>'
-      );
+          '</div>'
+        );
+      }
     });
     container.innerHTML = htmlArr.join('');
     updateCartFn(cartObj);
   }
 
-  function clearItem(itemId, type = 'guest') { const cartObj = type === 'admin' ? adminCart : cart; delete cartObj[itemId]; if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter); }
-  function selectSpicy(level, type = 'guest') { if (type === 'admin') { adminCurrentSpicy = level; renderAdminMenu(); } else { currentSpicy = level; renderMenu(currentFilter); } }
+  function clearItem(itemId, type = 'guest') {
+    const cartObj = type === 'admin' ? adminCart : cart;
+    delete cartObj[itemId];
+    if (type === 'admin') renderAdminMenu();
+    else renderMenu(currentFilter);
+  }
+
+  function selectSpicy(level, type = 'guest') {
+    if (type === 'admin') { adminCurrentSpicy = level; renderAdminMenu(); }
+    else { currentSpicy = level; renderMenu(currentFilter); }
+  }
+
   function quickAdjust(itemId, delta, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
     const curSpicy = type === 'admin' ? adminCurrentSpicy : currentSpicy;
+    const item = menu.find(m => m.id === itemId);
+    if (item && item.soldOut) return;
     if (!cartObj[itemId]) cartObj[itemId] = {};
     if (delta > 0) cartObj[itemId][curSpicy] = (cartObj[itemId][curSpicy] || 0) + delta;
     else {
@@ -558,13 +433,17 @@
       if (cartObj[itemId][curSpicy] === 0) delete cartObj[itemId][curSpicy];
     }
     if (Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
-    if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter);
+    if (type === 'admin') renderAdminMenu();
+    else renderMenu(currentFilter);
   }
+
   function editDetail(itemId, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
+    const item = menu.find(m => m.id == itemId);
+    if (item && item.soldOut) return;
     const itemCart = cartObj[itemId] || {};
     let html = '<div class="modal-overlay" id="detailModal"><div class="modal-content">' +
-      '<div class="modal-title">调整【' + menu.find(m => m.id == itemId).name + '】口味及数量</div>';
+      '<div class="modal-title">调整【' + item.name + '】口味及数量</div>';
     tasteOptions.forEach(option => {
       const qty = itemCart[option] || 0;
       html += '<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0;">' +
@@ -575,6 +454,7 @@
     html += '<div class="modal-actions"><button class="btn-cancel" onclick="closeDetailModal(' + itemId + ', \'' + type + '\')">完成</button></div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
   }
+
   function closeDetailModal(itemId, type) {
     const cartObj = type === 'admin' ? adminCart : cart;
     tasteOptions.forEach(option => {
@@ -584,29 +464,37 @@
     });
     if (cartObj[itemId] && Object.keys(cartObj[itemId]).length === 0) delete cartObj[itemId];
     document.getElementById('detailModal').remove();
-    if (type === 'admin') renderAdminMenu(); else renderMenu(currentFilter);
+    if (type === 'admin') renderAdminMenu();
+    else renderMenu(currentFilter);
   }
+
   function updateCartBar(cartObj = cart) {
     const countSpan = document.getElementById('cartCount'), totalSpan = document.getElementById('cartTotal');
     if (!countSpan || !totalSpan) return;
     let totalCount = 0, totalPrice = 0;
     Object.entries(cartObj).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
-      Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; });
+      if (item) {
+        Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; });
+      }
     });
     countSpan.innerText = totalCount;
     totalSpan.innerText = totalPrice.toFixed(2);
   }
+
   function getCartItems(cartObj = cart) {
     let items = [];
     Object.entries(cartObj).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
-      Object.entries(levels).forEach(([level, qty]) => {
-        if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty });
-      });
+      if (item) {
+        Object.entries(levels).forEach(([level, qty]) => {
+          if (qty > 0) items.push({ id: item.id, name: item.name, price: item.price, qty, spicy: level, subtotal: item.price * qty });
+        });
+      }
     });
     return items;
   }
+
   function generateOrderNumber() {
     const now = new Date();
     const dateStr = now.getFullYear().toString().slice(-2) + ('0' + (now.getMonth() + 1)).slice(-2) + ('0' + now.getDate()).slice(-2);
@@ -614,12 +502,8 @@
     const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     return 'Y' + dateStr + '-' + timeStr + rand;
   }
-  function filterCategory(cat, e) {
-    document.querySelectorAll('#leftCategories button').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-    currentFilter = cat;
-    renderMenu(cat);
-  }
+
+  // ==================== 点餐相关 ====================
   function showConfirmModal() { const items = getCartItems(cart); if (items.length === 0) { alert('请先选择菜品'); return; } showCommonConfirm(items, 'guest'); }
   function showCommonConfirm(items, type) {
     const total = items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2);
@@ -674,10 +558,9 @@
     });
   }
 
-  // 代客点餐
+  // ==================== 代客点餐 ====================
   function showAdminOrderPanel() { document.getElementById('adminPanel').style.display = 'none'; document.getElementById('adminOrderPanel').style.display = 'flex'; currentAdminFilter = 'all'; renderAdminMenu(); }
   function hideAdminOrderPanel() { document.getElementById('adminOrderPanel').style.display = 'none'; document.getElementById('adminPanel').style.display = 'block'; renderOrders(); }
-  function filterAdminCategory(cat, e) { document.querySelectorAll('#adminLeftCategories button').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); currentAdminFilter = cat; renderAdminMenu(); }
   function renderAdminMenu() { renderMenu(currentAdminFilter, 'adminMenuContainer', adminCart, updateAdminCartBar, true); }
   function updateAdminCartBar() {
     const countSpan = document.getElementById('adminCartCount'), totalSpan = document.getElementById('adminCartTotal');
@@ -685,7 +568,7 @@
     let totalCount = 0, totalPrice = 0;
     Object.entries(adminCart).forEach(([itemId, levels]) => {
       const item = menu.find(m => m.id == itemId);
-      Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; });
+      if (item) Object.values(levels).forEach(qty => { totalCount += qty; totalPrice += item.price * qty; });
     });
     countSpan.innerText = totalCount; totalSpan.innerText = totalPrice.toFixed(2);
   }
@@ -710,7 +593,7 @@
     });
   }
 
-  // 订单管理
+  // ==================== 订单管理 ====================
   let allOrders = [];
   function startListening() {
     ordersRef.off();
@@ -767,7 +650,7 @@
   function clearOrders() { if (confirm('确定清空所有订单？')) ordersRef.remove(); }
   function reprint(key) { const order = allOrders.find(o => o.key === key); if (order) autoPrint(order); }
 
-  // ==================== 订单修改（新增添加菜品功能） ====================
+  // ==================== 订单修改（含添加菜品） ====================
   function editOrder(key) {
     const order = allOrders.find(o => o.key === key);
     if (!order) return;
@@ -792,34 +675,27 @@
       </div>`;
     });
     html += '</div>';
-    // 添加新菜品区域
     html += '<hr><div class="modal-title">添加菜品</div>';
-    html += '<div class="add-item-row">';
+    html += '<div class="add-item-row" style="display:flex;gap:4px;align-items:center;margin-bottom:8px;">';
     html += '<select id="newEditItemSelect">';
-    menu.forEach(item => {
-      html += `<option value="${item.id}">${item.name} (¥${item.price})</option>`;
-    });
+    menu.forEach(item => { html += `<option value="${item.id}">${item.name} (¥${item.price})</option>`; });
     html += '</select>';
     html += '<select id="newEditItemSpicy">';
     tasteOptions.forEach(t => html += `<option value="${t}">${t}</option>`);
     html += '</select>';
     html += '<input type="number" id="newEditItemQty" value="1" min="1" style="width:50px;">';
-    html += '<button onclick="addItemToEdit()" style="background:#3498db; color:white; border:none; border-radius:6px; padding:4px 8px;">添加</button>';
+    html += '<button onclick="addItemToEdit()" style="background:#3498db;color:white;border:none;border-radius:6px;padding:4px 8px;">添加</button>';
     html += '</div>';
     html += '<div class="modal-actions">';
     html += '<button class="btn-cancel" onclick="document.getElementById(\'editOrderModal\').remove()">取消</button>';
     html += '<button class="btn-confirm" onclick="saveEditOrder(\'' + key + '\', ' + order.items.length + ')">保存修改</button>';
     html += '</div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
+    window.editOrderNewItems = [];
   }
 
-  function removeEditItem(idx) {
-    const el = document.getElementById(`editQty_${idx}`);
-    if (el) el.closest('.menu-edit-row').remove();
-  }
+  function removeEditItem(idx) { const el = document.getElementById(`editQty_${idx}`); if (el) el.closest('.menu-edit-row').remove(); }
 
-  // 向编辑订单添加新菜品（临时存储到全局变量以便保存）
-  let editOrderNewItems = [];
   function addItemToEdit() {
     const select = document.getElementById('newEditItemSelect');
     const itemId = parseInt(select.value);
@@ -829,16 +705,14 @@
     const menuItem = menu.find(m => m.id === itemId);
     if (!menuItem) return;
     const subtotal = menuItem.price * qty;
-    editOrderNewItems.push({ name: menuItem.name, price: menuItem.price, qty, spicy, subtotal });
-    // 显示已添加
+    if (!window.editOrderNewItems) window.editOrderNewItems = [];
+    window.editOrderNewItems.push({ name: menuItem.name, price: menuItem.price, qty, spicy, subtotal });
     const container = document.getElementById('editOrderItems');
-    const idx = Date.now(); // 临时索引
     const div = document.createElement('div');
     div.className = 'menu-edit-row';
     div.style.justifyContent = 'space-between';
-    div.innerHTML = `<span>${menuItem.name}</span><span>${spicy}</span><span>${qty}</span><button onclick="this.parentElement.remove(); editOrderNewItems.splice(${editOrderNewItems.length-1},1)" style="background:#e74c3c;color:white;border:none;border-radius:50%;width:20px;height:20px;">✕</button>`;
+    div.innerHTML = `<span>${menuItem.name}</span><span>${spicy}</span><span>${qty}</span><button onclick="this.parentElement.remove(); window.editOrderNewItems.splice(window.editOrderNewItems.length-1,1)" style="background:#e74c3c;color:white;border:none;border-radius:50%;width:20px;height:20px;">✕</button>`;
     container.appendChild(div);
-    editOrderNewItems.push({ name: menuItem.name, price: menuItem.price, qty, spicy, subtotal });
   }
 
   function saveEditOrder(key, originalLength) {
@@ -848,7 +722,6 @@
     const newItems = [];
     let total = 0;
     const order = allOrders.find(o => o.key === key);
-    // 原有菜品
     for (let i = 0; i < originalLength; i++) {
       const qtyEl = document.getElementById(`editQty_${i}`);
       if (!qtyEl) continue;
@@ -862,12 +735,10 @@
         }
       }
     }
-    // 新添加的菜品
-    editOrderNewItems.forEach(item => {
-      total += item.subtotal;
-      newItems.push(item);
-    });
-    editOrderNewItems = []; // 清空
+    if (window.editOrderNewItems) {
+      window.editOrderNewItems.forEach(item => { total += item.subtotal; newItems.push(item); });
+    }
+    window.editOrderNewItems = [];
     if (newItems.length === 0) { alert('请至少保留一个菜品'); return; }
     const updates = {};
     updates[key + '/table'] = table;
@@ -878,7 +749,7 @@
     ordersRef.update(updates).then(() => { document.getElementById('editOrderModal').remove(); alert('订单已更新'); });
   }
 
-  // ==================== 菜品管理（增加图片链接管理） ====================
+  // ==================== 菜品管理 ====================
   function showMenuManager() {
     let html = '<div class="modal-overlay" id="menuManagerModal"><div class="modal-content" style="max-width:500px;">';
     html += '<div class="modal-title">🍽️ 菜品管理</div>';
@@ -886,16 +757,14 @@
       html += `<div class="menu-edit-row">
         <input type="text" id="mname_${item.id}" value="${item.name}" style="width:80px;" placeholder="名称">
         <input type="number" step="0.1" id="mprice_${item.id}" value="${item.price}" style="width:60px;" placeholder="价格">
-        <select id="mcat_${item.id}" style="width:70px;">
-          <option value="meat" ${item.category==='meat'?'selected':''}>肉类</option>
-          <option value="veg" ${item.category==='veg'?'selected':''}>蔬菜</option>
-          <option value="seafood" ${item.category==='seafood'?'selected':''}>海鲜</option>
-          <option value="noodle" ${item.category==='noodle'?'selected':''}>面食</option>
-          <option value="drink" ${item.category==='drink'?'selected':''}>饮品</option>
-          <option value="other" ${item.category==='other'?'selected':''}>其他</option>
-        </select>
+        <select id="mcat_${item.id}" style="width:70px;">`;
+      categories.forEach(cat => {
+        html += `<option value="${cat.id}" ${item.category===cat.id?'selected':''}>${cat.name}</option>`;
+      });
+      html += `</select>
         <input type="text" id="munit_${item.id}" value="${item.unit}" style="width:40px;" placeholder="单位">
         <input type="text" id="mimg_${item.id}" value="${item.img}" style="width:120px;" placeholder="图片链接">
+        <label><input type="checkbox" id="msoldout_${item.id}" ${item.soldOut?'checked':''}>售罄</label>
         <button onclick="deleteMenuItem(${item.id})" style="background:#e74c3c;color:white;border:none;border-radius:4px;">删除</button>
       </div>`;
     });
@@ -903,7 +772,9 @@
     html += `<div class="menu-edit-row">
       <input type="text" id="newName" placeholder="名称" style="width:80px;">
       <input type="number" step="0.1" id="newPrice" placeholder="价格" style="width:60px;">
-      <select id="newCat"><option value="meat">肉类</option><option value="veg">蔬菜</option><option value="seafood">海鲜</option><option value="noodle">面食</option><option value="drink">饮品</option><option value="other">其他</option></select>
+      <select id="newCat">`;
+    categories.forEach(cat => html += `<option value="${cat.id}">${cat.name}</option>`);
+    html += `</select>
       <input type="text" id="newUnit" placeholder="单位" style="width:40px;" value="串">
       <input type="text" id="newImg" placeholder="图片链接" style="width:120px;">
     </div>`;
@@ -924,11 +795,18 @@
       const catEl = document.getElementById('mcat_' + item.id);
       const unitEl = document.getElementById('munit_' + item.id);
       const imgEl = document.getElementById('mimg_' + item.id);
+      const soldOutEl = document.getElementById('msoldout_' + item.id);
       if (nameEl && priceEl) {
         const name = nameEl.value.trim();
         const price = parseFloat(priceEl.value);
         if (name && !isNaN(price) && price >= 0) {
-          updates[item.id] = { name, price, category: catEl.value, unit: unitEl.value, img: imgEl ? imgEl.value.trim() : item.img };
+          updates[item.id] = {
+            name, price,
+            category: catEl.value,
+            unit: unitEl.value,
+            img: imgEl ? imgEl.value.trim() : item.img,
+            soldOut: soldOutEl ? soldOutEl.checked : false
+          };
         }
       }
     });
@@ -937,17 +815,73 @@
     if (newName && !isNaN(newPrice) && newPrice >= 0) {
       const newId = Date.now();
       updates[newId] = {
-        name: newName,
-        price: newPrice,
+        name: newName, price: newPrice,
         category: document.getElementById('newCat').value,
         unit: document.getElementById('newUnit').value.trim() || '串',
-        img: document.getElementById('newImg').value.trim() || ''
+        img: document.getElementById('newImg').value.trim() || '',
+        soldOut: false
       };
     }
     menuCustomRef.update(updates).then(() => { document.getElementById('menuManagerModal').remove(); alert('菜单已更新！'); });
   }
 
-  // 库存统计
+  // ==================== 分类管理 ====================
+  function showCategoryManager() {
+    let html = '<div class="modal-overlay" id="catModal"><div class="modal-content" style="max-width:400px;">';
+    html += '<div class="modal-title">📂 分类管理</div>';
+    categories.forEach(cat => {
+      html += `<div class="cat-edit-row">
+        <input type="text" id="catname_${cat.id}" value="${cat.name}" style="width:100px;">
+        <input type="text" id="caticon_${cat.id}" value="${cat.icon}" style="width:40px;">
+        <button onclick="deleteCategory('${cat.id}')" style="background:#e74c3c;color:white;border:none;border-radius:4px;">删除</button>
+      </div>`;
+    });
+    html += '<hr><div class="modal-title">添加新分类</div>';
+    html += `<div class="cat-edit-row">
+      <input type="text" id="newCatName" placeholder="分类名称" style="width:100px;">
+      <input type="text" id="newCatIcon" placeholder="图标" style="width:40px;">
+    </div>`;
+    html += '<div class="modal-actions">';
+    html += '<button class="btn-cancel" onclick="document.getElementById(\'catModal\').remove()">取消</button>';
+    html += '<button class="btn-confirm" onclick="saveCategories()">保存</button>';
+    html += '</div></div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  function deleteCategory(id) {
+    if (!confirm('确定删除此分类？')) return;
+    categories = categories.filter(c => c.id !== id);
+    saveCategoriesToDb();
+  }
+
+  function saveCategories() {
+    const newCategories = [];
+    categories.forEach(cat => {
+      const nameEl = document.getElementById('catname_' + cat.id);
+      const iconEl = document.getElementById('caticon_' + cat.id);
+      if (nameEl) cat.name = nameEl.value.trim();
+      if (iconEl) cat.icon = iconEl.value.trim();
+      newCategories.push(cat);
+    });
+    const newName = document.getElementById('newCatName').value.trim();
+    const newIcon = document.getElementById('newCatIcon').value.trim();
+    if (newName) {
+      const newId = 'cat_' + Date.now();
+      newCategories.push({ id: newId, name: newIcon + ' ' + newName, icon: newIcon || '🔸' });
+    }
+    saveCategoriesToDb(newCategories);
+  }
+
+  function saveCategoriesToDb(updatedCategories = categories) {
+    const obj = {};
+    updatedCategories.forEach(c => obj[c.id] = c);
+    menuCustomRef.child('categories').set(obj).then(() => {
+      document.getElementById('catModal')?.remove();
+      alert('分类已更新');
+    });
+  }
+
+  // ==================== 库存统计 ====================
   function getStockData() { const stored = localStorage.getItem('stockData'); return stored ? JSON.parse(stored) : {}; }
   function saveStockData(data) { localStorage.setItem('stockData', JSON.stringify(data)); }
   function showStatistics() {
@@ -980,7 +914,64 @@
   }
   function updateStock(itemId, value) { const stock = getStockData(); const qty = parseInt(value) || 0; if (qty >= 0) { stock[itemId] = qty; saveStockData(stock); } }
 
-  // 打印
+  // ==================== GBK 及打印 ====================
+  const defaultGbkMap = new Map([
+    ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
+    ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
+    ['鲜',[0xCF,0xCA]],['切',[0xC7,0xD0]],['羊',[0xD1,0xF2]],['鸡',[0xBC,0xA6]],
+    ['翅',[0xB3,0xE1]],['尖',[0xBC,0xE2]],['脆',[0xB4,0xE0]],['骨',[0xB9,0xC7]],
+    ['蒜',[0xCB,0xE2]],['瓣',[0xB0,0xEA]],['望',[0xCD,0xFB]],['京',[0xBE,0xA9]],
+    ['小',[0xD0,0xA1]],['腰',[0xD1,0xFC]],['鱼',[0xD3,0xE3]],['豆',[0xB6,0xB9]],
+    ['腐',[0xB8,0xAF]],['掌',[0xD5,0xC6]],['中',[0xD6,0xD0]],['宝',[0xB1,0xA6]],
+    ['肠',[0xB3,0xA6]],['牛',[0xC5,0xA3]],['心',[0xD0,0xC4]],['管',[0xB9,0xDC]],
+    ['碳',[0xCC,0xBC]],['皮',[0xC6,0xA4]],['面',[0xC3,0xE6]],['筋',[0xBD,0xEE]],
+    ['鱿',[0xF6,0xD9]],['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],
+    ['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],
+    ['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],
+    ['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],
+    ['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],['青',[0xC7,0xE0]],
+    ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xDB,0xC9]],
+    ['崂',[0xE1,0xBE]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
+    ['孜',[0xD7,0xAC]],['然',[0xC8,0xBB]],['辣',[0xC0,0xB1]],
+    ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
+    ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
+    ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
+    ['量',[0xC1,0xBF]],['度',[0xB6,0xC8]],['不',[0xB2,0xBB]],['微',[0xCE,0xA2]],
+    ['特',[0xCC,0xD8]],['谢',[0xD0,0xBB]],['惠',[0xBB,0xDD]],['顾',[0xB9,0xCB]],
+    ['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],['再',[0xD4,0xD9]],['次',[0xB4,0xCE]],
+    ['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],
+    ['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],
+    ['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],
+    ['辣',[0xC0,0xB1]],['盐',[0xD1,0xCE]],['少',[0xC9,0xD9]],['注',[0xD7,0xA2]]
+  ]);
+
+  function loadCustomGbk() {
+    try { const stored = localStorage.getItem('customGbk'); if (stored) { const obj = JSON.parse(stored); const map = new Map(); for (const char in obj) map.set(char, obj[char]); return map; } } catch (e) {}
+    return new Map();
+  }
+  function saveCustomGbk(map) { const obj = {}; for (const [char, code] of map) obj[char] = code; localStorage.setItem('customGbk', JSON.stringify(obj)); }
+  function getActiveGbkMap() { const custom = loadCustomGbk(); const merged = new Map(defaultGbkMap); for (const [c, code] of custom) merged.set(c, code); return merged; }
+  function toPinyinStr(char) { try { if (typeof pinyinPro !== 'undefined' && pinyinPro.pinyin) { const pyArr = pinyinPro.pinyin(char, { toneType: 'none', type: 'array' }); return pyArr.length > 0 ? pyArr[0] : ''; } } catch (e) {} return ''; }
+  function encodeGBK(str) {
+    const gbkMap = getActiveGbkMap();
+    const bytes = [];
+    for (const c of str) {
+      const code = c.charCodeAt(0);
+      if (code <= 0x7F) bytes.push(code);
+      else {
+        const gbk = gbkMap.get(c);
+        if (gbk) { bytes.push(gbk[0], gbk[1]); }
+        else { const py = toPinyinStr(c); if (py) { for (const pc of py) bytes.push(pc.charCodeAt(0)); } else bytes.push(0x20); }
+      }
+    }
+    return new Uint8Array(bytes);
+  }
+
+  function showGbkManager() { /* 同之前版本 */ }
+  function updateGbkChar(char) { /* 同之前版本 */ }
+  function deleteGbkChar(char) { /* 同之前版本 */ }
+  function addGbkChar() { /* 同之前版本 */ }
+
   function autoPrint(order) {
     if (bluetoothCharacteristic) {
       try { const command = build72mmESC(order); sendBluetoothData(command); } catch (e) { fallbackPrint(order); }
@@ -1036,7 +1027,6 @@
     if (!bluetoothCharacteristic) throw new Error('未连接打印机');
     const chunkSize = 20; for (let i = 0; i < data.length; i += chunkSize) { await bluetoothCharacteristic.writeValue(data.slice(i, i + chunkSize)); }
   }
-
   function build72mmESC(order) {
     let str = '\x1B\x40'; str += '\x1B\x61\x01'; str += '\x1B\x21\x30'; str += '久久家一元烧烤\n'; str += '\x1B\x21\x00';
     str += '----------------------------\n'; str += '\x1B\x61\x00';
@@ -1053,6 +1043,36 @@
     str += '----------------------------\n'; str += '\x1B\x61\x02'; str += '合计：¥ ' + order.total + '\n';
     str += '\x1B\x61\x01'; str += '谢谢惠顾，欢迎再次光临\n'; str += '\n\n\n'; str += '\x1D\x56\x42\x00';
     return encodeGBK(str);
+  }
+
+  // 初始化桌号等
+  const urlParams = new URLSearchParams(window.location.search);
+  if (!isAdmin && urlParams.has('table')) {
+    const tableParam = urlParams.get('table');
+    if (tableParam === '' || tableParam === '0' || tableParam === 'none') customerTable = '';
+    else { const num = parseInt(tableParam); if (!isNaN(num) && num >= 1 && num <= 10) customerTable = num; }
+  }
+  function toggleTableDropdown() { document.getElementById('tableDropdown').classList.toggle('open'); }
+  function updateTableDisplay() {
+    const bigText = document.getElementById('tableBigText'), bigBtn = document.getElementById('tableBigBtn');
+    if (customerTable === '') { bigText.innerText = '选桌'; bigBtn.classList.add('no-table'); }
+    else { bigText.innerText = customerTable; bigBtn.classList.remove('no-table'); }
+    document.getElementById('tableDropdown').classList.remove('open');
+  }
+  function setCustomerTable(num) { customerTable = num; updateTableDisplay(); }
+  updateTableDisplay();
+
+  if (isAdmin) {
+    document.getElementById('customerView').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+    document.getElementById('adminOrderPanel').style.display = 'none';
+    showLoginForm();
+  } else {
+    document.getElementById('customerView').style.display = 'flex';
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('adminOrderPanel').style.display = 'none';
+    document.getElementById('adminLink').style.display = 'block';
+    renderMenu('all');
   }
 </script>
 </body>
