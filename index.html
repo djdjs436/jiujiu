@@ -23,7 +23,7 @@
     .table-opt-btn.active { background: #c0392b; color: white; border-color: #c0392b; }
     .main-container { display: flex; flex: 1; overflow: hidden; }
     .left-categories { width: 90px; background: white; border-right: 1px solid #eee; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; padding-top: 5px; }
-    .left-categories button { display: block; width: 100%; background: white; border: none; padding: 10px 4px; font-size: 13px; cursor: pointer; text-align: center; }
+    .left-categories button { display: block; width: 100%; background: white; border: none; padding: 10px 4px; font-size: 13px; cursor: pointer; text-align: center; transition: background 0.2s; }
     .left-categories button.active { background: #c0392b; color: white; font-weight: bold; }
     .back-btn { background: #7f8c8d; color: white; border: none; padding: 14px 4px; font-size: 15px; cursor: pointer; text-align: center; margin-bottom: 8px; }
     .back-label { font-size: 10px; color: #ddd; text-align: center; padding: 2px 0; }
@@ -115,7 +115,7 @@
     <h1>久久家一元烧烤</h1>
     <p>扫码点餐 · 干净卫生 · 现串现烤</p>
   </div>
-  <div class="hint-bar">💡 点击正方形选桌，选择孜然或辣后用步进器调数量</div>
+  <div class="hint-bar">💡 点击正方形选桌，选择口味后用步进器调数量</div>
   <div class="table-row">
     <div class="table-big-btn" id="tableBigBtn" onclick="toggleTableDropdown()">
       <span id="tableBigText">选桌</span>
@@ -204,7 +204,7 @@
   const ordersRef = database.ref('orders');
   const menuCustomRef = database.ref('menuCustom');
 
-  // ==================== 更新后的默认菜单 ====================
+  // ==================== 默认菜单 ====================
   const defaultMenu = [
     { id:1, name:"大串猪肉", price:1, category:"meat", unit:"串", img:"https://i.ibb.co/cSbsJvKK/172333b755165e851eb8562037e318265d2a612052ba97c75ecd06d6e9e40e22.jpg" },
     { id:2, name:"鲜切羊肉", price:3, category:"meat", unit:"串", img:"https://i.ibb.co/S4yhtTm0/b951cab1e1f5c72d6bb7bb0a1fe55d01ce1c36cb5c9dabf110e24c63cfeaff26-0.webp" },
@@ -241,7 +241,8 @@
   ];
 
   let menu = JSON.parse(JSON.stringify(defaultMenu));
-  const tasteOptions = ['孜然', '辣'];
+  const tasteOptionsNormal = ['孜然', '辣'];
+  const tasteOptionsDrink = ['常温', '冰镇'];
   let cart = {};
   let adminCart = {};
   let currentSpicy = '辣';
@@ -256,6 +257,7 @@
   let currentSearch = '';
   let bluetoothDevice = null;
   let bluetoothCharacteristic = null;
+  let isSubmitting = false;
 
   // ==================== 分类数据 ====================
   const defaultCategories = [
@@ -267,6 +269,10 @@
     { id: 'other', name: '🥜 其他', icon: '🥜' }
   ];
   let categories = JSON.parse(JSON.stringify(defaultCategories));
+
+  function getTasteOptions(category) {
+    return category === 'drink' ? tasteOptionsDrink : tasteOptionsNormal;
+  }
 
   // 分类监听
   menuCustomRef.child('categories').on('value', snap => {
@@ -304,30 +310,39 @@
     }
     if (containerId === 'adminLeftCategories') {
       currentAdminFilter = cat;
+      const opts = getTasteOptions(cat);
+      if (!opts.includes(adminCurrentSpicy)) adminCurrentSpicy = opts[0];
       renderAdminMenu();
     } else {
       currentFilter = cat;
+      const opts = getTasteOptions(cat);
+      if (!opts.includes(currentSpicy)) currentSpicy = opts[0];
       renderMenu(cat);
     }
   }
 
-  // 菜单自定义监听（包含售罄）
+  // 菜单自定义监听（包含售罄、删除标记）
   menuCustomRef.on('value', (snapshot) => {
     const customData = snapshot.val() || {};
-    menu = defaultMenu.map(item => {
-      const custom = customData[item.id] || {};
-      return {
-        ...item,
-        name: custom.name || item.name,
-        price: custom.price !== undefined ? custom.price : item.price,
-        category: custom.category || item.category,
-        unit: custom.unit || item.unit,
-        img: custom.img || item.img,
-        soldOut: custom.soldOut || false
-      };
-    });
+    menu = defaultMenu
+      .filter(item => {
+        const custom = customData[item.id];
+        return !custom || !custom.deleted;
+      })
+      .map(item => {
+        const custom = customData[item.id] || {};
+        return {
+          ...item,
+          name: custom.name || item.name,
+          price: custom.price !== undefined ? custom.price : item.price,
+          category: custom.category || item.category,
+          unit: custom.unit || item.unit,
+          img: custom.img || item.img,
+          soldOut: custom.soldOut || false
+        };
+      });
     for (const id in customData) {
-      if (!menu.find(m => m.id == id) && customData[id].name) {
+      if (!menu.find(m => m.id == id) && customData[id].name && !customData[id].deleted) {
         menu.push({ id: parseInt(id), ...customData[id], soldOut: customData[id].soldOut || false });
       }
     }
@@ -351,6 +366,8 @@
       const type = isAdminPanel ? 'admin' : 'guest';
       const unit = item.unit || '串';
       const soldOut = item.soldOut || false;
+      const tasteOptions = getTasteOptions(item.category);
+      const effectiveCurSpicy = tasteOptions.includes(curSpicy) ? curSpicy : tasteOptions[0];
 
       if (soldOut) {
         htmlArr.push(
@@ -366,16 +383,14 @@
       } else {
         let tasteTags = tasteOptions.map(option => {
           const qty = itemCart[option] || 0;
-          const sel = (option === curSpicy) ? ' selected' : '';
+          const sel = (option === effectiveCurSpicy) ? ' selected' : '';
           return `<span class="taste-tag${sel}" onclick="selectSpicy('${option}', '${type}')">${option} ${qty}</span>`;
         }).join('');
-
-        let tasteRow = `<div class="taste-row">${tasteTags}</div>`;
 
         let quickHtml = '';
         if (item.price < 6) {
           quickHtml = '<div class="quick-adjust">' +
-            '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
+            '<span class="spicy-indicator">当前：' + effectiveCurSpicy + '</span>' +
             '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
             '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -5, \'' + type + '\')">-5</button><span class="stepper-val">5' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 5, \'' + type + '\')">+5</button></div>' +
             '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -10, \'' + type + '\')">-10</button><span class="stepper-val">10' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 10, \'' + type + '\')">+10</button></div>' +
@@ -388,7 +403,7 @@
             '</div>';
         } else {
           quickHtml = '<div class="quick-adjust">' +
-            '<span class="spicy-indicator">当前：' + curSpicy + '</span>' +
+            '<span class="spicy-indicator">当前：' + effectiveCurSpicy + '</span>' +
             '<div class="stepper"><button class="stepper-btn left" onclick="quickAdjust(' + item.id + ', -1, \'' + type + '\')">-1</button><span class="stepper-val">1' + unit + '</span><button class="stepper-btn right" onclick="quickAdjust(' + item.id + ', 1, \'' + type + '\')">+1</button></div>' +
             '</div>';
         }
@@ -399,7 +414,7 @@
           '<div class="item-info">' +
             '<div class="item-name">' + item.name + '</div>' +
             '<div class="item-price">¥' + item.price + '</div>' +
-            tasteRow +
+            '<div class="taste-row">' + tasteTags + '</div>' +
             '<div class="qty-row">' +
               '<span class="qty-num" onclick="editDetail(' + item.id + ', \'' + type + '\')">' + total + '</span> ' + unit +
               '<button class="clear-item-btn" onclick="clearItem(' + item.id + ', \'' + type + '\')" title="清除此菜品">✕</button>' +
@@ -418,9 +433,11 @@
   function selectSpicy(level, type = 'guest') { if (type === 'admin') { adminCurrentSpicy = level; renderAdminMenu(); } else { currentSpicy = level; renderMenu(currentFilter); } }
   function quickAdjust(itemId, delta, type = 'guest') {
     const cartObj = type === 'admin' ? adminCart : cart;
-    const curSpicy = type === 'admin' ? adminCurrentSpicy : currentSpicy;
     const item = menu.find(m => m.id === itemId);
     if (item && item.soldOut) return;
+    const tasteOptions = getTasteOptions(item.category);
+    const curSpicy = type === 'admin' ? adminCurrentSpicy : currentSpicy;
+    if (!tasteOptions.includes(curSpicy)) return;
     if (!cartObj[itemId]) cartObj[itemId] = {};
     if (delta > 0) cartObj[itemId][curSpicy] = (cartObj[itemId][curSpicy] || 0) + delta;
     else {
@@ -436,6 +453,7 @@
     const cartObj = type === 'admin' ? adminCart : cart;
     const item = menu.find(m => m.id == itemId);
     if (item && item.soldOut) return;
+    const tasteOptions = getTasteOptions(item.category);
     const itemCart = cartObj[itemId] || {};
     let html = '<div class="modal-overlay" id="detailModal"><div class="modal-content">' +
       '<div class="modal-title">调整【' + item.name + '】口味及数量</div>';
@@ -451,6 +469,9 @@
   }
   function closeDetailModal(itemId, type) {
     const cartObj = type === 'admin' ? adminCart : cart;
+    const item = menu.find(m => m.id == itemId);
+    if (!item) return;
+    const tasteOptions = getTasteOptions(item.category);
     tasteOptions.forEach(option => {
       const val = parseInt(document.getElementById('detailQty_' + itemId + '_' + option).value) || 0;
       if (val === 0) { if (cartObj[itemId]) delete cartObj[itemId][option]; }
@@ -523,6 +544,8 @@
     }
   }
   function confirmOrder() {
+    if (isSubmitting) return;
+    isSubmitting = true;
     const tableNumber = customerTable || '未选桌';
     const isPack = document.getElementById('packCheckbox').checked;
     const remark = document.getElementById('remarkInput').value.trim();
@@ -539,7 +562,8 @@
       document.getElementById('confirmModal').remove();
       alert('下单成功！单号：' + orderNumber + '\n合计 ¥' + total);
       cart = {}; renderMenu(currentFilter);
-    });
+      isSubmitting = false;
+    }).catch(() => { isSubmitting = false; });
   }
 
   // ==================== 代客点餐 ====================
@@ -558,6 +582,8 @@
   }
   function showAdminConfirmModal() { const items = getCartItems(adminCart); if (items.length === 0) { alert('请先选择菜品'); return; } showCommonConfirm(items, 'admin'); }
   function confirmAdminOrder() {
+    if (isSubmitting) return;
+    isSubmitting = true;
     const tableNumber = adminSelectedTable || '未选桌';
     const isPack = document.getElementById('packCheckbox').checked;
     const remark = document.getElementById('remarkInput').value.trim();
@@ -574,7 +600,8 @@
       document.getElementById('confirmModal').remove();
       alert('代客下单成功！单号：' + orderNumber + '\n合计 ¥' + total);
       adminCart = {}; adminSelectedTable = ''; renderAdminMenu();
-    });
+      isSubmitting = false;
+    }).catch(() => { isSubmitting = false; });
   }
 
   // ==================== 订单管理 ====================
@@ -665,7 +692,8 @@
     menu.forEach(item => { html += `<option value="${item.id}">${item.name} (¥${item.price})</option>`; });
     html += '</select>';
     html += '<select id="newEditItemSpicy">';
-    tasteOptions.forEach(t => html += `<option value="${t}">${t}</option>`);
+    const allTastes = ['孜然', '辣', '常温', '冰镇']; // 合并所有口味选项，方便修改订单时选择
+    allTastes.forEach(t => html += `<option value="${t}">${t}</option>`);
     html += '</select>';
     html += '<input type="number" id="newEditItemQty" value="1" min="1" style="width:50px;">';
     html += '<button onclick="addItemToEdit()" style="background:#3498db;color:white;border:none;border-radius:6px;padding:4px 8px;">添加</button>';
@@ -761,7 +789,15 @@
     document.body.insertAdjacentHTML('beforeend', html);
   }
 
-  function deleteMenuItem(id) { if (!confirm('确定删除此菜品？')) return; const updates = {}; updates[id] = null; menuCustomRef.update(updates); }
+  function deleteMenuItem(id) {
+    if (!confirm('确定删除此菜品？')) return;
+    const defaultItem = defaultMenu.find(m => m.id === id);
+    if (defaultItem) {
+      menuCustomRef.child(id).set({ deleted: true });
+    } else {
+      menuCustomRef.child(id).remove();
+    }
+  }
 
   function saveMenuManager() {
     const updates = {};
@@ -868,41 +904,40 @@
   }
   function updateStock(itemId, value) { const stock = getStockData(); const qty = parseInt(value) || 0; if (qty >= 0) { stock[itemId] = qty; saveStockData(stock); } }
 
-  // ==================== GBK 映射管理（已修复） ====================
+  // ==================== GBK 映射 ====================
   const defaultGbkMap = new Map([
-  ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
-  ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
-  ['鲜',[0xCF,0xCA]],['切',[0xC7,0xD0]],['羊',[0xD1,0xF2]],['鸡',[0xBC,0xA6]],
-  ['翅',[0xB3,0xE1]],['尖',[0xBC,0xE2]],['脆',[0xB4,0xE0]],['骨',[0xB9,0xC7]],
-  ['蒜',[0xCB,0xE2]],['瓣',[0xB0,0xEA]],['望',[0xCD,0xFB]],['京',[0xBE,0xA9]],
-  ['小',[0xD0,0xA1]],['腰',[0xD1,0xFC]],['鱼',[0xD3,0xE3]],['豆',[0xB6,0xB9]],
-  ['腐',[0xB8,0xAF]],['掌',[0xD5,0xC6]],['中',[0xD6,0xD0]],['宝',[0xB1,0xA6]],
-  ['肠',[0xB3,0xA6]],['牛',[0xC5,0xA3]],['心',[0xD0,0xC4]],['管',[0xB9,0xDC]],
-  ['碳',[0xCC,0xBC]],['皮',[0xC6,0xA4]],['面',[0xC3,0xE6]],['筋',[0xBD,0xEE]],
-  ['鱿',[0xF6,0xCF]],['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],
-  ['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],
-  ['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],
-  ['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],
-  ['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],['青',[0xC7,0xE0]],
-  ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xD2,0xA4]],
-  ['崂',[0xE1,0xC0]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
-  ['孜',[0xD7,0xCE]],['然',[0xC8,0xBB]],['辣',[0xC0,0xB1]],
-  ['尔',[0xB6,0xFB]],['良',[0xC1,0xBC]],['醋',[0xB4,0xD7]],['香',[0xCF,0xE3]],
-  ['脉',[0xC2,0xF6]],['动',[0xB6,0xAF]],['农',[0xC5,0xA9]],['夫',[0xB7,0xF2]],
-  ['泉',[0xC8,0xAA]],['燕',[0xD1,0xE0]],['京',[0xBE,0xA9]],['U',[0x55,0x00]],
-  ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
-  ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
-  ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
-  ['量',[0xC1,0xBF]],['度',[0xB6,0xC8]],['不',[0xB2,0xBB]],['微',[0xCE,0xA2]],
-  ['特',[0xCC,0xD8]],['谢',[0xD0,0xBB]],['惠',[0xBB,0xDD]],['顾',[0xB9,0xCB]],
-  ['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],['再',[0xD4,0xD9]],['次',[0xB4,0xCE]],
-  ['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],
-  ['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],
-  ['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],
-  ['辣',[0xC0,0xB1]],['盐',[0xD1,0xCE]],['少',[0xC9,0xD9]],['注',[0xD7,0xA2]],
-  // 新增/修正的字符
-  ['奥',[0xB0,0xC2]],['腿',[0xCD,0xC8]],['老',[0xC0,0xCF]],['奶',[0xC4,0xCC]]
-]);
+    ['久',[0xBE,0xC3]],['家',[0xBC,0xD2]],['一',[0xD2,0xBB]],['元',[0xD4,0xAA]],['烧',[0xC9,0xD5]],['烤',[0xBF,0xBE]],
+    ['大',[0xB4,0xF3]],['串',[0xB4,0xAE]],['猪',[0xD6,0xED]],['肉',[0xC8,0xE2]],
+    ['鲜',[0xCF,0xCA]],['切',[0xC7,0xD0]],['羊',[0xD1,0xF2]],['鸡',[0xBC,0xA6]],
+    ['翅',[0xB3,0xE1]],['尖',[0xBC,0xE2]],['脆',[0xB4,0xE0]],['骨',[0xB9,0xC7]],
+    ['蒜',[0xCB,0xE2]],['瓣',[0xB0,0xEA]],['望',[0xCD,0xFB]],['京',[0xBE,0xA9]],
+    ['小',[0xD0,0xA1]],['腰',[0xD1,0xFC]],['鱼',[0xD3,0xE3]],['豆',[0xB6,0xB9]],
+    ['腐',[0xB8,0xAF]],['掌',[0xD5,0xC6]],['中',[0xD6,0xD0]],['宝',[0xB1,0xA6]],
+    ['肠',[0xB3,0xA6]],['牛',[0xC5,0xA3]],['心',[0xD0,0xC4]],['管',[0xB9,0xDC]],
+    ['碳',[0xCC,0xBC]],['皮',[0xC6,0xA4]],['面',[0xC3,0xE6]],['筋',[0xBD,0xEE]],
+    ['鱿',[0xF6,0xCF]],['韭',[0xBE,0xC2]],['菜',[0xB2,0xCB]],['干',[0xB8,0xC9]],
+    ['椒',[0xBD,0xB7]],['包',[0xB0,0xFC]],['金',[0xBD,0xF0]],['针',[0xD5,0xEB]],
+    ['菇',[0xB9,0xBD]],['馒',[0xC2,0xF8]],['头',[0xCD,0xB7]],['卤',[0xC2,0xB1]],
+    ['花',[0xBB,0xA8]],['生',[0xC9,0xFA]],['黄',[0xBB,0xC6]],['瓜',[0xB9,0xCF]],
+    ['拌',[0xB0,0xE8]],['马',[0xC2,0xED]],['步',[0xB2,0xBD]],['青',[0xC7,0xE0]],
+    ['岛',[0xB5,0xBA]],['啤',[0xC6,0xA1]],['酒',[0xBE,0xC6]],['窑',[0xD2,0xA4]],
+    ['崂',[0xE1,0xC0]],['山',[0xC9,0xBD]],['雪',[0xD1,0xA9]],['碧',[0xB1,0xCC]],
+    ['孜',[0xD7,0xAC]],['然',[0xC8,0xBB]],['辣',[0xC0,0xB1]],
+    ['尔',[0xB6,0xFB]],['良',[0xC1,0xBC]],['醋',[0xB4,0xD7]],['香',[0xCF,0xE3]],
+    ['脉',[0xC2,0xF6]],['动',[0xB6,0xAF]],['农',[0xC5,0xA9]],['夫',[0xB7,0xF2]],
+    ['泉',[0xC8,0xAA]],['燕',[0xD1,0xE0]],['京',[0xBE,0xA9]],['U',[0x55,0x00]],
+    ['桌',[0xD7,0xC0]],['号',[0xBA,0xC5]],['时',[0xCA,0xB1]],['间',[0xBC,0xE4]],
+    ['打',[0xB4,0xF2]],['堂',[0xCC,0xC3]],['食',[0xCA,0xB3]],['合',[0xBA,0xCF]],
+    ['计',[0xBC,0xC6]],['品',[0xC6,0xB7]],['名',[0xC3,0xFB]],['数',[0xCA,0xFD]],
+    ['量',[0xC1,0xBF]],['度',[0xB6,0xC8]],['不',[0xB2,0xBB]],['微',[0xCE,0xA2]],
+    ['特',[0xCC,0xD8]],['谢',[0xD0,0xBB]],['惠',[0xBB,0xDD]],['顾',[0xB9,0xCB]],
+    ['欢',[0xBB,0xB6]],['迎',[0xD3,0xAD]],['再',[0xD4,0xD9]],['次',[0xB4,0xCE]],
+    ['光',[0xB9,0xE2]],['临',[0xC1,0xD9]],['新',[0xD0,0xC2]],['订',[0xB6,0xA9]],
+    ['单',[0xB5,0xA5]],['请',[0xC7,0xEB]],['及',[0xBC,0xB0]],['处',[0xB4,0xA6]],
+    ['理',[0xC0,0xED]],['：',[0xA3,0xBA]],['。',[0xA1,0xA3]],['，',[0xA1,0xA2]],
+    ['辣',[0xC0,0xB1]],['盐',[0xD1,0xCE]],['少',[0xC9,0xD9]],['注',[0xD7,0xA2]],
+    ['奥',[0xB0,0xC2]],['腿',[0xCD,0xC8]],['老',[0xC0,0xCF]],['奶',[0xC4,0xCC]]
+  ]);
 
   function loadCustomGbk() {
     try { const stored = localStorage.getItem('customGbk'); if (stored) { const obj = JSON.parse(stored); const map = new Map(); for (const char in obj) map.set(char, obj[char]); return map; } } catch (e) {}
@@ -926,7 +961,6 @@
     return new Uint8Array(bytes);
   }
 
-  // GBK 字符管理器（完整实现）
   function showGbkManager() {
     const customMap = loadCustomGbk();
     const activeMap = getActiveGbkMap();
@@ -1019,6 +1053,8 @@
   function playNotification() { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); osc.type = 'square'; osc.frequency.setValueAtTime(800, ctx.currentTime); osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.15); }
   function hideAdmin() { window.location.href = window.location.pathname; }
   function showLoginForm() {
+    const existing = document.getElementById('loginBox');
+    if (existing) existing.remove();
     document.getElementById('customerView').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('adminOrderPanel').style.display = 'none';
@@ -1076,7 +1112,7 @@
     return encodeGBK(str);
   }
 
-  // 初始化
+  // ==================== 初始化 ====================
   const urlParams = new URLSearchParams(window.location.search);
   if (!isAdmin && urlParams.has('table')) {
     const tableParam = urlParams.get('table');
