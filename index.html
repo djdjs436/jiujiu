@@ -692,7 +692,7 @@
     menu.forEach(item => { html += `<option value="${item.id}">${item.name} (¥${item.price})</option>`; });
     html += '</select>';
     html += '<select id="newEditItemSpicy">';
-    const allTastes = ['孜然', '辣', '常温', '冰镇']; // 合并所有口味选项，方便修改订单时选择
+    const allTastes = ['孜然', '辣', '常温', '冰镇'];
     allTastes.forEach(t => html += `<option value="${t}">${t}</option>`);
     html += '</select>';
     html += '<input type="number" id="newEditItemQty" value="1" min="1" style="width:50px;">';
@@ -1095,20 +1095,43 @@
   }
 
   function build72mmESC(order) {
-    let str = '\x1B\x40'; str += '\x1B\x61\x01'; str += '\x1B\x21\x30'; str += '久久家一元烧烤\n'; str += '\x1B\x21\x00';
-    str += '----------------------------\n'; str += '\x1B\x61\x00';
-    str += '时间：' + order.time + '\n'; str += '单号：' + (order.orderNumber || '无') + '\n';
-    str += '\x1B\x45\x01\x1B\x21\x30'; str += '桌号：' + order.table + '  ' + order.isPack + '\n';
-    str += '\x1B\x21\x00\x1B\x45\x00'; str += '----------------------------\n';
+    let str = '\x1B\x40';
+    str += '\x1B\x61\x01';
+    str += '\x1B\x21\x30';
+    str += '久久家一元烧烤\n';
+    str += '\x1B\x21\x00';
+    str += '----------------------------\n';
+    str += '\x1B\x61\x00';
+    str += '时间：' + order.time + '\n';
+    str += '单号：' + (order.orderNumber || '无') + '\n';
+    str += '\x1B\x45\x01\x1B\x21\x30';
+    str += '桌号：' + order.table + '  ' + order.isPack + '\n';
+    str += '\x1B\x21\x00\x1B\x45\x00';
+    str += '----------------------------\n';
     str += '品名       数量  小计\n';
+
+    // 菜品放大两倍
+    str += '\x1B\x21\x30';
     order.items.forEach(item => {
-      const name = item.name.padEnd(7, ' '); const qty = item.qty.toString().padStart(2, ' '); const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
+      const name = item.name.padEnd(7, ' ');
+      const qty = item.qty.toString().padStart(2, ' ');
+      const subtotal = item.subtotal.toFixed(2).padStart(6, ' ');
       str += name + ' ' + qty + ' ' + subtotal + '\n';
       str += '  ' + item.spicy + '\n';
     });
-    if (order.remark) { str += '----------------------------\n'; str += '备注：' + order.remark + '\n'; }
-    str += '----------------------------\n'; str += '\x1B\x61\x02'; str += '合计：¥ ' + order.total + '\n';
-    str += '\x1B\x61\x01'; str += '谢谢惠顾，欢迎再次光临\n'; str += '\n\n\n'; str += '\x1D\x56\x42\x00';
+    str += '\x1B\x21\x00';
+
+    if (order.remark) {
+      str += '----------------------------\n';
+      str += '备注：' + order.remark + '\n';
+    }
+    str += '----------------------------\n';
+    str += '\x1B\x61\x02';
+    str += '合计：¥ ' + order.total + '\n';
+    str += '\x1B\x61\x01';
+    str += '谢谢惠顾，欢迎再次光临\n';
+    str += '\n\n\n';
+    str += '\x1D\x56\x42\x00';
     return encodeGBK(str);
   }
 
