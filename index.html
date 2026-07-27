@@ -1035,7 +1035,7 @@
     showGbkManager();
   }
 
-  // ==================== 打印 ====================
+  // ==================== 打印（修正为标准双倍宽高） ====================
   function autoPrint(order) {
     if (bluetoothCharacteristic) {
       try { const command = build72mmESC(order); sendBluetoothData(command); } catch (e) { fallbackPrint(order); }
@@ -1095,23 +1095,23 @@
   }
 
   function build72mmESC(order) {
-    let str = '\x1B\x40';
-    str += '\x1B\x61\x01';
-    str += '\x1B\x21\x30';
+    let str = '\x1B\x40';                         // 初始化打印机
+    str += '\x1B\x61\x01';                        // 居中
+    str += '\x1B\x21\x11';                        // 标准双倍宽高（正确指令）
     str += '久久家一元烧烤\n';
-    str += '\x1B\x21\x00';
+    str += '\x1B\x21\x00';                        // 恢复默认
     str += '----------------------------\n';
-    str += '\x1B\x61\x00';
+    str += '\x1B\x61\x00';                        // 左对齐
     str += '时间：' + order.time + '\n';
     str += '单号：' + (order.orderNumber || '无') + '\n';
-    str += '\x1B\x45\x01\x1B\x21\x30';
+    str += '\x1B\x45\x01\x1B\x21\x11';            // 加粗 + 标准双倍宽高
     str += '桌号：' + order.table + '  ' + order.isPack + '\n';
-    str += '\x1B\x21\x00\x1B\x45\x00';
+    str += '\x1B\x21\x00\x1B\x45\x00';            // 恢复默认 + 取消加粗
     str += '----------------------------\n';
     str += '品名       数量  小计\n';
 
-    // 菜品放大两倍
-    str += '\x1B\x21\x30';
+    // 菜品区：放大一倍（双倍宽高）
+    str += '\x1B\x21\x11';                        // 标准双倍宽高
     order.items.forEach(item => {
       const name = item.name.padEnd(7, ' ');
       const qty = item.qty.toString().padStart(2, ' ');
@@ -1119,19 +1119,19 @@
       str += name + ' ' + qty + ' ' + subtotal + '\n';
       str += '  ' + item.spicy + '\n';
     });
-    str += '\x1B\x21\x00';
+    str += '\x1B\x21\x00';                        // 恢复默认
 
     if (order.remark) {
       str += '----------------------------\n';
       str += '备注：' + order.remark + '\n';
     }
     str += '----------------------------\n';
-    str += '\x1B\x61\x02';
+    str += '\x1B\x61\x02';                        // 右对齐
     str += '合计：¥ ' + order.total + '\n';
-    str += '\x1B\x61\x01';
+    str += '\x1B\x61\x01';                        // 居中
     str += '谢谢惠顾，欢迎再次光临\n';
     str += '\n\n\n';
-    str += '\x1D\x56\x42\x00';
+    str += '\x1D\x56\x42\x00';                    // 切纸
     return encodeGBK(str);
   }
 
